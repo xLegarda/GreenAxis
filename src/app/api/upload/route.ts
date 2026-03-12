@@ -4,6 +4,10 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { put, del } from '@vercel/blob'
+
+// Detectar si estamos en Vercel (producción)
+const isVercel = process.env.VERCEL === '1'
 
 // Tipos MIME permitidos para imágenes
 const ALLOWED_IMAGE_TYPES = [
@@ -75,8 +79,14 @@ function validateFile(buffer: Buffer, declaredType: string): boolean {
   const signature = FILE_SIGNATURES[declaredType]
   if (!signature) return buffer.length > 0
   
+  // Verificar que el signature no tenga valores null antes de comparar
   const fileHeader = buffer.subarray(0, signature.length)
-  return fileHeader.equals(signature)
+  for (let i = 0; i < signature.length; i++) {
+    if (signature[i] !== null && fileHeader[i] !== signature[i]) {
+      return false
+    }
+  }
+  return true
 }
 
 // Helper para convertir string vacío a null
@@ -142,12 +152,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    // Crear directorio de uploads si no existe
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
-    
     // Generar nombre único con extensión segura
     const timestamp = Date.now()
     let ext = mimeType.split('/')[1] || 'bin'
@@ -159,13 +163,8 @@ export async function POST(request: NextRequest) {
     if (ext === 'mpeg' && mimeType.startsWith('audio')) ext = 'mp3'
     if (ext === 'x-m4a') ext = 'm4a'
     const fileName = `${timestamp}-${Math.random().toString(36).substring(2, 8)}.${ext}`
-    const filePath = path.join(uploadDir, fileName)
     
-    // Guardar archivo
-    await writeFile(filePath, buffer)
-    
-    // URL pública
-    const publicUrl = `/uploads/${fileName}`
+    let publicUrl: string
     
     // Auto-generar key si no se proporciona
     const fileKey = key || `${fileCategory}_${timestamp}_${Math.random().toString(36).substring(2, 8)}`
@@ -175,19 +174,73 @@ export async function POST(request: NextRequest) {
       where: { key: fileKey }
     })
     
-    if (existingImage) {
-      // Eliminar archivo anterior
-      const oldFilePath = path.join(process.cwd(), 'public', existingImage.url)
-      if (existsSync(oldFilePath)) {
-        await unlink(oldFilePath).catch(() => {})
+    if (isVercel) {
+      // PRODUCCIÓN: Usar Vercel Blob
+      const blob = await put(fileName, buffer, {
+        access: 'public',
+        contentType: mimeType,
+      })
+      publicUrl = blob.url
+      
+      // Si existe imagen anterior, eliminar del blob
+      if (existingImage && existingImage.url.includes('vercel-storage')) {
+        await del(existingImage.url).catch(() => {})
+      }
+    } else {
+      // DESARROLLO: Guardar en sistema de archivos local
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+      if (!existsSync(uploadDir)) {
+        await mkdir(uploadDir, { recursive: true })
       }
       
+      const filePath = path.join(uploadDir, fileName)
+      await writeFile(filePath, buffer)
+      publicUrl = `/uploads/${fileName}`
+      
+      // Eliminar archivo anterior si existe
+      if (existingImage) {
+        const oldFilePath = path.join(process.cwd(), 'public', existingImage.url)
+        if (existsSync(oldFilePath)) {
+          await unlink(oldFilePath).catch(() => {})
+        }
+      }
+    }
+    
+    if (existingImage) {
       // Actualizar registro
       await db.siteImage.update({
         where: { key: fileKey },
         data: {
           url: publicUrl,
           label: label || existingImage.label,
+          description: emptyToNull(description),
+          category: emptyToNull(category) || fileCategory,
+        }
+      })
+    } else {
+      // Crear nuevo registro
+      await db.siteImage.create({
+        data: {
+          key: fileKey,
+          label: label || file.name.replace(/\.[^/.]+$/, ''),
+          description: emptyToNull(description),
+          category: emptyToNull(category) || fileCategory,
+          url: publicUrl,
+        }
+      })
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      url: publicUrl,
+      fileName,
+      key: fileKey
+    })
+  } catch (error) {
+    console.error('Error uploading file:', error)
+    return NextResponse.json({ error: 'Error al subir archivo' }, { status: 500 })
+  }
+}
           description: emptyToNull(description),
           category: emptyToNull(category) || fileCategory,
         }
@@ -238,20 +291,28 @@ export async function DELETE(request: NextRequest) {
       })
       
       if (image) {
-        // Eliminar archivo
-        const filePath = path.join(process.cwd(), 'public', image.url)
-        if (existsSync(filePath)) {
-          await unlink(filePath).catch(() => {})
+        // Eliminar archivo según el entorno
+        if (isVercel && image.url.includes('vercel-storage')) {
+          // Producción: Eliminar de Vercel Blob
+          await del(image.url).catch(() => {})
+        } else if (!isVercel && image.url.startsWith('/uploads/')) {
+          // Desarrollo: Eliminar del sistema de archivos local
+          const filePath = path.join(process.cwd(), 'public', image.url)
+          if (existsSync(filePath)) {
+            await unlink(filePath).catch(() => {})
+          }
         }
         
-        // Eliminar registro
+        // Eliminar registro de la base de datos
         await db.siteImage.delete({
           where: { key }
         })
       }
     } else if (url) {
-      // Solo eliminar archivo (validar que esté en uploads)
-      if (url.startsWith('/uploads/')) {
+      // Eliminar solo el archivo (sin registro en DB)
+      if (isVercel && url.includes('vercel-storage')) {
+        await del(url).catch(() => {})
+      } else if (!isVercel && url.startsWith('/uploads/')) {
         const filePath = path.join(process.cwd(), 'public', url)
         if (existsSync(filePath)) {
           await unlink(filePath).catch(() => {})

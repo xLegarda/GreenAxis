@@ -55,7 +55,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' https://www.google-analytics.com",
+    "connect-src 'self' https://www.google-analytics.com blob:",
     "frame-src 'self' https://www.google.com https://maps.google.com",
     "frame-ancestors 'none'",
   ].join('; ')
