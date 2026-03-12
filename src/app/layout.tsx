@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   
   const siteName = config?.siteName || "Green Axis S.A.S."
   const description = config?.siteDescription || "Empresa líder en servicios ambientales en Colombia. Ofrecemos soluciones integrales para el manejo de residuos, consultoría ambiental y más."
-  const favicon = config?.faviconUrl || "/logo.png"
+  const favicon = config?.faviconUrl || "/favicon.png"
   
   return {
     title: {
