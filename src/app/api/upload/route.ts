@@ -4,10 +4,17 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
-import { put, del } from '@vercel/blob'
+import { v2 as cloudinary } from 'cloudinary'
 
-// Detectar si estamos en Vercel (producción)
-const isVercel = process.env.VERCEL === '1'
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+// Detectar si estamos en producción (Vercel)
+const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
 
 // Tipos MIME permitidos para imágenes
 const ALLOWED_IMAGE_TYPES = [
@@ -174,17 +181,29 @@ export async function POST(request: NextRequest) {
       where: { key: fileKey }
     })
     
-    if (isVercel) {
-      // PRODUCCIÓN: Usar Vercel Blob
-      const blob = await put(fileName, buffer, {
-        access: 'public',
-        contentType: mimeType,
+    if (isProduction) {
+      // PRODUCCIÓN: Usar Cloudinary
+      const uploadResult = await new Promise<any>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'green-axis',
+            resource_type: 'auto', // Detecta automáticamente si es imagen, video o audio
+            public_id: fileKey,
+          },
+          (error, result) => {
+            if (error) reject(error)
+            else resolve(result)
+          }
+        )
+        uploadStream.end(buffer)
       })
-      publicUrl = blob.url
       
-      // Si existe imagen anterior, eliminar del blob
-      if (existingImage && existingImage.url.includes('vercel-storage')) {
-        await del(existingImage.url).catch(() => {})
+      publicUrl = uploadResult.secure_url
+      
+      // Si existe imagen anterior en Cloudinary, eliminarla
+      if (existingImage && existingImage.url.includes('cloudinary.com')) {
+        const publicId = existingImage.url.split('/').slice(-2).join('/').split('.')[0]
+        await cloudinary.uploader.destroy(publicId).catch(() => {})
       }
     } else {
       // DESARROLLO: Guardar en sistema de archivos local
@@ -292,10 +311,11 @@ export async function DELETE(request: NextRequest) {
       
       if (image) {
         // Eliminar archivo según el entorno
-        if (isVercel && image.url.includes('vercel-storage')) {
-          // Producción: Eliminar de Vercel Blob
-          await del(image.url).catch(() => {})
-        } else if (!isVercel && image.url.startsWith('/uploads/')) {
+        if (isProduction && image.url.includes('cloudinary.com')) {
+          // Producción: Eliminar de Cloudinary
+          const publicId = image.url.split('/').slice(-2).join('/').split('.')[0]
+          await cloudinary.uploader.destroy(publicId).catch(() => {})
+        } else if (!isProduction && image.url.startsWith('/uploads/')) {
           // Desarrollo: Eliminar del sistema de archivos local
           const filePath = path.join(process.cwd(), 'public', image.url)
           if (existsSync(filePath)) {
@@ -310,9 +330,10 @@ export async function DELETE(request: NextRequest) {
       }
     } else if (url) {
       // Eliminar solo el archivo (sin registro en DB)
-      if (isVercel && url.includes('vercel-storage')) {
-        await del(url).catch(() => {})
-      } else if (!isVercel && url.startsWith('/uploads/')) {
+      if (isProduction && url.includes('cloudinary.com')) {
+        const publicId = url.split('/').slice(-2).join('/').split('.')[0]
+        await cloudinary.uploader.destroy(publicId).catch(() => {})
+      } else if (!isProduction && url.startsWith('/uploads/')) {
         const filePath = path.join(process.cwd(), 'public', url)
         if (existsSync(filePath)) {
           await unlink(filePath).catch(() => {})
