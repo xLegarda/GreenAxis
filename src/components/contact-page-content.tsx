@@ -1,0 +1,345 @@
+'use client'
+
+import { useState } from 'react'
+import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import Link from 'next/link'
+import { toast } from '@/hooks/use-toast'
+
+interface PlatformConfig {
+  siteName: string
+  companyAddress: string | null
+  companyPhone: string | null
+  companyEmail: string | null
+  googleMapsEmbed: string | null
+}
+
+interface ContactPageContentProps {
+  config: PlatformConfig
+}
+
+export function ContactPageContent({ config }: ContactPageContentProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    subject: '',
+    message: ''
+  })
+  const [consent, setConsent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  
+  // Extraer la URL del iframe si existe
+  const getEmbedSrc = () => {
+    if (config.googleMapsEmbed) {
+      // Si es un iframe completo, extraer el src
+      const srcMatch = config.googleMapsEmbed.match(/src=["']([^"']+)["']/)
+      if (srcMatch) return srcMatch[1]
+      // Si es solo la URL, usarla directamente
+      if (config.googleMapsEmbed.startsWith('http')) return config.googleMapsEmbed
+    }
+    
+    // Si solo hay dirección, crear embed URL
+    if (config.companyAddress) {
+      const encodedAddress = encodeURIComponent(config.companyAddress)
+      return `https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+    }
+    
+    return null
+  }
+
+  // Crear URL para abrir en Google Maps
+  const getGoogleMapsUrl = () => {
+    if (config.companyAddress) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(config.companyAddress)}`
+    }
+    return null
+  }
+  
+  const embedSrc = getEmbedSrc()
+  const externalMapUrl = getGoogleMapsUrl()
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!consent) {
+      toast({
+        title: 'Error',
+        description: 'Debes aceptar la política de tratamiento de datos personales.',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    setLoading(true)
+    
+    try {
+      const response = await fetch('/api/contacto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          consent: true
+        })
+      })
+      
+      if (response.ok) {
+        setSuccess(true)
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          company: '',
+          subject: '',
+          message: ''
+        })
+        setConsent(false)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        toast({
+          title: 'Error',
+          description: errorData.error || 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  return (
+    <>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-[#005A7A] via-[#004A66] to-[#6BBE45] py-20">
+        <div className="container mx-auto px-4 text-center text-white">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            Contáctanos
+          </h1>
+          <p className="text-lg text-white/80 max-w-2xl mx-auto">
+            Estamos aquí para ayudarte con tus necesidades ambientales.
+          </p>
+        </div>
+      </section>
+      
+      {/* Contact Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Contact Info */}
+            <div>
+              <h2 className="text-2xl font-bold text-foreground mb-6">
+                Información de Contacto
+              </h2>
+              
+              <div className="space-y-6">
+                {config.companyAddress && (
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-primary/10">
+                      <MapPin className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Dirección</h3>
+                      <p className="text-muted-foreground">{config.companyAddress}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {config.companyPhone && (
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-primary/10">
+                      <Phone className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Teléfono</h3>
+                      <a href={`tel:${config.companyPhone}`} className="text-muted-foreground hover:text-primary">
+                        {config.companyPhone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                
+                {config.companyEmail && (
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-primary/10">
+                      <Mail className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Correo Electrónico</h3>
+                      <a href={`mailto:${config.companyEmail}`} className="text-muted-foreground hover:text-primary">
+                        {config.companyEmail}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Map */}
+              {embedSrc && (
+                <div className="mt-8 rounded-xl overflow-hidden h-64 relative border border-border shadow-lg">
+                  <iframe
+                    src={embedSrc}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Ubicación"
+                  />
+                  {externalMapUrl && (
+                    <a
+                      href={externalMapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 text-xs font-medium text-foreground hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Abrir
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Contact Form */}
+            <div className="bg-card rounded-2xl p-8 shadow-lg">
+              {success ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground mb-2">
+                    ¡Mensaje Enviado!
+                  </h3>
+                  <p className="text-muted-foreground mb-6">
+                    Gracias por contactarnos. Te responderemos lo antes posible.
+                  </p>
+                  <Button onClick={() => setSuccess(false)} className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white">
+                    Enviar otro mensaje
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-foreground mb-6">
+                    Solicitar Cotización
+                  </h2>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Nombre completo *</Label>
+                        <Input
+                          id="name"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Tu nombre"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Correo electrónico *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="tu@correo.com"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Teléfono</Label>
+                        <Input
+                          id="phone"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          placeholder="+57 300 123 4567"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="company">Empresa</Label>
+                        <Input
+                          id="company"
+                          value={formData.company}
+                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                          placeholder="Nombre de tu empresa"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="subject">Asunto</Label>
+                      <Input
+                        id="subject"
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                        placeholder="¿En qué podemos ayudarte?"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="message">Mensaje *</Label>
+                      <Textarea
+                        id="message"
+                        required
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        placeholder="Describe tu consulta o los servicios que necesitas..."
+                        className="min-h-[150px]"
+                      />
+                    </div>
+                    
+                    <div className="flex items-start space-x-2">
+                      <Checkbox
+                        id="consent"
+                        checked={consent}
+                        onCheckedChange={(checked) => setConsent(checked as boolean)}
+                      />
+                      <Label htmlFor="consent" className="text-sm text-muted-foreground leading-tight">
+                        Acepto la{' '}
+                        <Link href="/privacidad" className="text-primary hover:underline">
+                          Política de Tratamiento de Datos Personales
+                        </Link>
+                        {' '}y autorizo el uso de mis datos para ser contactado.
+                      </Label>
+                    </div>
+                    
+                    <Button
+                      type="submit"
+                      className="w-full bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        'Enviando...'
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Enviar Mensaje
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}

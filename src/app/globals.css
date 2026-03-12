@@ -1,0 +1,545 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  /* Green Axis Brand Colors - Light Mode */
+  --background: #ffffff;
+  --foreground: #1a3a40;
+  --card: #ffffff;
+  --card-foreground: #1a3a40;
+  --popover: #ffffff;
+  --popover-foreground: #1a3a40;
+  --primary: #6BBE45;
+  --primary-foreground: #ffffff;
+  --secondary: #005A7A;
+  --secondary-foreground: #ffffff;
+  --muted: #f0fdf4;
+  --muted-foreground: #4a7a6d;
+  --accent: #e8f8ec;
+  --accent-foreground: #1a3a40;
+  --destructive: #dc2626;
+  --border: #d1e7dd;
+  --input: #d1e7dd;
+  --ring: #6BBE45;
+  --chart-1: #6BBE45;
+  --chart-2: #005A7A;
+  --chart-3: #4A9A35;
+  --chart-4: #8BC34A;
+  --chart-5: #2E7A56;
+  --sidebar: #f8fcfa;
+  --sidebar-foreground: #1a3a40;
+  --sidebar-primary: #6BBE45;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8f8ec;
+  --sidebar-accent-foreground: #1a3a40;
+  --sidebar-border: #d1e7dd;
+  --sidebar-ring: #6BBE45;
+}
+
+.dark {
+  --background: #0a1a1f;
+  --foreground: #e8f5ec;
+  --card: #0f252d;
+  --card-foreground: #e8f5ec;
+  --popover: #0f252d;
+  --popover-foreground: #e8f5ec;
+  --primary: #8BC34A;
+  --primary-foreground: #0a1a1f;
+  --secondary: #2a7a8a;
+  --secondary-foreground: #e8f5ec;
+  --muted: #1a3540;
+  --muted-foreground: #8ab5a0;
+  --accent: #1a3a40;
+  --accent-foreground: #e8f5ec;
+  --destructive: #ef4444;
+  --border: #1a3a40;
+  --input: #1a3a40;
+  --ring: #8BC34A;
+  --chart-1: #8BC34A;
+  --chart-2: #2a7a8a;
+  --chart-3: #6BBE45;
+  --chart-4: #a5d653;
+  --chart-5: #4CAF50;
+  --sidebar: #0f2028;
+  --sidebar-foreground: #e8f5ec;
+  --sidebar-primary: #8BC34A;
+  --sidebar-primary-foreground: #0a1a1f;
+  --sidebar-accent: #1a3a40;
+  --sidebar-accent-foreground: #e8f5ec;
+  --sidebar-border: #1a3a40;
+  --sidebar-ring: #8BC34A;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Animaciones personalizadas */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(107, 190, 69, 0.4); }
+  50% { box-shadow: 0 0 0 15px rgba(107, 190, 69, 0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slow-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-slow-zoom {
+  animation: slow-zoom 5.5s ease-out forwards;
+  transform: scale(1.08); /* Fallback por si la animación no carga */
+}
+
+/* Scrollbar personalizado - Green Axis */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0fdf4;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #0f2028;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6BBE45;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5CAE38;
+}
+
+/* Gradientes Green Axis */
+.gradient-greenaxis {
+  background: linear-gradient(135deg, #6BBE45 0%, #4A9A35 100%);
+}
+
+.gradient-greenaxis-dark {
+  background: linear-gradient(180deg, #005A7A 0%, #003D52 100%);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, #005A7A 0%, #6BBE45 100%);
+}
+
+/* Patrón de hojas sutil */
+.pattern-leaves {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c-5 10-15 15-25 15 10 5 15 15 15 25 5-10 15-15 25-15-10-5-15-15-15-25z' fill='%236BBE45' fill-opacity='0.05'/%3E%3C/svg%3E");
+}
+
+.dark .pattern-leaves {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c-5 10-15 15-25 15 10 5 15 15 15 25 5-10 15-15 25-15-10-5-15-15-15-25z' fill='%238BC34A' fill-opacity='0.08'/%3E%3C/svg%3E");
+}
+
+/* Colores de marca para clases utilitarias */
+.text-brand-green { color: #6BBE45; }
+.text-brand-blue { color: #005A7A; }
+.bg-brand-green { background-color: #6BBE45; }
+.bg-brand-blue { background-color: #005A7A; }
+.border-brand-green { border-color: #6BBE45; }
+.border-brand-blue { border-color: #005A7A; }
+
+/* Logo dark mode */
+.dark .logo-invert {
+  filter: brightness(0) invert(1);
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.dark .glass {
+  background: rgba(10, 26, 31, 0.8);
+}
+
+/* Glow effect */
+.glow-green {
+  box-shadow: 0 0 20px rgba(107, 190, 69, 0.3);
+}
+
+.dark .glow-green {
+  box-shadow: 0 0 30px rgba(139, 195, 74, 0.4);
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(107, 190, 69, 0.15);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 12px 40px rgba(139, 195, 74, 0.2);
+}
+
+
+/* ==================== EDITOR.JS INLINE TOOLBAR ==================== */
+/* Solo estilos para la barra de formato inline */
+
+/* ==================== ESTILOS EDITOR.JS ==================== */
+/* Contenedor del editor */
+.codex-editor__redactor {
+  padding-bottom: 100px !important;
+}
+
+.ce-toolbar__plus {
+  color: #6BBE45 !important;
+}
+
+/* Bloques en el editor */
+.ce-block--selected .ce-block__content {
+  background: rgba(107, 190, 69, 0.1);
+}
+
+.cdx-list__item {
+  padding: 4px 0;
+}
+
+.ce-header {
+  font-weight: 600;
+}
+
+/* Títulos más grandes en el editor */
+.ce-block h1.ce-header,
+.ce-block h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  margin-bottom: 1rem !important;
+}
+
+.ce-block h2.ce-header,
+.ce-block h2 {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  margin-bottom: 0.875rem !important;
+}
+
+.ce-block h3.ce-header,
+.ce-block h3 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.ce-block h4.ce-header,
+.ce-block h4 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.cdx-quote {
+  border-left: 4px solid #6BBE45;
+  padding-left: 16px;
+}
+
+/* Inline code */
+.ce-inline-code,
+.cdx-inline-code {
+  background: rgba(250, 239, 240, 0.78);
+  color: #c44545;
+  padding: 0.15em 0.3em;
+  border-radius: 2px;
+  font-family: Menlo, Monaco, Consolas, monospace;
+  font-size: 86%;
+}
+
+/* Marcador/resaltado original */
+.cdx-marker {
+  background: rgba(255, 212, 69, 0.4);
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+/* Marcadores con múltiples colores */
+.cdx-marker-custom,
+mark.cdx-marker-custom {
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+/* Tachado */
+.cdx-strikethrough,
+s.cdx-strikethrough,
+del.cdx-strikethrough {
+  text-decoration: line-through;
+}
+
+/* Color de texto */
+.cdx-color-text,
+span.cdx-color-text {
+  /* El color se aplica inline */
+}
+
+/* ==================== BARRA DE FORMATO INLINE ==================== */
+/* Solo la barra de formato que aparece al seleccionar texto */
+.ce-inline-toolbar {
+  background: #1f2937 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+  border: 1px solid #374151 !important;
+}
+
+/* Iconos SVG - blanco sobre fondo oscuro */
+.ce-inline-toolbar svg {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Botones normales (negrita, enlace) - sin cambios */
+
+/* ==================== DARK MODE ==================== */
+.dark .ce-toolbar__actions {
+  background: #1f2937;
+}
+
+.dark .ce-popover {
+  background: #1f2937;
+}
+
+.dark .ce-popover__item {
+  color: white;
+}
+
+.dark .ce-popover__item:hover {
+  background: #374151;
+}
+
+.dark .video-upload-prompt,
+.dark .audio-upload-prompt {
+  border-color: #4b5563;
+}
+
+.dark .video-upload-prompt:hover,
+.dark .audio-upload-prompt:hover {
+  border-color: #6BBE45;
+}
+
+.codex-editor {
+  direction: ltr;
+}
+
+/* ==================== CONTENIDO DE NOTICIAS ==================== */
+/* Contenedor principal del artículo - con restricción de ancho máxima */
+.news-article-content {
+  max-width: 720px !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  box-sizing: border-box !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+/* Párrafos justificados con última línea a la izquierda */
+.news-article-content p {
+  text-align: justify !important;
+  text-align-last: left !important;
+  line-height: 1.8;
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  box-sizing: border-box !important;
+}
+
+/* Títulos alineados a la izquierda */
+.news-article-content h1,
+.news-article-content h2,
+.news-article-content h3,
+.news-article-content h4 {
+  text-align: left !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+/* Tamaños de títulos en previsualización */
+.news-article-content h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.news-article-content h2 {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.875rem !important;
+}
+
+.news-article-content h3 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.news-article-content h4 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Media elements centrados y restringidos */
+.news-article-content img,
+.news-article-content video,
+.news-article-content audio,
+.news-article-content figure {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 2rem auto !important;
+  display: block;
+  box-sizing: border-box !important;
+}
+
+/* Listas restringidas */
+.news-article-content ul,
+.news-article-content ol {
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+}
+
+/* Blockquotes restringidos */
+.news-article-content blockquote {
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+}
+
+/* Divs y cualquier otro elemento */
+.news-article-content div {
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+}
+
+/* Cualquier elemento hijo directo debe respetar el ancho */
+.news-article-content > * {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+}
+
+/* Todos los elementos dentro del contenido */
+.news-article-content * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Force text wrapping in all text elements */
+.news-article-content span,
+.news-article-content a,
+.news-article-content strong,
+.news-article-content em,
+.news-article-content b,
+.news-article-content i {
+  display: inline;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
