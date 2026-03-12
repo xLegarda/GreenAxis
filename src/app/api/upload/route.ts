@@ -6,12 +6,11 @@ import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { v2 as cloudinary } from 'cloudinary'
 
-// Configurar Cloudinary usando CLOUDINARY_URL
-if (process.env.CLOUDINARY_URL) {
-  cloudinary.config({
-    cloudinary_url: process.env.CLOUDINARY_URL
-  })
-}
+// Configurar Cloudinary
+// Cloudinary puede usar CLOUDINARY_URL o las variables individuales
+cloudinary.config({
+  secure: true
+})
 
 // Detectar si estamos en producción (Vercel)
 const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
