@@ -3,11 +3,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "sqlite"
   url      = env("TURSO_DATABASE_URL")
+  relationMode = "prisma"
 }
 
 // Configuración general de la plataforma
