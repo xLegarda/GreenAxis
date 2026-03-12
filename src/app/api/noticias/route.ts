@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 
@@ -83,6 +84,10 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    // Revalidar el caché después de crear una noticia
+    revalidatePath('/noticias', 'page')
+    revalidatePath('/', 'page')
+    
     return NextResponse.json(news)
   } catch (error) {
     console.error('Error creating news:', error)
@@ -165,6 +170,11 @@ export async function PUT(request: NextRequest) {
       }
     })
     
+    // Revalidar el caché después de actualizar una noticia
+    revalidatePath('/noticias', 'page')
+    revalidatePath(`/noticias/${news.slug}`, 'page')
+    revalidatePath('/', 'page')
+    
     return NextResponse.json(news)
   } catch (error) {
     console.error('Error updating news:', error)
@@ -190,6 +200,10 @@ export async function DELETE(request: NextRequest) {
     await db.news.delete({
       where: { id }
     })
+    
+    // Revalidar el caché después de eliminar una noticia
+    revalidatePath('/noticias', 'page')
+    revalidatePath('/', 'page')
     
     return NextResponse.json({ success: true })
   } catch (error) {

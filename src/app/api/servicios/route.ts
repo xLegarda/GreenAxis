@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 
@@ -38,6 +39,10 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    // Revalidar el caché después de crear un servicio
+    revalidatePath('/servicios', 'page')
+    revalidatePath('/', 'page')
+    
     return NextResponse.json(service)
   } catch (error) {
     console.error('Error creating service:', error)
@@ -73,6 +78,10 @@ export async function PUT(request: NextRequest) {
       }
     })
     
+    // Revalidar el caché después de actualizar un servicio
+    revalidatePath('/servicios', 'page')
+    revalidatePath('/', 'page')
+    
     return NextResponse.json(service)
   } catch (error) {
     console.error('Error updating service:', error)
@@ -98,6 +107,10 @@ export async function DELETE(request: NextRequest) {
     await db.service.delete({
       where: { id }
     })
+    
+    // Revalidar el caché después de eliminar un servicio
+    revalidatePath('/servicios', 'page')
+    revalidatePath('/', 'page')
     
     return NextResponse.json({ success: true })
   } catch (error) {

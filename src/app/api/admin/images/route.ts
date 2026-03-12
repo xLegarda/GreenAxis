@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { existsSync, unlink } from 'fs'
@@ -53,6 +54,9 @@ export async function DELETE(request: NextRequest) {
     await db.siteImage.delete({
       where: { id }
     })
+
+    // Revalidar el caché después de eliminar una imagen (las imágenes pueden usarse en cualquier página)
+    revalidatePath('/', 'layout')
 
     return NextResponse.json({ success: true })
   } catch (error) {

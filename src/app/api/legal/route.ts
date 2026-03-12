@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 
@@ -74,6 +75,10 @@ export async function PUT(request: NextRequest) {
         manualDate: manualDate || null 
       }
     })
+    
+    // Revalidar el caché después de actualizar una página legal
+    revalidatePath('/privacidad', 'page')
+    revalidatePath('/terminos', 'page')
     
     return NextResponse.json(page)
   } catch (error) {

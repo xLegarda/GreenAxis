@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 
@@ -105,6 +106,9 @@ export async function PUT(request: Request) {
         data
       })
     }
+    
+    // Revalidar el caché después de actualizar la configuración
+    revalidatePath('/', 'layout')
     
     return NextResponse.json(config)
   } catch (error) {

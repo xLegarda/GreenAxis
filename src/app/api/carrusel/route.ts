@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    // Revalidar el caché después de crear un slide
+    revalidatePath('/', 'page')
+    
     return NextResponse.json(slide)
   } catch (error) {
     console.error('Error creating slide:', error)
@@ -78,6 +82,9 @@ export async function PUT(request: NextRequest) {
       }
     })
     
+    // Revalidar el caché después de actualizar un slide
+    revalidatePath('/', 'page')
+    
     return NextResponse.json(slide)
   } catch (error) {
     console.error('Error updating slide:', error)
@@ -102,6 +109,9 @@ export async function DELETE(request: NextRequest) {
     await db.carouselSlide.delete({
       where: { id }
     })
+    
+    // Revalidar el caché después de eliminar un slide
+    revalidatePath('/', 'page')
     
     return NextResponse.json({ success: true })
   } catch (error) {

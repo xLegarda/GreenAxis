@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 
@@ -133,6 +134,10 @@ export async function PUT(request: NextRequest) {
         }
       })
     }
+    
+    // Revalidar el caché después de actualizar la página "Quiénes Somos"
+    revalidatePath('/quienes-somos', 'page')
+    revalidatePath('/', 'page')
     
     return NextResponse.json(aboutPage)
   } catch (error) {
