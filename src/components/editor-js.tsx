@@ -39,12 +39,6 @@ const i18nConfig = {
     toolNames: {
       "Text": "Párrafo",
       "Heading": "Título",
-      "Heading 1": "Título 1",
-      "Heading 2": "Título 2",
-      "Heading 3": "Título 3",
-      "Heading 4": "Título 4",
-      "Heading 5": "Título 5",
-      "Heading 6": "Título 6",
       "List": "Lista",
       "Warning": "Advertencia",
       "Checklist": "Lista de verificación",
@@ -57,6 +51,7 @@ const i18nConfig = {
       "Marker": "Resaltado",
       "Marker Color": "Resaltado color",
       "Text Color": "Color de texto",
+      "Convert to": "Convertir a",
       "Bold": "Negrita",
       "Italic": "Cursiva",
       "InlineCode": "Código",
@@ -149,7 +144,10 @@ const i18nConfig = {
       },
       "markerColor": {
         "Highlight": "Resaltado"
-      }
+      },
+      "convertTo": {
+          "Convert to": "Convertir a"
+      },
     },
     blockTunes: {
       "delete": {
@@ -187,7 +185,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
   }, [])
 
   const saveData = useCallback(async () => {
-    if (editorRef.current && !editorRef.current.isDestroyed) {
+    if (editorRef.current && !(editorRef.current as any).isDestroyed) {
       try {
         const output = await editorRef.current.save()
         onChangeRef.current(output)
@@ -293,7 +291,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               }
             },
             paragraph: {
-              class: Paragraph,
+              class: Paragraph as any,
               inlineToolbar: true
             },
             embed: {
@@ -316,7 +314,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               }
             },
             videoLocal: {
-              class: VideoTool,
+              class: VideoTool as any,
               config: {
                 uploader: {
                   async uploadByFile(file: File) {
@@ -343,7 +341,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               }
             },
             audioLocal: {
-              class: AudioTool,
+              class: AudioTool as any,
               config: {
                 uploader: {
                   async uploadByFile(file: File) {
@@ -376,7 +374,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               class: Marker
             },
             markerColor: {
-              class: MarkerTool,
+              class: MarkerTool as any,
               config: {
                 colors: [
                   { name: 'Amarillo', value: 'rgba(255, 235, 59, 0.4)' },
@@ -391,7 +389,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               }
             },
             textColor: {
-              class: ColorTool,
+              class: ColorTool as any,
               config: {
                 colors: [
                   '#000000',
