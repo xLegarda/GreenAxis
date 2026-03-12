@@ -260,34 +260,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Error al subir archivo' }, { status: 500 })
   }
 }
-          description: emptyToNull(description),
-          category: emptyToNull(category) || fileCategory,
-        }
-      })
-    } else {
-      // Crear nuevo registro
-      await db.siteImage.create({
-        data: {
-          key: fileKey,
-          label: label || file.name.replace(/\.[^/.]+$/, ''),
-          description: emptyToNull(description),
-          category: emptyToNull(category) || fileCategory,
-          url: publicUrl,
-        }
-      })
-    }
-    
-    return NextResponse.json({ 
-      success: true, 
-      url: publicUrl,
-      fileName,
-      key: fileKey
-    })
-  } catch (error) {
-    console.error('Error uploading file:', error)
-    return NextResponse.json({ error: 'Error al subir archivo' }, { status: 500 })
-  }
-}
 
 export async function DELETE(request: NextRequest) {
   const admin = await getCurrentAdmin()
