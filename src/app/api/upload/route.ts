@@ -7,10 +7,25 @@ import { getCurrentAdmin } from '@/lib/auth'
 import { v2 as cloudinary } from 'cloudinary'
 
 // Configurar Cloudinary
-// Cloudinary puede usar CLOUDINARY_URL o las variables individuales
-cloudinary.config({
-  secure: true
-})
+// Intenta usar CLOUDINARY_URL primero, si no, usa variables individuales
+if (process.env.CLOUDINARY_URL) {
+  // Parsear CLOUDINARY_URL manualmente
+  // Formato: cloudinary://api_key:api_secret@cloud_name
+  const url = new URL(process.env.CLOUDINARY_URL)
+  cloudinary.config({
+    cloud_name: url.hostname,
+    api_key: url.username,
+    api_secret: url.password,
+    secure: true
+  })
+} else {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
+  })
+}
 
 // Detectar si estamos en producción (Vercel)
 const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
