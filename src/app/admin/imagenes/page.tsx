@@ -149,7 +149,12 @@ export default function ImagenesAdminPage() {
         toast({ title: 'Error al subir archivo', description: error.error, variant: 'destructive' })
       }
     } catch (error) {
-      toast({ title: 'Error al subir archivo', variant: 'destructive' })
+      // Handle network errors or other exceptions
+      toast({ 
+        title: 'Error al subir archivo', 
+        description: 'No se pudo conectar con el servidor. Verifica tu conexión.',
+        variant: 'destructive' 
+      })
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
