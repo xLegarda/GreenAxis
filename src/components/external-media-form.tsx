@@ -299,5 +299,3 @@ export function ExternalMediaForm({ open, onOpenChange, onSuccess }: ExternalMed
     </Dialog>
   )
 }
-
-export default ExternalMediaForm

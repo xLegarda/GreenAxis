@@ -14,7 +14,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MediaCard, type MediaItem } from './media-card'
 import { MediaPreviewModal } from './media-preview-modal'
-import ExternalMediaForm from './external-media-form'
+import { ExternalMediaForm } from './external-media-form'
 
 /**
  * MediaLibraryBrowser Component
