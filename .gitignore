@@ -2,12 +2,11 @@
 # extra
 /.kiro
 /.vscode
-README.md
 /public/uploads/
 /.zscripts
 /public/logo.svg
 DOCUMENTACION-PROYECTO.md
-/.md
+*.tar
 
 # dependencies
 node_modules
@@ -28,9 +27,18 @@ node_modules
 
 # production
 /build
-
 # misc
 .DS_Store
+*.pem
+
+# compressed files / backups
+*.tar
+*.tar.gz
+*.zip
+*.rar
+*.7z
+*.bak
+*.backuptore
 *.pem
 
 # debug
