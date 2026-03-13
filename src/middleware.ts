@@ -48,7 +48,7 @@ export function middleware(request: NextRequest) {
   return response
 }
 
-// Solo aplicar a rutas que no sean estáticas
+// Solo aplicar a rutas que no sean estáticas ni uploads
 export const config = {
   matcher: [
     /*
@@ -56,7 +56,7 @@ export const config = {
      * - _next/static (archivos estáticos)
      * - _next/image (optimización de imágenes)
      * - favicon.ico
-     * - uploads (archivos subidos - incluye audio, video, imágenes)
+     * - uploads/ (archivos multimedia - NO aplicar middleware aquí)
      */
     '/((?!_next/static|_next/image|favicon.ico|uploads/).*)',
   ],
