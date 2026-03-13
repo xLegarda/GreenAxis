@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/hooks/use-toast'
-import { MediaPicker } from '@/components/media-picker'
+import MediaPickerCompact from '@/components/media-picker-compact'
 
 interface PlatformConfig {
   id: string
@@ -133,7 +133,7 @@ export default function ConfiguracionPage() {
               {/* Logo */}
               <div className="space-y-2">
                 <Label>Logo del Sitio</Label>
-                <MediaPicker
+                <MediaPickerCompact
                   value={config?.logoUrl || ''}
                   onChange={(url) => updateConfig('logoUrl', url)}
                   accept="image"
@@ -147,7 +147,7 @@ export default function ConfiguracionPage() {
               {/* Favicon */}
               <div className="space-y-2">
                 <Label>Favicon (icono de pestaña)</Label>
-                <MediaPicker
+                <MediaPickerCompact
                   value={config?.faviconUrl || ''}
                   onChange={(url) => updateConfig('faviconUrl', url)}
                   accept="image"

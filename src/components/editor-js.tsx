@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import type EditorJS from '@editorjs/editorjs'
 import { createRoot } from 'react-dom/client'
-import { MediaPicker } from './media-picker'
+import MediaPickerCompact from './media-picker-compact'
 
 interface EditorProps {
   data?: any
@@ -293,7 +293,7 @@ function openMediaPickerModal(accept: 'image' | 'video' | 'audio'): Promise<stri
     // Render MediaPicker using React
     const root = createRoot(pickerContainer)
     root.render(
-      <MediaPicker
+      <MediaPickerCompact
         value=""
         onChange={(url) => {
           if (modalContainer.parentNode) {

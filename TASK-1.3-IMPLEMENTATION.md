@@ -16,7 +16,7 @@ Created a new API endpoint at `src/app/api/admin/media/route.ts` that provides c
 
 ✅ **Category Filtering**
 - Filter by category using `category` query parameter
-- Supports: news, videos, audio, config, carousel, general
+- Supports: news, services, videos, audio, config, carousel, general
 
 ✅ **Search Filtering**
 - Search by label using `search` query parameter

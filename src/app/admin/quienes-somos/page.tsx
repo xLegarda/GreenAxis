@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/hooks/use-toast'
-import { MediaPicker } from '@/components/media-picker'
+import MediaPickerCompact from '@/components/media-picker-compact'
 
 interface AboutPage {
   id: string
@@ -243,7 +243,7 @@ export default function QuienesSomosAdminPage() {
               </div>
               <div className="space-y-2">
                 <Label>Imagen</Label>
-                <MediaPicker
+                <MediaPickerCompact
                   value={page?.heroImageUrl || ''}
                   onChange={(url) => updateField('heroImageUrl', url)}
                   accept="image"
@@ -273,7 +273,7 @@ export default function QuienesSomosAdminPage() {
               </div>
               <div className="space-y-2">
                 <Label>Imagen</Label>
-                <MediaPicker
+                <MediaPickerCompact
                   value={page?.historyImageUrl || ''}
                   onChange={(url) => updateField('historyImageUrl', url)}
                   accept="image"
@@ -442,7 +442,7 @@ export default function QuienesSomosAdminPage() {
                       </div>
                       <Textarea value={member.bio} onChange={(e) => updateTeamMember(index, 'bio', e.target.value)} placeholder="Biografía" rows={2} />
                       <div className="flex gap-2">
-                        <MediaPicker
+                        <MediaPickerCompact
                           value={member.image}
                           onChange={(url) => updateTeamMember(index, 'image', url)}
                           accept="image"

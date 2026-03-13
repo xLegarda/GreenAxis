@@ -18,7 +18,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
-import { MediaPicker } from '@/components/media-picker'
+import MediaPickerCompact from '@/components/media-picker-compact'
 
 interface CarouselSlide {
   id: string
@@ -41,6 +41,10 @@ export default function CarruselAdminPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingSlide, setEditingSlide] = useState<CarouselSlide | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; slide: CarouselSlide | null }>({
+    open: false,
+    slide: null
+  })
 
   const [formData, setFormData] = useState({
     title: '',
@@ -104,14 +108,20 @@ export default function CarruselAdminPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este slide?')) return
+  const handleDelete = (slide: CarouselSlide) => {
+    setDeleteDialog({ open: true, slide })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.slide) return
+
     try {
-      await fetch(`/api/carrusel?id=${id}`, { method: 'DELETE' })
-      toast({ title: 'Slide eliminado' })
+      await fetch(`/api/carrusel?id=${deleteDialog.slide.id}`, { method: 'DELETE' })
+      toast({ title: 'Slide eliminado correctamente' })
       fetchSlides()
+      setDeleteDialog({ open: false, slide: null })
     } catch (error) {
-      toast({ title: 'Error al eliminar', variant: 'destructive' })
+      toast({ title: 'Error al eliminar slide', variant: 'destructive' })
     }
   }
 
@@ -245,7 +255,7 @@ export default function CarruselAdminPage() {
                 <Button variant="ghost" size="icon" onClick={() => openEditDialog(slide)} title="Editar">
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(slide.id)} title="Eliminar" className="hover:text-destructive">
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(slide)} title="Eliminar" className="hover:text-destructive">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -287,7 +297,7 @@ export default function CarruselAdminPage() {
             <div className="space-y-3">
               <Label>Imagen del Slide *</Label>
               
-              <MediaPicker
+              <MediaPickerCompact
                 value={formData.imageUrl}
                 onChange={(url) => setFormData({ ...formData, imageUrl: url })}
                 accept="image"
@@ -446,6 +456,39 @@ export default function CarruselAdminPage() {
             <Button onClick={handleSave} className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white">
               <Save className="h-4 w-4 mr-2" />
               {editingSlide ? 'Guardar cambios' : 'Crear slide'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, slide: null })}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Confirmar eliminación
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar el slide <strong>"{deleteDialog.slide?.title || 'Sin título'}"</strong>?
+              <br />
+              <span className="text-destructive font-medium">Esta acción no se puede deshacer.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialog({ open: false, slide: null })}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar slide
             </Button>
           </DialogFooter>
         </DialogContent>

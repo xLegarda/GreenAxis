@@ -27,30 +27,502 @@ import { MediaPreviewModal } from './media-preview-modal'
  * Requirements: 1.1, 2.1, 12.1-12.6
  */
 
-interface MediaPickerProps {
-  /** Current media URL */
-  value?: string
-  /** Callback when media selected */
-  onChange: (url: string) => void
-  /** File type filter */
-  accept?: 'image' | 'video' | 'audio' | 'all'
-  /** Auto-assign category on upload */
-  category?: string
-  /** Prefix for generated keys */
-  keyPrefix?: string
-  /** Fixed key for replacement */
-  fixedKey?: string
-  /** Display size recommendation */
-  recommendedSize?: string
-  /** Additional format guidance */
-  formatHint?: string
-  /** Override default size limit */
-  maxSizeMB?: number
-  /** Show library tab (default: true) */
-  showLibrary?: boolean
-  /** Show upload tab (default: true) */
-  showUpload?: boolean
+function MediaPicker({
+  value,
+  onChange,
+  accept = 'all',
+  category = 'general',
+  keyPrefix = 'media',
+  fixedKey,
+  recommendedSize,
+  formatHint,
+  maxSizeMB = 50,
+  showLibrary = true,
+  showUpload = true
+}: MediaPickerProps) {
+  // Simplified state - no auto-loading
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false)
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    file: File
+    suggestions: DuplicateSuggestion[]
+  } | null>(null)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  /**
+   * Handle file upload with progress tracking and duplicate detection
+   */
+  const handleFileUpload = async (file: File, skipDuplicateCheck = false) => {
+    // Validate file size before uploading
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      setError(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.
+
+💡 Alternativa: Si no puedes comprimir más el archivo, súbelo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+      return
+    }
+
+    // Reset error state
+    setUploading(true)
+    setUploadProgress(0)
+    setError(null)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // Use fixedKey if provided, otherwise generate unique key
+    const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
+    formData.append('key', mediaKey)
+    formData.append('label', file.name.replace(/\.[^/.]+$/, ''))
+    formData.append('category', category)
+
+    if (skipDuplicateCheck) {
+      formData.append('skipDuplicateCheck', 'true')
+    }
+
+    try {
+      // Create XMLHttpRequest for progress tracking
+      const xhr = new XMLHttpRequest()
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(percentComplete)
+        }
+      })
+
+      // Handle response
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText))
+          } else if (xhr.status === 413) {
+            // Payload Too Large
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.
+
+💡 Alternativa: Sube el archivo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`))
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText)
+              const errorMsg = errorData.error || xhr.responseText || 'Error desconocido'
+              const details = errorData.details ? `\n\nDetalles: ${errorData.details}` : ''
+              reject(new Error(errorMsg + details))
+            } catch {
+              reject(new Error(`Error ${xhr.status}: ${xhr.responseText || 'Error al subir archivo'}`))
+            }
+          }
+        })
+        xhr.addEventListener('error', () => reject(new Error('Error de red al subir archivo')))
+        xhr.addEventListener('abort', () => reject(new Error('Subida cancelada')))
+      })
+
+      xhr.open('POST', '/api/upload')
+      xhr.send(formData)
+
+      const data = await uploadPromise
+
+      // Check for duplicate warning
+      if (!data.success && data.duplicate?.exists) {
+        setUploading(false)
+        setUploadProgress(0)
+        setDuplicateWarning({
+          file,
+          suggestions: data.duplicate.suggestions
+        })
+        return
+      }
+
+      // Success - update with new URL
+      if (data.success) {
+        onChange(data.url)
+        setUploading(false)
+        setUploadProgress(100)
+        setError(null)
+        setIsUploadOpen(false) // Close upload modal on success
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Error al subir archivo. Por favor, intenta de nuevo.'
+
+      setUploading(false)
+      setUploadProgress(0)
+      setError(errorMessage)
+    }
+  }
+
+  /**
+   * Handle file input change
+   */
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await handleFileUpload(file)
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  /**
+   * Handle drag and drop events
+   */
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      const file = files[0]
+
+      // Validate file type
+      const acceptAttr = getAcceptAttribute()
+      const acceptedTypes = acceptAttr.split(',').map(t => t.trim())
+      const isAccepted = acceptedTypes.some(type => {
+        if (type.endsWith('/*')) {
+          const category = type.split('/')[0]
+          return file.type.startsWith(category + '/')
+        }
+        return file.type === type
+      })
+
+      if (!isAccepted) {
+        setError('Tipo de archivo no permitido. Por favor, selecciona un archivo válido.')
+        return
+      }
+
+      await handleFileUpload(file)
+    }
+  }
+
+  /**
+   * Handle duplicate warning - use existing file
+   */
+  const handleUseExisting = (suggestion: DuplicateSuggestion) => {
+    onChange(suggestion.url)
+    setDuplicateWarning(null)
+    setIsUploadOpen(false)
+  }
+
+  /**
+   * Handle duplicate warning - upload anyway
+   */
+  const handleUploadAnyway = async () => {
+    if (!duplicateWarning) return
+    const { file } = duplicateWarning
+    setDuplicateWarning(null)
+    await handleFileUpload(file, true)
+  }
+
+  /**
+   * Handle duplicate warning - cancel
+   */
+  const handleCancelUpload = () => {
+    setDuplicateWarning(null)
+  }
+
+  /**
+   * Get accept attribute for file input based on accept prop
+   */
+  const getAcceptAttribute = () => {
+    switch (accept) {
+      case 'image':
+        return 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
+      case 'video':
+        return 'video/mp4,video/webm,video/quicktime,video/x-msvideo'
+      case 'audio':
+        return 'audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac'
+      default:
+        return 'image/*,video/*,audio/*'
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Current selection preview */}
+      {value && (
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            {(() => {
+              const type = getMediaType(value)
+              const Icon = getMediaIcon(type)
+              return (
+                <>
+                  <Icon className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{value}</p>
+                    <p className="text-xs text-muted-foreground">Archivo seleccionado</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onChange('')}
+                  >
+                    Limpiar
+                  </Button>
+                </>
+              )
+            })()}
+          </div>
+        </Card>
+      )}
+
+      {/* Format recommendations */}
+      {(recommendedSize || formatHint) && (
+        <Card className="p-3 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <div className="text-sm">
+            {recommendedSize && (
+              <p className="font-medium text-blue-700 dark:text-blue-300">
+                Tamaño recomendado: {recommendedSize}
+              </p>
+            )}
+            {formatHint && (
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                {formatHint}
+              </p>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Action buttons - no auto-loading */}
+      <Card className="p-6">
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center mb-4">
+            <ImageIcon className="h-12 w-12 text-muted-foreground" />
+          </div>
+
+          <p className="text-sm text-muted-foreground mb-4">
+            Selecciona un archivo multimedia
+          </p>
+
+          <div className="flex gap-3 justify-center flex-wrap">
+            {showLibrary && (
+              <Button
+                onClick={() => setIsLibraryOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <ImageIcon className="h-4 w-4" />
+                Biblioteca
+              </Button>
+            )}
+
+            {showUpload && (
+              <Button
+                variant="outline"
+                onClick={() => setIsUploadOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Subir Nuevo
+              </Button>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF, SVG'}
+            {accept === 'video' && 'Videos: MP4, WebM, MOV'}
+            {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A'}
+            {accept === 'all' && 'Imágenes, videos y audio soportados'}
+          </p>
+        </div>
+      </Card>
+
+      {/* Library Modal - only loads when opened */}
+      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Biblioteca de Medios
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona un archivo de la biblioteca
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-hidden">
+            <MediaLibraryBrowser
+              accept={accept}
+              onSelect={(item) => {
+                onChange(item.url)
+                setIsLibraryOpen(false)
+              }}
+              category={category}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Modal */}
+      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Subir Archivo
+            </DialogTitle>
+            <DialogDescription>
+              Sube un nuevo archivo a la biblioteca
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Error display */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>{error}</p>
+                  {error.includes('Cloudinary') && (
+                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
+                      <p className="font-medium text-blue-700 dark:text-blue-300">💡 Alternativa para archivos grandes:</p>
+                      <ol className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-1">
+                        <li>1. Ve a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline">Cloudinary Console</a></li>
+                        <li>2. Sube tu archivo en "Media Library"</li>
+                        <li>3. Copia la URL del archivo</li>
+                        <li>4. Úsala directamente en tu contenido</li>
+                      </ol>
+                    </div>
+                  )}
+                </AlertDescription>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => setError(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </Alert>
+            )}
+
+            {/* Upload progress */}
+            {uploading && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Subiendo archivo...</span>
+                  <span className="font-medium">{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+
+            {/* Drag and drop zone */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                'border-muted-foreground/25 hover:border-primary/50'
+              } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={getAcceptAttribute()}
+                onChange={handleFileInputChange}
+                className="hidden"
+                id="media-upload-modal"
+                disabled={uploading}
+              />
+              <label
+                htmlFor="media-upload-modal"
+                className={`cursor-pointer ${uploading ? 'pointer-events-none' : ''}`}
+              >
+                <Upload className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-sm font-medium mb-2">
+                  {uploading
+                    ? 'Subiendo archivo...'
+                    : 'Arrastra un archivo o haz clic para seleccionar'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF, SVG (máx. 5MB)'}
+                  {accept === 'video' && 'Videos: MP4, WebM, MOV (máx. 25MB en producción)'}
+                  {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A (máx. 15MB en producción)'}
+                  {accept === 'all' && 'Imágenes (5MB), videos (25MB) y audio (15MB) en producción'}
+                </p>
+              </label>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate warning dialog */}
+      <Dialog open={!!duplicateWarning} onOpenChange={(open) => !open && handleCancelUpload()}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Archivo similar encontrado
+            </DialogTitle>
+            <DialogDescription>
+              Ya existen archivos con nombres similares en la biblioteca. ¿Deseas usar uno de los archivos existentes o continuar con la subida?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            <p className="text-sm font-medium">Archivos similares:</p>
+            {duplicateWarning?.suggestions.map((suggestion) => (
+              <Card
+                key={suggestion.id}
+                className="p-3 cursor-pointer hover:border-primary transition-colors"
+                onClick={() => handleUseExisting(suggestion)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                    {getMediaType(suggestion.url) === 'image' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={suggestion.url}
+                        alt={suggestion.label}
+                        className="w-full h-full object-cover rounded"
+                      />
+                    ) : (
+                      (() => {
+                        const Icon = getMediaIcon(getMediaType(suggestion.url))
+                        return <Icon className="h-8 w-8 text-muted-foreground" />
+                      })()
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{suggestion.label}</p>
+                    {suggestion.category && (
+                      <p className="text-xs text-muted-foreground">
+                        Categoría: {suggestion.category}
+                      </p>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Usar este
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={handleCancelUpload}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUploadAnyway}>
+              Subir archivo nuevo de todas formas
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
 }
+
 
 interface DuplicateSuggestion {
   id: string

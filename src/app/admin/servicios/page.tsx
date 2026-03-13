@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { MediaPicker } from '@/components/media-picker'
+import MediaPickerCompact from '@/components/media-picker-compact'
 import { toast } from '@/hooks/use-toast'
 import { 
   Leaf, Recycle, TreePine, Droplets, Wind, Building2, 
@@ -72,6 +72,10 @@ export default function ServiciosAdminPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; service: Service | null }>({
+    open: false,
+    service: null
+  })
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
   const [formData, setFormData] = useState({
@@ -132,14 +136,20 @@ export default function ServiciosAdminPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este servicio? Esta acción no se puede deshacer.')) return
+  const handleDelete = (service: Service) => {
+    setDeleteDialog({ open: true, service })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.service) return
+
     try {
-      await fetch(`/api/servicios?id=${id}`, { method: 'DELETE' })
-      toast({ title: 'Servicio eliminado' })
+      await fetch(`/api/servicios?id=${deleteDialog.service.id}`, { method: 'DELETE' })
+      toast({ title: 'Servicio eliminado correctamente' })
       fetchServices()
+      setDeleteDialog({ open: false, service: null })
     } catch (error) {
-      toast({ title: 'Error al eliminar', variant: 'destructive' })
+      toast({ title: 'Error al eliminar servicio', variant: 'destructive' })
     }
   }
 
@@ -332,7 +342,7 @@ export default function ServiciosAdminPage() {
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(service)} title="Editar">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(service.id)} title="Eliminar" className="hover:text-destructive">
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(service)} title="Eliminar" className="hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -480,7 +490,7 @@ export default function ServiciosAdminPage() {
                 <span className="text-xs text-muted-foreground">Recomendado: 800x600px</span>
               </div>
               
-              <MediaPicker
+              <MediaPickerCompact
                 value={formData.imageUrl}
                 onChange={handleImageChange}
                 accept="image"
@@ -527,6 +537,39 @@ export default function ServiciosAdminPage() {
             >
               <Save className="h-4 w-4 mr-2" />
               {editingService ? 'Guardar cambios' : 'Crear servicio'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, service: null })}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Confirmar eliminación
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar el servicio <strong>"{deleteDialog.service?.title}"</strong>?
+              <br />
+              <span className="text-destructive font-medium">Esta acción no se puede deshacer.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialog({ open: false, service: null })}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar servicio
             </Button>
           </DialogFooter>
         </DialogContent>

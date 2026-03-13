@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, ImageIcon, Loader2 } from 'lucide-react'
+import { Search, ImageIcon, Loader2, ExternalLink } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MediaCard, type MediaItem } from './media-card'
 import { MediaPreviewModal } from './media-preview-modal'
+import ExternalMediaForm from './external-media-form'
 
 /**
  * MediaLibraryBrowser Component
@@ -23,7 +24,7 @@ import { MediaPreviewModal } from './media-preview-modal'
  * Features:
  * - Infinite scroll pagination (50 items per page)
  * - Search by filename (debounced)
- * - Filter by category (news, videos, audio, config, carousel, general)
+ * - Filter by category (news, services, videos, audio, config, carousel, general)
  * - Grid layout (4 columns desktop, 2 columns mobile)
  * - Lazy loading for images
  * - Visual indicators for media type (video/audio icons)
@@ -81,6 +82,7 @@ export function MediaLibraryBrowser({
   const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null)
+  const [externalFormOpen, setExternalFormOpen] = useState(false)
 
   // Debounce search query
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
@@ -248,6 +250,7 @@ export function MediaLibraryBrowser({
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
             <SelectItem value="news">Noticias</SelectItem>
+            <SelectItem value="services">Servicios</SelectItem>
             <SelectItem value="videos">Videos</SelectItem>
             <SelectItem value="audio">Audio</SelectItem>
             <SelectItem value="config">Configuración</SelectItem>
@@ -255,6 +258,16 @@ export function MediaLibraryBrowser({
             <SelectItem value="general">General</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* External Media Button */}
+        <Button
+          variant="outline"
+          onClick={() => setExternalFormOpen(true)}
+          className="gap-2 whitespace-nowrap"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Archivo externo
+        </Button>
       </div>
 
       {/* Error Display */}
@@ -330,6 +343,18 @@ export function MediaLibraryBrowser({
         onOpenChange={(open) => !open && setPreviewItem(null)}
         onDelete={handleDeleteMedia}
         onUpdate={handleUpdateMedia}
+      />
+
+      {/* External Media Form */}
+      <ExternalMediaForm
+        open={externalFormOpen}
+        onOpenChange={setExternalFormOpen}
+        onSuccess={() => {
+          // Refresh media list after successful registration
+          setPage(1)
+          setMediaItems([])
+          fetchMediaItems(1, true)
+        }}
       />
     </div>
   )

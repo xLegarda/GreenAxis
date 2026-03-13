@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/hooks/use-toast'
-import { MediaPicker } from '@/components/media-picker'
+import MediaPickerCompact from '@/components/media-picker-compact'
 
 interface PlatformConfig {
   id: string
@@ -216,7 +216,7 @@ export default function QuienesSomosPage() {
               {/* Imagen */}
               <div className="space-y-2">
                 <Label>Imagen de la sección</Label>
-                <MediaPicker
+                <MediaPickerCompact
                   value={config?.aboutImageUrl || ''}
                   onChange={(url) => updateConfig('aboutImageUrl', url)}
                   accept="image"

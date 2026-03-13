@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 import { EditorJSComponent, editorDataToText } from '@/components/editor-js'
 import type EditorJS from '@editorjs/editorjs'
-import { MediaPicker } from '@/components/media-picker'
+import MediaPickerCompact from '@/components/media-picker-compact'
 
 interface News {
   id: string
@@ -372,7 +372,7 @@ export default function NoticiasAdminPage() {
             <div className="space-y-3">
               <Label>Imagen destacada</Label>
               
-              <MediaPicker
+              <MediaPickerCompact
                 value={formData.imageUrl}
                 onChange={(url) => setFormData({ ...formData, imageUrl: url })}
                 accept="image"

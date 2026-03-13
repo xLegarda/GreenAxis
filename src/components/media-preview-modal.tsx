@@ -399,7 +399,7 @@ export function MediaPreviewModal({
                   id="category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Categoría (news, videos, audio, config, carousel, general)"
+                  placeholder="Categoría (news, services, videos, audio, config, carousel, general)"
                 />
               </div>
 
