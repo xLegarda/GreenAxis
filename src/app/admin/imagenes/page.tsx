@@ -83,8 +83,8 @@ export default function ImagenesAdminPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file size (50MB max)
-    const maxSizeBytes = 50 * 1024 * 1024
+    // Validate file size (4.5MB max - Vercel free tier limit)
+    const maxSizeBytes = 4.5 * 1024 * 1024
     if (file.size > maxSizeBytes) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
       toast({ 
