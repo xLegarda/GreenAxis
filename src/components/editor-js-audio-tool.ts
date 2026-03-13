@@ -187,8 +187,8 @@ export default class AudioTool {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return
 
-      if (file.size > 20 * 1024 * 1024) {
-        alert('El audio es demasiado grande. El tamaño máximo es 20MB.')
+      if (file.size > 15 * 1024 * 1024) {
+        alert('El audio es demasiado grande (máx. 15MB en producción).\n\n💡 Para audios más grandes:\n1. Ve a https://console.cloudinary.com\n2. Sube tu audio en "Media Library"\n3. Copia la URL y úsala directamente')
         return
       }
 
@@ -234,8 +234,8 @@ export default class AudioTool {
         return
       }
 
-      if (file.size > 20 * 1024 * 1024) {
-        alert('El audio es demasiado grande. El tamaño máximo es 20MB.')
+      if (file.size > 15 * 1024 * 1024) {
+        alert('El audio es demasiado grande (máx. 15MB en producción).\n\n💡 Para audios más grandes:\n1. Ve a https://console.cloudinary.com\n2. Sube tu audio en "Media Library"\n3. Copia la URL y úsala directamente')
         return
       }
 

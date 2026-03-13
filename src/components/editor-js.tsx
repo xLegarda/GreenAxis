@@ -403,6 +403,14 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               config: {
                 uploader: {
                   async uploadByFile(file: File) {
+                    // Validate file size (10MB max for images)
+                    const maxSizeBytes = 10 * 1024 * 1024
+                    if (file.size > maxSizeBytes) {
+                      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+                      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube la imagen directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+                      return { success: 0 }
+                    }
+
                     const formData = new FormData()
                     formData.append('file', file)
                     formData.append('key', `news-${Date.now()}`)
@@ -416,6 +424,9 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       if (response.ok) {
                         const data = await response.json()
                         return { success: 1, file: { url: data.url } }
+                      } else if (response.status === 413) {
+                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+                        alert(`El archivo (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube la imagen directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
                       }
                     } catch (e) {
                       console.error('Upload error:', e)
@@ -467,6 +478,14 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               config: {
                 uploader: {
                   async uploadByFile(file: File) {
+                    // Validate file size (100MB max for videos)
+                    const maxSizeBytes = 100 * 1024 * 1024
+                    if (file.size > maxSizeBytes) {
+                      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+                      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el video directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+                      return { success: 0 }
+                    }
+
                     const formData = new FormData()
                     formData.append('file', file)
                     formData.append('key', `video-${Date.now()}`)
@@ -480,6 +499,9 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       if (response.ok) {
                         const data = await response.json()
                         return { success: 1, file: { url: data.url } }
+                      } else if (response.status === 413) {
+                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+                        alert(`El video (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el video directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
                       }
                     } catch (e) {
                       console.error('Video upload error:', e)
@@ -500,6 +522,14 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               config: {
                 uploader: {
                   async uploadByFile(file: File) {
+                    // Validate file size (20MB max for audio)
+                    const maxSizeBytes = 20 * 1024 * 1024
+                    if (file.size > maxSizeBytes) {
+                      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+                      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el audio directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+                      return { success: 0 }
+                    }
+
                     const formData = new FormData()
                     formData.append('file', file)
                     formData.append('key', `audio-${Date.now()}`)
@@ -513,6 +543,9 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       if (response.ok) {
                         const data = await response.json()
                         return { success: 1, file: { url: data.url } }
+                      } else if (response.status === 413) {
+                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+                        alert(`El audio (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el audio directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
                       }
                     } catch (e) {
                       console.error('Audio upload error:', e)

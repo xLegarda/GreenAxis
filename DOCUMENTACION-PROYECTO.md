@@ -1,6 +1,6 @@
 # 📘 Documentación Técnica - Green Axis S.A.S.
 
-**Versión**: 0.2.0  
+**Versión**: 0.3.0  
 **Fecha**: Marzo 12, 2026  
 **Framework**: Next.js 16.1.1 (App Router)  
 **Base de Datos**: Turso (LibSQL) con Prisma ORM 6.19.2  
@@ -32,13 +32,13 @@ Green Axis S.A.S. es una plataforma web corporativa completa para una empresa de
 - Integración con WhatsApp (botón flotante)
 - Scripts de backup y restauración de datos
 
-**Estado Actual**: Producción ready con puntuación de seguridad de 8.5/10. Un bug conocido de caché tiene workaround disponible y fix diseñado.
+**Estado Actual**: Producción ready con puntuación de seguridad de 8.5/10. Sistema de biblioteca de medios completo implementado con detección de duplicados, gestión de referencias y eliminación segura.
 
 ---
 
 ## 📊 Estado Actual del Proyecto
 
-**Versión**: 0.2.0  
+**Versión**: 0.3.0  
 **Estado**: ✅ **Producción Ready**  
 **Última Actualización**: Marzo 12, 2026  
 **Puntuación de Seguridad**: 8.5/10 (Enterprise Ready)
@@ -52,7 +52,7 @@ Green Axis S.A.S. es una plataforma web corporativa completa para una empresa de
 | Autenticación | ✅ Completo | Bcrypt, sesiones, recuperación |
 | Base de Datos | ✅ Completo | Turso + Prisma, 11 modelos |
 | Editor de Contenido | ✅ Completo | Editor.js con 15+ herramientas |
-| Gestión de Imágenes | ✅ Completo | Cloudinary + sistema de keys |
+| Gestión de Imágenes | ✅ Completo | Biblioteca de medios con detección de duplicados |
 | Seguridad | ✅ Completo | Headers, rate limiting, validación |
 | Caché | ⚠️ Bug Conocido | Workaround disponible, fix diseñado |
 | Testing | ❌ Pendiente | Recomendado para v0.3.0 |
@@ -78,7 +78,13 @@ Green Axis S.A.S. es una plataforma web corporativa completa para una empresa de
 - CRUD de servicios con drag & drop
 - CRUD de noticias con Editor.js
 - CRUD de carrusel con drag & drop
-- Gestión de imágenes por categorías
+- Biblioteca de medios completa con:
+  - Detección de duplicados por hash SHA-256
+  - Gestión de referencias automática
+  - Metadatos completos (tamaño, dimensiones, duración)
+  - Eliminación segura con verificación de uso
+  - Soporte para imágenes, audio y video
+  - Integración con Cloudinary
 - Editor de páginas legales
 - Editor de página "About" completa
 - Editor de sección "About" del home
@@ -114,9 +120,17 @@ Green Axis S.A.S. es una plataforma web corporativa completa para una empresa de
 ### Próximos Pasos
 
 1. **Inmediato**: Implementar fix de caché (prioridad crítica)
-2. **Corto plazo**: Mejorar logging y monitoreo
-3. **Mediano plazo**: Testing automatizado, 2FA, i18n
-4. **Largo plazo**: Analytics interno, búsqueda global, roles avanzados
+2. **Corto plazo**: 
+   - Mejorar logging y monitoreo
+   - Testing automatizado de biblioteca de medios
+3. **Mediano plazo**: 
+   - Testing automatizado completo
+   - Autenticación de dos factores (2FA)
+   - Internacionalización (i18n)
+4. **Largo plazo**: 
+   - Analytics interno
+   - Búsqueda global en sitio
+   - Sistema de roles y permisos granulares
 
 ---
 
@@ -228,6 +242,7 @@ Green Axis S.A.S. es una plataforma web corporativa completa para una empresa de
 │       ├── auth.ts           # Sistema de autenticación
 │       ├── db.ts             # Cliente Prisma
 │       ├── actions.ts        # Server Actions
+│       ├── media-references.ts # Sistema de tracking de referencias de medios
 │       └── utils.ts          # Utilidades generales
 ├── prisma/
 │   └── schema.prisma         # Schema de base de datos
@@ -334,13 +349,66 @@ Slides del carrusel principal con personalización avanzada.
 - Gradientes personalizables por slide
 
 #### 5. SiteImage
-Sistema de gestión de imágenes con keys únicas.
+Sistema de gestión de imágenes con biblioteca de medios completa.
 
 **Campos**:
-- `key` - Identificador único (hero-1, about-us, etc.)
-- `label`, `description` - Metadatos
-- `url`, `alt` - Imagen y texto alternativo
-- `category` - Categoría (hero, services, news, gallery)
+- `key` - Identificador único (opcional, para imágenes específicas del sistema)
+- `label` - Nombre descriptivo del archivo
+- `description` - Descripción opcional del archivo
+- `url` - URL del archivo (Cloudinary o local)
+- `alt` - Texto alternativo para accesibilidad
+- `category` - Categoría (hero, services, news, gallery, general)
+- `mimeType` - Tipo MIME del archivo (image/jpeg, audio/mp3, video/mp4, etc.)
+- `fileSize` - Tamaño del archivo en bytes
+- `width`, `height` - Dimensiones (solo para imágenes)
+- `duration` - Duración en segundos (solo para audio/video)
+- `hash` - Hash SHA-256 del contenido del archivo (para detección de duplicados)
+- `createdAt`, `updatedAt` - Timestamps
+
+**Características de la Biblioteca de Medios**:
+
+1. **Detección de Duplicados**:
+   - Calcula hash SHA-256 del contenido del archivo
+   - Detecta archivos idénticos antes de subir
+   - Ofrece reutilizar archivo existente o subir nuevo
+   - Ahorra espacio de almacenamiento y ancho de banda
+
+2. **Gestión de Referencias**:
+   - Sistema de tracking de uso de archivos
+   - Detecta dónde se usa cada archivo (servicios, noticias, carrusel, etc.)
+   - Previene eliminación accidental de archivos en uso
+   - Opción de eliminación forzada con limpieza de referencias
+
+3. **Metadatos Completos**:
+   - Información detallada de cada archivo (tamaño, dimensiones, duración)
+   - Categorización flexible
+   - Búsqueda y filtrado por categoría
+   - Edición de metadatos (label, description, alt, category)
+
+4. **Eliminación Segura**:
+   - Verifica referencias antes de eliminar
+   - Muestra lista de lugares donde se usa el archivo
+   - Elimina archivo de Cloudinary automáticamente
+   - Modo forzado para eliminar y limpiar referencias
+
+5. **Soporte Multi-formato**:
+   - Imágenes: jpg, jpeg, png, gif, webp, svg
+   - Audio: mp3, wav, ogg
+   - Video: mp4, webm, mov
+   - Validación de magic bytes para seguridad
+
+**API Endpoints**:
+- `GET /api/admin/media` - Listar archivos con filtros
+- `POST /api/admin/media` - Registrar nuevo archivo
+- `PUT /api/admin/media/:id` - Actualizar metadatos
+- `DELETE /api/admin/media/:id` - Eliminar archivo (con verificación de referencias)
+- `GET /api/admin/media/check-references` - Verificar uso de archivo
+
+**Componentes UI**:
+- `media-library-browser.tsx` - Navegador de biblioteca con grid responsive
+- `media-card.tsx` - Card de archivo con preview y acciones
+- `media-picker.tsx` - Selector de archivos para formularios
+- `image-selector.tsx` - Selector específico para imágenes (legacy, migrado a media-picker)
 
 #### 6. ContactMessage
 Mensajes del formulario de contacto con bandeja de entrada en admin.
@@ -1085,7 +1153,7 @@ Actualiza contenido de página "About" (admin).
 **⚠️ Bug**: No invalida caché automáticamente
 
 #### GET/POST/DELETE /api/admin/images
-Gestión de imágenes del sitio.
+Gestión de imágenes del sitio (legacy, migrado a /api/admin/media).
 
 **GET** - Listar imágenes por categoría:
 ```
@@ -1111,7 +1179,195 @@ GET /api/admin/images?category=hero
 }
 ```
 
-**Nota**: Si se sube imagen con key existente, reemplaza la anterior automáticamente.
+**Nota**: Este endpoint está siendo reemplazado por `/api/admin/media` que ofrece más funcionalidades.
+
+#### GET /api/admin/media
+Lista archivos de la biblioteca de medios con filtros avanzados.
+
+**Query params**:
+- `category` (opcional): Filtrar por categoría (hero, services, news, gallery, general)
+- `type` (opcional): Filtrar por tipo MIME (image/*, audio/*, video/*)
+- `search` (opcional): Buscar en label y description
+- `limit` (opcional): Número de resultados (default: 50)
+- `offset` (opcional): Offset para paginación
+
+**Response**:
+```json
+{
+  "media": [
+    {
+      "id": "clx...",
+      "label": "Logo de la empresa",
+      "description": "Logo principal en formato PNG",
+      "url": "https://res.cloudinary.com/...",
+      "alt": "Logo Green Axis",
+      "category": "general",
+      "mimeType": "image/png",
+      "fileSize": 45678,
+      "width": 800,
+      "height": 600,
+      "hash": "abc123...",
+      "createdAt": "2026-03-12T10:00:00Z",
+      "updatedAt": "2026-03-12T10:00:00Z"
+    }
+  ],
+  "total": 25,
+  "hasMore": false
+}
+```
+
+#### POST /api/admin/media
+Registra nuevo archivo en la biblioteca después de upload.
+
+**Body**:
+```json
+{
+  "label": "Imagen de servicio",
+  "description": "Foto de consultoría ambiental",
+  "url": "https://res.cloudinary.com/...",
+  "alt": "Consultoría ambiental",
+  "category": "services",
+  "mimeType": "image/jpeg",
+  "fileSize": 123456,
+  "width": 1920,
+  "height": 1080,
+  "hash": "sha256_hash_here"
+}
+```
+
+**Detección de Duplicados**:
+Si el hash ya existe en la biblioteca, retorna:
+```json
+{
+  "duplicate": true,
+  "existingMedia": {
+    "id": "clx...",
+    "label": "Archivo existente",
+    "url": "https://...",
+    ...
+  }
+}
+```
+
+**Response Success**:
+```json
+{
+  "success": true,
+  "media": {
+    "id": "clx...",
+    "label": "Imagen de servicio",
+    ...
+  }
+}
+```
+
+#### PUT /api/admin/media/:id
+Actualiza metadatos de un archivo existente.
+
+**Body**:
+```json
+{
+  "label": "Nuevo nombre",
+  "description": "Nueva descripción",
+  "alt": "Nuevo texto alternativo",
+  "category": "news"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "media": {
+    "id": "clx...",
+    "label": "Nuevo nombre",
+    ...
+  }
+}
+```
+
+#### DELETE /api/admin/media/:id
+Elimina archivo de la biblioteca con verificación de referencias.
+
+**Query params**:
+- `force` (opcional): "true" para forzar eliminación incluso si está en uso
+
+**Proceso de Eliminación**:
+1. Verifica si el archivo está siendo usado (servicios, noticias, carrusel, config)
+2. Si está en uso y no es forzado: retorna lista de referencias
+3. Si no está en uso o es forzado: elimina de Cloudinary y base de datos
+4. Si es forzado: limpia referencias en otros registros
+
+**Response - Archivo en Uso** (sin force):
+```json
+{
+  "success": false,
+  "deleted": false,
+  "message": "Este archivo está siendo usado en 3 lugares",
+  "references": [
+    {
+      "table": "Service",
+      "id": "clx...",
+      "field": "imageUrl",
+      "displayName": "Consultoría Ambiental"
+    },
+    {
+      "table": "News",
+      "id": "clx...",
+      "field": "imageUrl",
+      "displayName": "Nueva certificación ISO"
+    }
+  ]
+}
+```
+
+**Response - Eliminación Exitosa**:
+```json
+{
+  "success": true,
+  "deleted": true,
+  "message": "Archivo eliminado correctamente"
+}
+```
+
+**Nota Importante**: La eliminación también borra el archivo de Cloudinary automáticamente, intentando con diferentes tipos de recursos (image, video, raw) para asegurar la eliminación completa.
+
+#### GET /api/admin/media/check-references
+Verifica dónde se está usando un archivo específico.
+
+**Query params**:
+- `url` (requerido): URL del archivo a verificar
+
+**Response**:
+```json
+{
+  "inUse": true,
+  "references": [
+    {
+      "table": "Service",
+      "id": "clx...",
+      "field": "imageUrl",
+      "displayName": "Consultoría Ambiental",
+      "url": "/admin/servicios"
+    },
+    {
+      "table": "CarouselSlide",
+      "id": "clx...",
+      "field": "imageUrl",
+      "displayName": "Slide 1",
+      "url": "/admin/carrusel"
+    }
+  ]
+}
+```
+
+**Tablas Verificadas**:
+- Service (imageUrl)
+- News (imageUrl, blocks de Editor.js)
+- CarouselSlide (imageUrl)
+- PlatformConfig (logoUrl, faviconUrl, aboutImageUrl)
+- AboutPage (heroImageUrl, historyImageUrl, teamMembers, certificationsContent)
+- LegalPage (blocks de Editor.js)
 
 #### GET /api/admin/mensajes
 Lista mensajes de contacto (solo lectura, admin).
@@ -1507,6 +1763,95 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 ### Componentes de Contenido
 
 - `services-page-content.tsx` - Página completa de servicios con grid responsive
+  - Grid adaptativo (1→2→3 columnas)
+  - Cards con imagen, título, descripción
+  - Iconos de Lucide React
+  - Hover effects y transiciones
+  - Ordenamiento por campo `order`
+  
+- `news-page-content.tsx` - Listado de noticias con paginación
+  - Paginación con botones prev/next
+  - 6 noticias por página (configurable)
+  - Cards con imagen, título, excerpt, fecha
+  - Filtrado de noticias publicadas
+  - Ordenamiento por fecha (más recientes primero)
+  
+- `news-detail-content.tsx` - Detalle de noticia individual con renderizado de Editor.js
+  - Imagen de portada con caption opcional
+  - Renderizado de blocks de Editor.js
+  - Metadata (autor, fecha)
+  - Botón de volver a listado
+  - Compartir en redes sociales (futuro)
+  
+- `about-page-content.tsx` - Página completa "Quiénes Somos" con todas las secciones
+  - Hero section con imagen
+  - Historia con imagen y contenido markdown
+  - Misión y Visión en cards
+  - Valores con iconos (grid responsive)
+  - Equipo con fotos y bios (opcional)
+  - Por qué elegirnos con features
+  - Estadísticas animadas
+  - Certificaciones (opcional)
+  - CTA final con botón
+  - Sección de ubicación con mapa
+  
+- `contact-page-content.tsx` - Formulario de contacto con validación y rate limiting
+  - React Hook Form para gestión de formulario
+  - Validación en tiempo real
+  - Mensajes de error claros
+  - Checkbox de consentimiento (HABEAS DATA)
+  - Rate limiting (5 envíos por minuto)
+  - Toast de confirmación/error
+  - Campos: nombre, email, teléfono, empresa, asunto, mensaje
+  
+- `legal-page-content.tsx` - Páginas legales con renderizado de Editor.js
+  - Renderizado de blocks de Editor.js
+  - Fecha de última actualización (manual o automática)
+  - Tabla de contenidos (futuro)
+  - Impresión optimizada
+
+### Componentes de Biblioteca de Medios
+
+- `media-library-browser.tsx` - Navegador principal de biblioteca de medios
+  - Grid responsive con cards de archivos
+  - Filtrado por categoría (hero, services, news, gallery, general)
+  - Búsqueda por label y description
+  - Upload de archivos con drag & drop
+  - Preview de imágenes, audio y video
+  - Paginación automática
+  - Indicadores de archivos en uso
+  - Acciones: editar metadatos, eliminar, copiar URL
+  
+- `media-card.tsx` - Card individual de archivo multimedia
+  - Preview según tipo de archivo:
+    - Imágenes: thumbnail optimizado
+    - Audio: icono con indicador de duración
+    - Video: thumbnail con indicador de duración
+  - Información: label, tamaño, dimensiones
+  - Badge de categoría
+  - Indicador visual si está en uso
+  - Menú de acciones (editar, eliminar, copiar URL)
+  - Modal de edición de metadatos
+  - Confirmación antes de eliminar
+  - Muestra referencias si está en uso
+  
+- `media-picker.tsx` - Selector modal de archivos para formularios
+  - Modal fullscreen responsive
+  - Tabs: "Biblioteca" y "Subir Nuevo"
+  - Navegación por biblioteca existente
+  - Upload directo con validación
+  - Detección de duplicados en tiempo real
+  - Filtrado por tipo de archivo (imágenes, audio, video)
+  - Búsqueda y filtrado por categoría
+  - Preview antes de seleccionar
+  - Callback con archivo seleccionado
+  
+- `image-selector.tsx` - Selector de imágenes (legacy, migrado a media-picker)
+  - Preview en tiempo real
+  - Drag & drop para subir
+  - Integración con Cloudinary
+  - Validación de tipos de archivo
+  - Nota: Se recomienda usar `media-picker` para nuevos desarrollos
   - Grid adaptativo (1→2→3 columnas)
   - Cards con imagen, título, descripción
   - Iconos de Lucide React
@@ -2349,6 +2694,90 @@ Todos los componentes están en `src/components/ui/` y son completamente persona
 
 ---
 
+## 🛠️ Utilidades y Helpers
+
+### Sistema de Referencias de Medios
+
+**Archivo**: `src/lib/media-references.ts`
+
+Sistema completo para rastrear y gestionar el uso de archivos multimedia en toda la aplicación.
+
+**Funciones Principales**:
+
+```typescript
+// Encuentra todas las referencias a un archivo por URL
+findMediaReferences(url: string): Promise<MediaReference[]>
+
+// Actualiza todas las referencias de una URL a otra
+updateMediaReferences(oldUrl: string, newUrl: string): Promise<void>
+```
+
+**Tipo MediaReference**:
+```typescript
+{
+  table: string        // Nombre de la tabla (Service, News, etc.)
+  id: string          // ID del registro
+  field: string       // Campo que contiene la URL
+  displayName: string // Nombre descriptivo del registro
+  url?: string        // URL de edición (opcional)
+}
+```
+
+**Tablas Verificadas**:
+- `Service` - Campo `imageUrl`
+- `News` - Campo `imageUrl` y blocks de Editor.js
+- `CarouselSlide` - Campo `imageUrl`
+- `PlatformConfig` - Campos `logoUrl`, `faviconUrl`, `aboutImageUrl`
+- `AboutPage` - Campos `heroImageUrl`, `historyImageUrl`, `teamMembers` (JSON), `certificationsContent` (JSON)
+- `LegalPage` - Blocks de Editor.js (JSON)
+
+**Características**:
+- Búsqueda en campos de texto plano
+- Búsqueda en campos JSON (Editor.js blocks, arrays de objetos)
+- Búsqueda recursiva en estructuras anidadas
+- Actualización masiva de referencias
+- Manejo de errores graceful
+
+**Uso en Eliminación de Archivos**:
+```typescript
+// Verificar si un archivo está en uso
+const references = await findMediaReferences(fileUrl)
+
+if (references.length > 0) {
+  // Mostrar referencias al usuario
+  console.log(`Archivo usado en ${references.length} lugares`)
+  references.forEach(ref => {
+    console.log(`- ${ref.table}: ${ref.displayName}`)
+  })
+} else {
+  // Seguro eliminar
+  await deleteFile(fileUrl)
+}
+```
+
+**Uso en Reemplazo de Archivos**:
+```typescript
+// Reemplazar todas las referencias de un archivo
+await updateMediaReferences(oldUrl, newUrl)
+
+// Todas las referencias se actualizan automáticamente
+// en servicios, noticias, carrusel, configuración, etc.
+```
+
+**Limitaciones**:
+- Solo busca en tablas conocidas (no es dinámico)
+- Requiere actualización manual si se agregan nuevas tablas
+- No detecta referencias en código o templates
+- Búsqueda case-sensitive en URLs
+
+**Mejoras Futuras**:
+- Caché de referencias para mejor performance
+- Búsqueda case-insensitive
+- Detección automática de nuevas tablas
+- Índices de base de datos para búsquedas más rápidas
+
+---
+
 ## 🔧 Scripts Disponibles
 
 ### Desarrollo
@@ -2477,28 +2906,149 @@ npm run db:import    # Importa datos desde JSON (restauración)
 
 ### Gestión de Imágenes
 
-**Sistema de Keys Únicas**:
-- Cada imagen tiene un `key` único (hero-1, about-us, service-icon-1, etc.)
-- Al subir nueva imagen con mismo key, reemplaza la anterior automáticamente
-- Permite actualizar imágenes sin romper referencias
-- Elimina automáticamente la imagen anterior de Cloudinary
+**Sistema de Biblioteca de Medios Completo**:
 
-**Categorías**:
+La aplicación cuenta con una biblioteca de medios profesional que permite gestionar todos los archivos multimedia (imágenes, audio, video) de forma centralizada y eficiente.
+
+**Características Principales**:
+
+1. **Detección Inteligente de Duplicados**:
+   - Calcula hash SHA-256 del contenido de cada archivo
+   - Detecta archivos idénticos antes de subirlos
+   - Ofrece reutilizar archivo existente o subir como nuevo
+   - Ahorra espacio de almacenamiento y costos de Cloudinary
+   - Previene archivos duplicados innecesarios
+
+2. **Gestión de Referencias Automática**:
+   - Sistema de tracking que detecta dónde se usa cada archivo
+   - Verifica uso en: servicios, noticias, carrusel, configuración, páginas legales, about
+   - Previene eliminación accidental de archivos en uso
+   - Muestra lista detallada de referencias con links directos
+   - Opción de eliminación forzada con limpieza automática de referencias
+
+3. **Metadatos Completos**:
+   - Label (nombre descriptivo)
+   - Description (descripción opcional)
+   - Alt text (para accesibilidad)
+   - Category (hero, services, news, gallery, general)
+   - MIME type (image/jpeg, audio/mp3, video/mp4, etc.)
+   - File size (tamaño en bytes)
+   - Dimensions (ancho x alto para imágenes)
+   - Duration (duración para audio/video)
+   - Hash (SHA-256 para detección de duplicados)
+   - Timestamps (creación y última actualización)
+
+4. **Interfaz de Usuario Intuitiva**:
+   - Grid responsive con previews de archivos
+   - Búsqueda y filtrado por categoría
+   - Edición inline de metadatos
+   - Drag & drop para subir archivos
+   - Preview de imágenes, audio y video
+   - Indicadores visuales de archivos en uso
+   - Confirmación antes de eliminar
+
+5. **Integración con Editor.js**:
+   - Selector de medios integrado en herramientas de imagen, audio y video
+   - Reutilización fácil de archivos existentes
+   - Upload directo desde el editor
+   - Preview en tiempo real
+
+6. **Eliminación Segura con Cloudinary**:
+   - Elimina archivos de Cloudinary automáticamente
+   - Intenta con diferentes tipos de recursos (image, video, raw)
+   - Manejo de errores graceful (continúa si el archivo ya fue eliminado)
+   - Limpieza completa de base de datos y almacenamiento
+
+**Categorías de Archivos**:
 - `hero` - Imágenes del carrusel principal
 - `services` - Imágenes de servicios
-- `news` - Imágenes de noticias
-- `gallery` - Galería general
-- `about` - Imágenes de la página "About"
+- `news` - Imágenes de noticias y blog
+- `gallery` - Galería general de imágenes
+- `general` - Archivos generales (logos, iconos, etc.)
+
+**Tipos de Archivo Soportados**:
+- **Imágenes**: jpg, jpeg, png, gif, webp, svg
+- **Audio**: mp3, wav, ogg
+- **Video**: mp4, webm, mov
 
 **Almacenamiento**:
-- Desarrollo: `/public/uploads/` (local, nombres con timestamp)
-- Producción: Cloudinary (CDN global con optimización automática)
+- **Desarrollo**: `/public/uploads/` (sistema de archivos local)
+- **Producción**: Cloudinary (CDN global con optimización automática)
 
 **Validación de Seguridad**:
-- Validación de MIME type
-- Validación de magic bytes (firma del archivo)
-- Límites de tamaño por tipo de archivo
-- Tipos permitidos: imágenes (jpg, png, webp, gif), audio (mp3, wav), video (mp4, webm)
+- Validación de MIME type declarado
+- Validación de magic bytes (firma real del archivo)
+- Límites de tamaño por tipo:
+  - Imágenes: 10 MB
+  - Audio: 20 MB
+  - Video: 100 MB
+- Prevención de path traversal
+- Nombres de archivo seguros (generados por servidor)
+
+**Flujo de Trabajo**:
+
+1. **Subir Archivo**:
+   - Usuario arrastra archivo o hace clic en "Upload"
+   - Sistema valida tipo y tamaño
+   - Calcula hash SHA-256 del contenido
+   - Verifica si ya existe archivo con mismo hash
+   - Si es duplicado: ofrece reutilizar o subir nuevo
+   - Si es nuevo: sube a Cloudinary y registra en biblioteca
+   - Extrae metadatos automáticamente (dimensiones, duración, etc.)
+
+2. **Usar Archivo**:
+   - Usuario abre selector de medios en formulario
+   - Navega por biblioteca con filtros y búsqueda
+   - Selecciona archivo existente o sube nuevo
+   - Sistema inserta URL en campo correspondiente
+
+3. **Editar Metadatos**:
+   - Usuario hace clic en "Edit" en card de archivo
+   - Modifica label, description, alt, category
+   - Sistema actualiza registro en base de datos
+   - Cambios se reflejan inmediatamente
+
+4. **Eliminar Archivo**:
+   - Usuario hace clic en "Delete" en card de archivo
+   - Sistema verifica referencias en toda la aplicación
+   - Si está en uso: muestra lista de referencias con links
+   - Usuario puede cancelar o forzar eliminación
+   - Si fuerza: limpia referencias y elimina archivo
+   - Sistema elimina de Cloudinary y base de datos
+
+**Componentes de UI**:
+- `media-library-browser.tsx` - Navegador principal de biblioteca
+- `media-card.tsx` - Card individual de archivo con preview y acciones
+- `media-picker.tsx` - Selector modal para formularios
+- `image-selector.tsx` - Selector legacy (migrado a media-picker)
+
+**API Endpoints**:
+- `GET /api/admin/media` - Listar archivos con filtros
+- `POST /api/admin/media` - Registrar nuevo archivo
+- `PUT /api/admin/media/:id` - Actualizar metadatos
+- `DELETE /api/admin/media/:id` - Eliminar archivo
+- `GET /api/admin/media/check-references` - Verificar referencias
+
+**Utilidades**:
+- `src/lib/media-references.ts` - Sistema de tracking de referencias
+  - `findMediaReferences(url)` - Encuentra dónde se usa un archivo
+  - `updateMediaReferences(oldUrl, newUrl)` - Actualiza referencias masivamente
+
+**Sistema de Keys Únicas (Legacy)**:
+
+El sistema anterior de keys únicas sigue disponible para compatibilidad:
+- Cada imagen puede tener un `key` único opcional (hero-1, about-us, etc.)
+- Al subir nueva imagen con mismo key, reemplaza la anterior automáticamente
+- Útil para imágenes específicas del sistema que deben actualizarse
+- Elimina automáticamente la imagen anterior de Cloudinary
+
+**Migración de Sistema Antiguo**:
+
+Si tienes imágenes del sistema antiguo (`/api/admin/images`), puedes migrarlas a la nueva biblioteca:
+1. Las imágenes existentes siguen funcionando
+2. Nuevas subidas usan el sistema de biblioteca de medios
+3. Gradualmente reemplazar referencias antiguas con nuevas
+4. Ambos sistemas coexisten sin problemas
 
 ### Gestión de Servicios
 
@@ -5127,3 +5677,140 @@ Este proyecto es una aplicación web corporativa completa y bien estructurada co
 **Última Actualización**: Marzo 12, 2026  
 **Versión del Documento**: 1.1.0  
 **Versión de la Aplicación**: 0.2.0
+
+
+---
+
+## 📝 Changelog
+
+### Versión 0.3.0 (Marzo 12, 2026)
+
+**Biblioteca de Medios Completa** - Sistema profesional de gestión de archivos multimedia
+
+**Mejoras de UX - Manejo de Errores de Subida**:
+
+- **Validación previa de tamaño**: Los archivos se validan antes de enviarlos al servidor, evitando uploads innecesarios
+- **Manejo del error 413 (Payload Too Large)**: Detección específica cuando el servidor rechaza archivos grandes
+- **Mensajes claros y útiles**: Se muestra el tamaño del archivo y se explica que es demasiado grande para el plan actual
+- **Alternativa práctica**: Todos los mensajes de error incluyen sugerencia de subir directamente a Cloudinary Console con link directo
+- **Implementado en todos los puntos de entrada**:
+  - Biblioteca de medios (media-picker)
+  - Página de gestión de imágenes
+  - Editor.js (herramientas de imagen, video y audio)
+
+**Ejemplo de mensaje de error**:
+```
+El archivo es demasiado grande (7.2 MB) para el plan actual.
+
+💡 Alternativa: Sube el archivo directamente a Cloudinary Console 
+(https://console.cloudinary.com) y copia la URL para usarla aquí.
+```
+
+**Nuevas Características**:
+
+1. **Detección de Duplicados**:
+   - Cálculo de hash SHA-256 del contenido de archivos
+   - Detección automática de archivos idénticos antes de subir
+   - Opción de reutilizar archivo existente o subir como nuevo
+   - Ahorro de espacio de almacenamiento y costos de Cloudinary
+
+2. **Gestión de Referencias Automática**:
+   - Sistema de tracking que detecta dónde se usa cada archivo
+   - Verificación en servicios, noticias, carrusel, configuración, páginas legales, about
+   - Prevención de eliminación accidental de archivos en uso
+   - Lista detallada de referencias con links directos
+   - Eliminación forzada con limpieza automática de referencias
+
+3. **Metadatos Completos**:
+   - Label, description, alt text, category
+   - MIME type, file size, dimensions, duration
+   - Hash SHA-256 para detección de duplicados
+   - Timestamps de creación y actualización
+   - Edición inline de metadatos
+
+4. **Interfaz de Usuario Mejorada**:
+   - Grid responsive con previews de archivos
+   - Búsqueda y filtrado por categoría
+   - Drag & drop para subir archivos
+   - Preview de imágenes, audio y video
+   - Indicadores visuales de archivos en uso
+   - Confirmación antes de eliminar con lista de referencias
+
+5. **Eliminación Segura con Cloudinary**:
+   - Eliminación automática de archivos de Cloudinary
+   - Intento con diferentes tipos de recursos (image, video, raw)
+   - Manejo de errores graceful
+   - Limpieza completa de base de datos y almacenamiento
+
+**Nuevos Componentes**:
+- `media-library-browser.tsx` - Navegador principal de biblioteca
+- `media-card.tsx` - Card de archivo con preview y acciones
+- `media-picker.tsx` - Selector modal para formularios
+
+**Nuevos Endpoints API**:
+- `GET /api/admin/media` - Listar archivos con filtros
+- `POST /api/admin/media` - Registrar nuevo archivo
+- `PUT /api/admin/media/:id` - Actualizar metadatos
+- `DELETE /api/admin/media/:id` - Eliminar archivo con verificación
+- `GET /api/admin/media/check-references` - Verificar referencias
+
+**Nuevas Utilidades**:
+- `src/lib/media-references.ts` - Sistema de tracking de referencias
+  - `findMediaReferences(url)` - Encuentra dónde se usa un archivo
+  - `updateMediaReferences(oldUrl, newUrl)` - Actualiza referencias masivamente
+
+**Mejoras en Base de Datos**:
+- Nuevos campos en modelo `SiteImage`:
+  - `mimeType` - Tipo MIME del archivo
+  - `fileSize` - Tamaño en bytes
+  - `width`, `height` - Dimensiones (imágenes)
+  - `duration` - Duración (audio/video)
+  - `hash` - Hash SHA-256 para detección de duplicados
+
+**Soporte Multi-formato**:
+- Imágenes: jpg, jpeg, png, gif, webp, svg
+- Audio: mp3, wav, ogg
+- Video: mp4, webm, mov
+
+**Integración con Editor.js**:
+- Selector de medios integrado en herramientas de imagen, audio y video
+- Reutilización fácil de archivos existentes
+- Upload directo desde el editor
+
+**Compatibilidad**:
+- Sistema legacy de keys únicas sigue funcionando
+- Migración gradual de sistema antiguo a nuevo
+- Ambos sistemas coexisten sin problemas
+
+**Documentación**:
+- Documentación completa de API endpoints
+- Guías de uso de componentes
+- Ejemplos de integración
+- Documentación de utilidades
+
+---
+
+### Versión 0.2.0 (Marzo 10, 2026)
+
+**Lanzamiento Inicial** - Sistema completo de gestión de contenido
+
+**Características Principales**:
+- Sitio público con 8 páginas responsive
+- Panel de administración con 9 secciones
+- Autenticación segura con bcrypt
+- Editor de contenido con Editor.js
+- Gestión de imágenes con Cloudinary
+- Sistema de contacto con rate limiting
+- Carrusel configurable con drag & drop
+- Páginas legales editables
+- Recuperación de contraseña
+- Modo oscuro/claro
+- Headers de seguridad completos
+- Middleware de protección de rutas
+
+**Estado**: Producción ready con bug conocido de caché
+
+---
+
+**Última Actualización del Documento**: Marzo 12, 2026
+**Versión del Documento**: 1.2.0

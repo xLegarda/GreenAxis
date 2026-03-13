@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 interface SiteImage {
   id: string
@@ -59,14 +60,8 @@ export default function ImagenesAdminPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<SiteImage | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  const [formData, setFormData] = useState({
-    key: '',
-    label: '',
-    description: '',
-    category: '',
-  })
 
   useEffect(() => {
     fetchImages()
@@ -89,6 +84,26 @@ export default function ImagenesAdminPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate file size (50MB max)
+    const maxSizeBytes = 50 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      toast({ 
+        title: 'Archivo demasiado grande', 
+        description: (
+          <div className="space-y-2">
+            <p>El archivo ({fileSizeMB} MB) es demasiado grande para el plan actual.</p>
+            <p className="text-xs">💡 Alternativa: Sube el archivo directamente a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline font-medium">Cloudinary</a> y copia la URL para usarla aquí.</p>
+          </div>
+        ),
+        variant: 'destructive' 
+      })
+      return
+    }
+    await processFile(file)
+  }
+
+  const processFile = async (file: File) => {
     const isVideo = file.type.startsWith('video/')
     const isAudio = file.type.startsWith('audio/')
     
@@ -106,10 +121,7 @@ export default function ImagenesAdminPage() {
     setUploading(true)
     const uploadData = new FormData()
     uploadData.append('file', file)
-    if (formData.key) uploadData.append('key', formData.key)
-    if (formData.label) uploadData.append('label', formData.label)
-    if (formData.description) uploadData.append('description', formData.description)
-    if (formData.category) uploadData.append('category', formData.category)
+    // Solo enviamos el archivo - todo lo demás se genera automáticamente
 
     try {
       const response = await fetch('/api/upload', {
@@ -119,14 +131,49 @@ export default function ImagenesAdminPage() {
 
       if (response.ok) {
         toast({ title: isVideo ? 'Video subido correctamente' : isAudio ? 'Audio subido correctamente' : 'Imagen subida correctamente' })
-        setFormData({ key: '', label: '', description: '', category: '' })
         fetchImages()
+      } else if (response.status === 413) {
+        // Payload Too Large
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+        toast({ 
+          title: 'Archivo demasiado grande', 
+          description: (
+            <div className="space-y-2">
+              <p>El archivo ({fileSizeMB} MB) es demasiado grande para el plan actual.</p>
+              <p className="text-xs">💡 Alternativa: Sube el archivo directamente a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline font-medium">Cloudinary</a> y copia la URL para usarla aquí.</p>
+            </div>
+          ),
+          variant: 'destructive' 
+        })
+      } else {
+        const error = await response.json()
+        toast({ title: 'Error al subir archivo', description: error.error, variant: 'destructive' })
       }
     } catch (error) {
       toast({ title: 'Error al subir archivo', variant: 'destructive' })
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      await processFile(files[0])
     }
   }
 
@@ -213,8 +260,17 @@ export default function ImagenesAdminPage() {
                   <li>• <strong>Noticias/Blog:</strong> 1200 x 630 px (proporción 1.9:1 - ideal para redes sociales)</li>
                   <li>• <strong>Carrusel/Hero:</strong> 1920 x 800 px (proporción 2.4:1)</li>
                   <li>• <strong>Servicios:</strong> 800 x 600 px (proporción 4:3)</li>
-                  <li>• <strong>Videos:</strong> MP4 o WebM, máximo 50MB</li>
-                  <li>• <strong>Audio:</strong> MP3 o WAV, máximo 50MB, bitrate 128-320 kbps</li>
+                  <li>• <strong>Videos:</strong> MP4 o WebM, máximo 25MB en producción</li>
+                  <li>• <strong>Audio:</strong> MP3 o WAV, máximo 15MB en producción</li>
+                </ul>
+              </div>
+              
+              <div className="border-t border-blue-200 dark:border-blue-800 pt-3">
+                <p className="font-medium mb-1">💡 Para archivos más grandes:</p>
+                <ul className="text-xs space-y-0.5 text-blue-600 dark:text-blue-400">
+                  <li>• Ve a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline">Cloudinary Console</a></li>
+                  <li>• Sube tu archivo en "Media Library"</li>
+                  <li>• Copia la URL y úsala directamente en tu contenido</li>
                 </ul>
               </div>
             </div>
@@ -222,69 +278,41 @@ export default function ImagenesAdminPage() {
         </CardContent>
       </Card>
 
-      {/* Upload Form */}
+      {/* Upload Form - Simplificado */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Subir Nuevo Archivo</CardTitle>
-          <CardDescription>Sube una imagen, video o audio al servidor. Deja la key vacía para generar una automáticamente.</CardDescription>
+          <CardDescription>Arrastra archivos aquí o haz clic para seleccionar. Se organizarán automáticamente.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label>Identificador (key)</Label>
-              <Input
-                value={formData.key}
-                onChange={(e) => setFormData({ ...formData, key: e.target.value })}
-                placeholder="auto-generado"
-              />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/m4a"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <div 
+            className={cn(
+              "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+              isDragging 
+                ? "border-primary bg-primary/5" 
+                : "border-muted-foreground/25 hover:border-primary/50"
+            )}
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-sm font-medium mb-2">
+              {uploading ? 'Subiendo archivo...' : 'Arrastra archivos aquí o haz clic para seleccionar'}
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+              <span><strong>Imágenes:</strong> JPG, PNG, WebP, GIF, SVG | Máx. 5MB</span>
+              <span><strong>Videos:</strong> MP4, WebM, MOV | Máx. 25MB</span>
+              <span><strong>Audio:</strong> MP3, WAV, OGG, M4A | Máx. 15MB</span>
             </div>
-            <div className="space-y-2">
-              <Label>Nombre descriptivo</Label>
-              <Input
-                value={formData.label}
-                onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                placeholder="Mi imagen"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Categoría</Label>
-              <Input
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="carousel, services..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Descripción</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="¿Dónde se usa?"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Archivo</Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/m4a"
-                className="hidden"
-                onChange={handleUpload}
-              />
-              <Button 
-                className="w-full gradient-nature text-white"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {uploading ? 'Subiendo...' : 'Subir'}
-              </Button>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <span><strong>Imágenes:</strong> JPG, PNG, WebP, GIF, SVG | Máx. 5MB</span>
-            <span><strong>Videos:</strong> MP4, WebM, MOV | Máx. 50MB</span>
-            <span><strong>Audio:</strong> MP3, WAV, OGG, M4A | Máx. 50MB</span>
           </div>
         </CardContent>
       </Card>

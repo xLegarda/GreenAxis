@@ -120,10 +120,11 @@ model SiteImage {
   id          String   @id @default(cuid())
   key         String   @unique  // Identificador único (hero-1, about-us, etc.)
   label       String            // Nombre descriptivo
-  description String?           // Descripción de dónde se usa
   url         String            // URL de la imagen
   alt         String?           // Texto alternativo
   category    String?           // Categoría: hero, services, news, gallery
+  fileSize    Int?              // Tamaño del archivo en bytes
+  mimeType    String?           // Tipo MIME (image/jpeg, video/mp4, etc.)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -160,7 +160,6 @@ export async function POST(request: NextRequest) {
     const fixedKey = formData.get('fixedKey') as string | null
     const label = formData.get('label') as string
     const category = formData.get('category') as string | null
-    const description = formData.get('description') as string | null
     const skipDuplicateCheck = formData.get('skipDuplicateCheck') === 'true'
     
     if (!file) {
@@ -174,16 +173,29 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    // Validar tamaño según tipo
+    // Validar tamaño según tipo y entorno
     const fileCategory = getFileCategory(mimeType)
     let maxSize = 5 * 1024 * 1024 // 5MB por defecto para imágenes
-    if (fileCategory === 'video') maxSize = 50 * 1024 * 1024 // 50MB para videos
-    if (fileCategory === 'audio') maxSize = 20 * 1024 * 1024 // 20MB para audios
+    
+    if (isProduction) {
+      // PRODUCCIÓN (Vercel): Límites más estrictos
+      if (fileCategory === 'video') maxSize = 25 * 1024 * 1024 // 25MB para videos
+      if (fileCategory === 'audio') maxSize = 15 * 1024 * 1024 // 15MB para audios
+    } else {
+      // DESARROLLO: Límites más generosos
+      if (fileCategory === 'video') maxSize = 50 * 1024 * 1024 // 50MB para videos
+      if (fileCategory === 'audio') maxSize = 20 * 1024 * 1024 // 20MB para audios
+    }
     
     if (file.size > maxSize) {
       const maxMB = Math.floor(maxSize / (1024 * 1024))
+      const errorMessage = `El archivo es demasiado grande. Máximo ${maxMB}MB para ${fileCategory === 'video' ? 'videos' : fileCategory === 'audio' ? 'audios' : 'imágenes'}.`
+      const helpMessage = isProduction 
+        ? ` Para archivos más grandes, súbelos manualmente a Cloudinary: https://console.cloudinary.com/console/c-${process.env.CLOUDINARY_CLOUD_NAME || 'tu-cloud'}/media_library`
+        : ''
+      
       return NextResponse.json({ 
-        error: `El archivo es demasiado grande. Máximo ${maxMB}MB para ${fileCategory === 'video' ? 'videos' : fileCategory === 'audio' ? 'audios' : 'imágenes'}` 
+        error: errorMessage + helpMessage
       }, { status: 400 })
     }
     
@@ -319,8 +331,9 @@ export async function POST(request: NextRequest) {
         data: {
           url: publicUrl,
           label: label || existingImage.label,
-          description: emptyToNull(description),
           category: emptyToNull(category) || existingImage.category || fileCategory,
+          fileSize: file.size,
+          mimeType: file.type,
         }
       })
     } else {
@@ -329,9 +342,10 @@ export async function POST(request: NextRequest) {
         data: {
           key: fileKey,
           label: label || file.name.replace(/\.[^/.]+$/, ''),
-          description: emptyToNull(description),
           category: emptyToNull(category) || fileCategory,
           url: publicUrl,
+          fileSize: file.size,
+          mimeType: file.type,
         }
       })
     }

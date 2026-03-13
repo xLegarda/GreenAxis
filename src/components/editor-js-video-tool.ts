@@ -190,8 +190,8 @@ export default class VideoTool {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return
 
-      if (file.size > 50 * 1024 * 1024) {
-        alert('El video es demasiado grande. El tamaño máximo es 50MB.')
+      if (file.size > 25 * 1024 * 1024) {
+        alert('El video es demasiado grande (máx. 25MB en producción).\n\n💡 Para videos más grandes:\n1. Ve a https://console.cloudinary.com\n2. Sube tu video en "Media Library"\n3. Copia la URL y úsala directamente')
         return
       }
 
@@ -236,8 +236,8 @@ export default class VideoTool {
         return
       }
 
-      if (file.size > 50 * 1024 * 1024) {
-        alert('El video es demasiado grande. El tamaño máximo es 50MB.')
+      if (file.size > 25 * 1024 * 1024) {
+        alert('El video es demasiado grande (máx. 25MB en producción).\n\n💡 Para videos más grandes:\n1. Ve a https://console.cloudinary.com\n2. Sube tu video en "Media Library"\n3. Copia la URL y úsala directamente')
         return
       }
 

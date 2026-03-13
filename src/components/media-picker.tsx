@@ -207,6 +207,19 @@ export function MediaPicker({
    * Handle file upload with progress tracking and duplicate detection
    */
   const handleFileUpload = async (file: File, skipDuplicateCheck = false) => {
+    // Validate file size before uploading
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      setState(prev => ({ 
+        ...prev, 
+        error: `El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual. 
+
+💡 Alternativa: Si no puedes comprimir más el archivo, súbelo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`
+      }))
+      return
+    }
+
     // Reset error state
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
 
@@ -240,8 +253,19 @@ export function MediaPicker({
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText))
+          } else if (xhr.status === 413) {
+            // Payload Too Large
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.
+
+💡 Alternativa: Sube el archivo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`))
           } else {
-            reject(new Error(xhr.responseText))
+            try {
+              const errorData = JSON.parse(xhr.responseText)
+              reject(new Error(errorData.error || xhr.responseText))
+            } catch {
+              reject(new Error(xhr.responseText || 'Error al subir archivo'))
+            }
           }
         })
         xhr.addEventListener('error', () => reject(new Error('Error de red al subir archivo')))
@@ -573,7 +597,20 @@ export function MediaPicker({
                 <Alert variant="destructive" className="mb-4">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{state.error}</AlertDescription>
+                  <AlertDescription className="space-y-2">
+                    <p>{state.error}</p>
+                    {state.error.includes('Cloudinary') && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
+                        <p className="font-medium text-blue-700 dark:text-blue-300">💡 Alternativa para archivos grandes:</p>
+                        <ol className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-1">
+                          <li>1. Ve a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline">Cloudinary Console</a></li>
+                          <li>2. Sube tu archivo en "Media Library"</li>
+                          <li>3. Copia la URL del archivo</li>
+                          <li>4. Úsala directamente en tu contenido</li>
+                        </ol>
+                      </div>
+                    )}
+                  </AlertDescription>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -634,9 +671,9 @@ export function MediaPicker({
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF, SVG (máx. 5MB)'}
-                    {accept === 'video' && 'Videos: MP4, WebM, MOV (máx. 50MB)'}
-                    {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A (máx. 20MB)'}
-                    {accept === 'all' && 'Imágenes (5MB), videos (50MB) y audio (20MB)'}
+                    {accept === 'video' && 'Videos: MP4, WebM, MOV (máx. 25MB en producción)'}
+                    {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A (máx. 15MB en producción)'}
+                    {accept === 'all' && 'Imágenes (5MB), videos (25MB) y audio (15MB) en producción'}
                   </p>
                 </label>
               </div>

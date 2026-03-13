@@ -172,12 +172,13 @@ CREATE TABLE IF NOT EXISTS "SiteImage" (
 	"id"	TEXT NOT NULL,
 	"key"	TEXT NOT NULL,
 	"label"	TEXT NOT NULL,
-	"description"	TEXT,
 	"url"	TEXT NOT NULL,
 	"alt"	TEXT,
 	"category"	TEXT,
+	"fileSize"	INTEGER,
+	"mimeType"	TEXT,
 	"createdAt"	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updatedAt"	DATETIME NOT NULL,
+	"updatedAt"	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 CREATE TABLE IF NOT EXISTS "SocialFeedConfig" (
