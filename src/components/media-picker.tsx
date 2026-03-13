@@ -262,9 +262,11 @@ export function MediaPicker({
           } else {
             try {
               const errorData = JSON.parse(xhr.responseText)
-              reject(new Error(errorData.error || xhr.responseText))
+              const errorMsg = errorData.error || xhr.responseText || 'Error desconocido'
+              const details = errorData.details ? `\n\nDetalles: ${errorData.details}` : ''
+              reject(new Error(errorMsg + details))
             } catch {
-              reject(new Error(xhr.responseText || 'Error al subir archivo'))
+              reject(new Error(`Error ${xhr.status}: ${xhr.responseText || 'Error al subir archivo'}`))
             }
           }
         })

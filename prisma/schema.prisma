@@ -118,13 +118,15 @@ model News {
 // Imágenes del sitio (sistema con reemplazo automático)
 model SiteImage {
   id          String   @id @default(cuid())
-  key         String   @unique  // Identificador único (hero-1, about-us, etc.)
+  key         String?  @unique  // Identificador único (hero-1, about-us, etc.) - ahora opcional
   label       String            // Nombre descriptivo
+  description String?           // Descripción opcional
   url         String            // URL de la imagen
   alt         String?           // Texto alternativo
-  category    String?           // Categoría: hero, services, news, gallery
-  fileSize    Int?              // Tamaño del archivo en bytes
-  mimeType    String?           // Tipo MIME (image/jpeg, video/mp4, etc.)
+  category    String?           // Categoría: hero, services, news, gallery, general
+  
+  // Hash para detección de duplicados
+  hash        String?           // Hash SHA-256 del contenido del archivo
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

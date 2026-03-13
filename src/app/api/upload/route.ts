@@ -332,8 +332,6 @@ export async function POST(request: NextRequest) {
           url: publicUrl,
           label: label || existingImage.label,
           category: emptyToNull(category) || existingImage.category || fileCategory,
-          fileSize: file.size,
-          mimeType: file.type,
         }
       })
     } else {
@@ -344,8 +342,6 @@ export async function POST(request: NextRequest) {
           label: label || file.name.replace(/\.[^/.]+$/, ''),
           category: emptyToNull(category) || fileCategory,
           url: publicUrl,
-          fileSize: file.size,
-          mimeType: file.type,
         }
       })
     }
@@ -360,7 +356,38 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error uploading file:', error)
-    return NextResponse.json({ error: 'Error al subir archivo' }, { status: 500 })
+    
+    // Proporcionar más detalles del error
+    let errorMessage = 'Error al subir archivo'
+    let statusCode = 500
+    
+    if (error instanceof Error) {
+      // Error de Prisma (base de datos)
+      if (error.message.includes('PrismaClient')) {
+        errorMessage = 'Error de base de datos. Verifica que la estructura esté actualizada.'
+        console.error('Database error details:', error.message)
+      }
+      // Error de Cloudinary
+      else if (error.message.includes('cloudinary') || error.message.includes('Cloudinary')) {
+        errorMessage = 'Error al subir a Cloudinary. Verifica la configuración.'
+        console.error('Cloudinary error details:', error.message)
+      }
+      // Error de validación
+      else if (error.message.includes('validation') || error.message.includes('invalid')) {
+        errorMessage = 'Archivo no válido o datos incorrectos.'
+        statusCode = 400
+      }
+      // Error genérico con más detalles
+      else {
+        errorMessage = `Error al subir archivo: ${error.message}`
+        console.error('Upload error details:', error.message)
+      }
+    }
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+    }, { status: statusCode })
   }
 }
 
