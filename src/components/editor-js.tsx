@@ -427,11 +427,9 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       } else if (response.status === 413) {
                         const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
                         alert(`El archivo (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube la imagen directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      } else {
-                        alert('Error al subir la imagen. Por favor, intenta de nuevo.')
                       }
                     } catch (e) {
-                      alert('Error de conexión al subir la imagen. Verifica tu conexión a internet.')
+                      console.error('Upload error:', e)
                     }
                     return { success: 0 }
                   }
@@ -504,11 +502,9 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       } else if (response.status === 413) {
                         const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
                         alert(`El video (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el video directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      } else {
-                        alert('Error al subir el video. Por favor, intenta de nuevo.')
                       }
                     } catch (e) {
-                      alert('Error de conexión al subir el video. Verifica tu conexión a internet.')
+                      console.error('Video upload error:', e)
                     }
                     return { success: 0 }
                   }
@@ -550,11 +546,9 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       } else if (response.status === 413) {
                         const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
                         alert(`El audio (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el audio directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      } else {
-                        alert('Error al subir el audio. Por favor, intenta de nuevo.')
                       }
                     } catch (e) {
-                      alert('Error de conexión al subir el audio. Verifica tu conexión a internet.')
+                      console.error('Audio upload error:', e)
                     }
                     return { success: 0 }
                   }

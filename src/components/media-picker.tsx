@@ -307,6 +307,7 @@ export function MediaPicker({
         }
       }
     } catch (error) {
+      console.error('Upload error:', error)
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Error al subir archivo. Por favor, intenta de nuevo.'

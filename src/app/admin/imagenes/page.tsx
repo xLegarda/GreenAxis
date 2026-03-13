@@ -83,8 +83,8 @@ export default function ImagenesAdminPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file size (4.5MB max - Vercel free tier limit)
-    const maxSizeBytes = 4.5 * 1024 * 1024
+    // Validate file size (50MB max)
+    const maxSizeBytes = 50 * 1024 * 1024
     if (file.size > maxSizeBytes) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
       toast({ 
@@ -149,12 +149,7 @@ export default function ImagenesAdminPage() {
         toast({ title: 'Error al subir archivo', description: error.error, variant: 'destructive' })
       }
     } catch (error) {
-      // Handle network errors or other exceptions
-      toast({ 
-        title: 'Error al subir archivo', 
-        description: 'No se pudo conectar con el servidor. Verifica tu conexión.',
-        variant: 'destructive' 
-      })
+      toast({ title: 'Error al subir archivo', variant: 'destructive' })
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
