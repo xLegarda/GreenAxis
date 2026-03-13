@@ -24,11 +24,6 @@ export function middleware(request: NextRequest) {
   // Strict-Transport-Security: Fuerza HTTPS
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
   
-  // OWASP Cross-Origin Headers: Máxima seguridad contra ataques Spectre
-  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
-  response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp')
-  response.headers.set('Cross-Origin-Resource-Policy', 'same-site')
-  
   // Content-Security-Policy: Define qué recursos pueden cargarse
   // Configuración permisiva para sitios corporativos
   const csp = [
@@ -48,7 +43,7 @@ export function middleware(request: NextRequest) {
   return response
 }
 
-// Solo aplicar a rutas que no sean estáticas ni uploads
+// Solo aplicar a rutas que no sean estáticas
 export const config = {
   matcher: [
     /*
@@ -56,8 +51,7 @@ export const config = {
      * - _next/static (archivos estáticos)
      * - _next/image (optimización de imágenes)
      * - favicon.ico
-     * - uploads/ (archivos multimedia - NO aplicar middleware aquí)
      */
-    '/((?!_next/static|_next/image|favicon.ico|uploads/).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
