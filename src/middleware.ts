@@ -24,7 +24,7 @@ export function middleware(request: NextRequest) {
   // Strict-Transport-Security: Fuerza HTTPS
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
   
-  // OWASP Cross-Origin Headers: Defienden contra ataques Spectre y robos de datos a través de recursos cruzados
+  // OWASP Cross-Origin Headers: Máxima seguridad contra ataques Spectre
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
   response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp')
   response.headers.set('Cross-Origin-Resource-Policy', 'same-site')
@@ -39,7 +39,7 @@ export function middleware(request: NextRequest) {
     "font-src 'self' data:",
     "connect-src 'self' https://www.google-analytics.com blob:",
     "frame-src 'self' https://www.google.com https://maps.google.com",
-    "media-src 'self' https://res.cloudinary.com blob: data:",
+    "media-src 'self' https://res.cloudinary.com blob: data: https:",
     "frame-ancestors 'none'",
   ].join('; ')
   
@@ -56,8 +56,8 @@ export const config = {
      * - _next/static (archivos estáticos)
      * - _next/image (optimización de imágenes)
      * - favicon.ico
-     * - uploads (archivos subidos)
+     * - uploads (archivos subidos - incluye audio, video, imágenes)
      */
-    '/((?!_next/static|_next/image|favicon.ico|uploads).*)',
+    '/((?!_next/static|_next/image|favicon.ico|uploads/).*)',
   ],
 }

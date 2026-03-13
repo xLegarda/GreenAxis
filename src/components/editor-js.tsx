@@ -882,6 +882,13 @@ export function renderEditorBlocks(blocks: any[]) {
                   className="w-full"
                   preload="metadata"
                   src={audioData.url}
+                  onError={(e) => {
+                    console.error('Audio loading error:', e)
+                    console.log('Audio URL:', audioData.url)
+                  }}
+                  onLoadStart={() => {
+                    console.log('Audio loading started:', audioData.url)
+                  }}
                 >
                   Tu navegador no soporta audio HTML5.
                 </audio>

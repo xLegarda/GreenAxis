@@ -24,6 +24,32 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        // Excepción para archivos multimedia locales (incluye archivos del celular)
+        source: '/uploads/:path*.(jpg|jpeg|png|gif|svg|webp|mp3|wav|ogg|m4a|aac|mp4|webm|mov|avi|mkv|pdf|doc|docx)',
+        headers: [
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'cross-origin',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
