@@ -8,7 +8,8 @@ import {
   FileText, 
   Mail,
   MessageSquare,
-  Users
+  Users,
+  Star
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -69,6 +70,14 @@ const adminSections = [
     icon: Mail,
     href: '/admin/mensajes',
     color: 'bg-cyan-500/10 text-cyan-500'
+  },
+  {
+    title: 'Contáctame',
+    description: '¿Quieres más funcionalidades?',
+    icon: Star,
+    href: 'https://wa.me/573127711646',
+    color: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white',
+    external: true
   }
 ]
 
@@ -86,7 +95,12 @@ export default function AdminPage() {
         {adminSections.map((section) => {
           const Icon = section.icon
           return (
-            <Link key={section.href} href={section.href}>
+            <Link 
+              key={section.href} 
+              href={section.href}
+              target={section.external ? '_blank' : undefined}
+              rel={section.external ? 'noopener noreferrer' : undefined}
+            >
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer border-0 bg-card">
                 <CardHeader>
                   <div className={`w-12 h-12 rounded-xl ${section.color} flex items-center justify-center mb-3`}>

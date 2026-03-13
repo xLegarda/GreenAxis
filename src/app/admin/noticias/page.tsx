@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Save, Calendar, ImagePlus, Info, AlertTriangle, Video } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, Calendar, ImagePlus, Info, AlertTriangle, Video, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -43,6 +43,10 @@ export default function NoticiasAdminPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<EditorJS | null>(null)
   const editorDataRef = useRef<any>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const itemsPerPage = 10
 
   const [formData, setFormData] = useState({
     title: '',
@@ -57,13 +61,17 @@ export default function NoticiasAdminPage() {
 
   useEffect(() => {
     fetchNews()
-  }, [])
+  }, [currentPage])
 
   const fetchNews = async () => {
+    setLoading(true)
     try {
-      const response = await fetch('/api/noticias')
+      const response = await fetch(`/api/noticias?page=${currentPage}&limit=${itemsPerPage}`)
       if (response.ok) {
-        setNews(await response.json())
+        const data = await response.json()
+        setNews(data.news)
+        setTotal(data.total)
+        setTotalPages(data.pages)
       }
     } catch (error) {
       console.error('Error fetching news:', error)
@@ -245,7 +253,9 @@ export default function NoticiasAdminPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold">Noticias / Blog</h1>
-          <p className="text-sm text-muted-foreground">Crear y editar artículos con editor avanzado</p>
+          <p className="text-sm text-muted-foreground">
+            Crear y editar artículos con editor avanzado {total > 0 && `(${total} total)`}
+          </p>
         </div>
         <Button onClick={() => { resetForm(); setEditingNews(null); editorDataRef.current = null; setDialogOpen(true); }} className="gradient-nature text-white">
           <Plus className="h-4 w-4 mr-2" />Nueva Noticia
@@ -304,6 +314,40 @@ export default function NoticiasAdminPage() {
           </Card>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 pt-6 border-t">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, total)} de {total} noticias
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Anterior
+            </Button>
+            
+            <span className="text-sm text-muted-foreground px-3">
+              Página {currentPage} de {totalPages}
+            </span>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

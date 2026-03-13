@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const slug = searchParams.get('slug')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
     
     if (slug) {
       const news = await db.news.findUnique({
@@ -25,11 +27,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(news)
     }
     
-    const news = await db.news.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
+    // Pagination for admin
+    const skip = (page - 1) * limit
     
-    return NextResponse.json(news)
+    const [news, total] = await Promise.all([
+      db.news.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      db.news.count()
+    ])
+    
+    return NextResponse.json({
+      news,
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: page
+    })
   } catch (error) {
     console.error('Error fetching news:', error)
     return NextResponse.json({ error: 'Error al obtener noticias' }, { status: 500 })

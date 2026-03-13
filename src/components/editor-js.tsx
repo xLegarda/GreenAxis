@@ -720,8 +720,8 @@ export function renderEditorBlocks(blocks: any[]) {
                   controls
                   className="w-full"
                   preload="metadata"
+                  src={audioData.url}
                 >
-                  <source src={audioData.url} />
                   Tu navegador no soporta audio HTML5.
                 </audio>
               </div>

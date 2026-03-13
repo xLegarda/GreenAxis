@@ -7,7 +7,6 @@ import {
   Settings, 
   Wrench, 
   Newspaper, 
-  Image as ImageIcon, 
   Sliders, 
   FileText, 
   Mail,
@@ -19,7 +18,10 @@ import {
   Home,
   Users,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Library,
+  Star,
+  MessageCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -51,7 +53,7 @@ const navItems = [
   { name: 'Página Quiénes Somos', href: '/admin/quienes-somos', icon: FileText },
   { name: 'Servicios', href: '/admin/servicios', icon: Wrench },
   { name: 'Noticias', href: '/admin/noticias', icon: Newspaper },
-  { name: 'Imágenes', href: '/admin/imagenes', icon: ImageIcon },
+  { name: 'Biblioteca', href: '/admin/imagenes', icon: Library },
   { name: 'Carrusel', href: '/admin/carrusel', icon: Sliders },
   { name: 'Páginas Legales', href: '/admin/legal', icon: FileText },
   { name: 'Mensajes', href: '/admin/mensajes', icon: Mail },
@@ -159,16 +161,19 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-[#6BBE45] text-white'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                  item.external && 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
                 )}
               >
                 <Icon className="h-4 w-4" />
                 {item.name}
-                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                {isActive && !item.external && <ChevronRight className="h-4 w-4 ml-auto" />}
               </Link>
             )
           })}
@@ -261,12 +266,15 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    target={item.external ? '_blank' : undefined}
+                    rel={item.external ? 'noopener noreferrer' : undefined}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                       isActive
                         ? 'bg-[#6BBE45] text-white'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                      item.external && 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
                     )}
                   >
                     <Icon className="h-4 w-4" />

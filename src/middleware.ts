@@ -57,6 +57,7 @@ export function middleware(request: NextRequest) {
     "font-src 'self' data:",
     "connect-src 'self' https://www.google-analytics.com blob:",
     "frame-src 'self' https://www.google.com https://maps.google.com",
+    "media-src 'self' https://res.cloudinary.com blob: data:",
     "frame-ancestors 'none'",
   ].join('; ')
   

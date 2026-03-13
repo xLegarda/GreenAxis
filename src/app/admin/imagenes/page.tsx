@@ -40,8 +40,14 @@ const categoryLabels: Record<string, { label: string; color: string }> = {
 
 // Helper to detect if URL is a video
 function isVideoUrl(url: string): boolean {
-  const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.ogg']
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv']
   return videoExtensions.some(ext => url.toLowerCase().endsWith(ext))
+}
+
+// Helper to detect if URL is an audio file
+function isAudioUrl(url: string): boolean {
+  const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']
+  return audioExtensions.some(ext => url.toLowerCase().endsWith(ext))
 }
 
 export default function ImagenesAdminPage() {
@@ -84,13 +90,14 @@ export default function ImagenesAdminPage() {
     if (!file) return
 
     const isVideo = file.type.startsWith('video/')
+    const isAudio = file.type.startsWith('audio/')
     
     // Check file size
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024 // 50MB for videos, 5MB for images
+    const maxSize = (isVideo || isAudio) ? 50 * 1024 * 1024 : 5 * 1024 * 1024 // 50MB for videos/audio, 5MB for images
     if (file.size > maxSize) {
       toast({ 
         title: 'Error', 
-        description: `El archivo es muy grande. Máximo ${isVideo ? '50MB' : '5MB'}.`,
+        description: `El archivo es muy grande. Máximo ${(isVideo || isAudio) ? '50MB' : '5MB'}.`,
         variant: 'destructive' 
       })
       return
@@ -111,7 +118,7 @@ export default function ImagenesAdminPage() {
       })
 
       if (response.ok) {
-        toast({ title: isVideo ? 'Video subido correctamente' : 'Imagen subida correctamente' })
+        toast({ title: isVideo ? 'Video subido correctamente' : isAudio ? 'Audio subido correctamente' : 'Imagen subida correctamente' })
         setFormData({ key: '', label: '', description: '', category: '' })
         fetchImages()
       }
@@ -131,7 +138,7 @@ export default function ImagenesAdminPage() {
       const response = await fetch(`/api/upload?key=${deleteConfirm.key}`, { method: 'DELETE' })
       if (response.ok) {
         setImages(images.filter(img => img.id !== deleteConfirm.id))
-        toast({ title: isVideoUrl(deleteConfirm.url) ? 'Video eliminado correctamente' : 'Imagen eliminada correctamente' })
+        toast({ title: isVideoUrl(deleteConfirm.url) ? 'Video eliminado correctamente' : isAudioUrl(deleteConfirm.url) ? 'Audio eliminado correctamente' : 'Imagen eliminada correctamente' })
       } else {
         toast({ title: 'Error al eliminar', variant: 'destructive' })
       }
@@ -166,9 +173,10 @@ export default function ImagenesAdminPage() {
   // Obtener categorías únicas
   const categories = [...new Set(images.map(img => img.category).filter(Boolean))]
 
-  // Count videos
+  // Count videos and audio
   const videoCount = images.filter(img => isVideoUrl(img.url)).length
-  const imageCount = images.length - videoCount
+  const audioCount = images.filter(img => isAudioUrl(img.url)).length
+  const imageCount = images.length - videoCount - audioCount
 
   if (loading) {
     return <div className="p-8 text-center text-muted-foreground">Cargando...</div>
@@ -179,7 +187,7 @@ export default function ImagenesAdminPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Biblioteca de Archivos</h1>
         <p className="text-sm text-muted-foreground">
-          Gestiona todas las imágenes y videos del sitio. Total: {imageCount} imágenes, {videoCount} videos
+          Gestiona todas las imágenes, videos y audios del sitio. Total: {imageCount} imágenes, {videoCount} videos, {audioCount} audios
         </p>
       </div>
 
@@ -205,7 +213,8 @@ export default function ImagenesAdminPage() {
                   <li>• <strong>Noticias/Blog:</strong> 1200 x 630 px (proporción 1.9:1 - ideal para redes sociales)</li>
                   <li>• <strong>Carrusel/Hero:</strong> 1920 x 800 px (proporción 2.4:1)</li>
                   <li>• <strong>Servicios:</strong> 800 x 600 px (proporción 4:3)</li>
-                  <li>• <strong>Videos:</strong> MP4 o WebP, máximo 50MB</li>
+                  <li>• <strong>Videos:</strong> MP4 o WebM, máximo 50MB</li>
+                  <li>• <strong>Audio:</strong> MP3 o WAV, máximo 50MB, bitrate 128-320 kbps</li>
                 </ul>
               </div>
             </div>
@@ -217,7 +226,7 @@ export default function ImagenesAdminPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Subir Nuevo Archivo</CardTitle>
-          <CardDescription>Sube una imagen o video al servidor. Deja la key vacía para generar una automáticamente.</CardDescription>
+          <CardDescription>Sube una imagen, video o audio al servidor. Deja la key vacía para generar una automáticamente.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -258,7 +267,7 @@ export default function ImagenesAdminPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/mp4,video/webm,video/quicktime"
+                accept="image/*,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/m4a"
                 className="hidden"
                 onChange={handleUpload}
               />
@@ -275,6 +284,7 @@ export default function ImagenesAdminPage() {
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <span><strong>Imágenes:</strong> JPG, PNG, WebP, GIF, SVG | Máx. 5MB</span>
             <span><strong>Videos:</strong> MP4, WebM, MOV | Máx. 50MB</span>
+            <span><strong>Audio:</strong> MP3, WAV, OGG, M4A | Máx. 50MB</span>
           </div>
         </CardContent>
       </Card>
@@ -313,10 +323,11 @@ export default function ImagenesAdminPage() {
         </div>
       </div>
 
-      {/* Images/Videos Grid */}
+      {/* Images/Videos/Audio Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredImages.map((image) => {
           const isVideo = isVideoUrl(image.url)
+          const isAudio = isAudioUrl(image.url)
           return (
             <Card key={image.id} className="overflow-hidden group">
               <CardContent className="p-0">
@@ -324,6 +335,15 @@ export default function ImagenesAdminPage() {
                   {isVideo ? (
                     <div className="w-full h-full bg-black flex items-center justify-center">
                       <Video className="h-12 w-12 text-white/60" />
+                    </div>
+                  ) : isAudio ? (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center p-4">
+                      <audio 
+                        src={image.url} 
+                        controls 
+                        preload="metadata"
+                        className="w-full"
+                      />
                     </div>
                   ) : (
                     <img 
@@ -366,6 +386,13 @@ export default function ImagenesAdminPage() {
                     <div className="absolute top-2 right-2">
                       <Badge className="bg-red-500 text-white text-[10px]">
                         Video
+                      </Badge>
+                    </div>
+                  )}
+                  {isAudio && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className="bg-purple-500 text-white text-[10px]">
+                        Audio
                       </Badge>
                     </div>
                   )}
@@ -415,7 +442,7 @@ export default function ImagenesAdminPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              {deleteConfirm && isVideoUrl(deleteConfirm.url) ? 'Eliminar video' : 'Eliminar imagen'}
+              {deleteConfirm && (isVideoUrl(deleteConfirm.url) ? 'Eliminar video' : isAudioUrl(deleteConfirm.url) ? 'Eliminar audio' : 'Eliminar imagen')}
             </DialogTitle>
             <DialogDescription>
               Esta acción no se puede deshacer. El archivo será eliminado permanentemente.
@@ -429,6 +456,15 @@ export default function ImagenesAdminPage() {
                   {isVideoUrl(deleteConfirm.url) ? (
                     <div className="h-48 w-48 bg-black flex items-center justify-center">
                       <Video className="h-16 w-16 text-white/60" />
+                    </div>
+                  ) : isAudioUrl(deleteConfirm.url) ? (
+                    <div className="h-48 w-64 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center p-4">
+                      <audio 
+                        src={deleteConfirm.url} 
+                        controls 
+                        preload="metadata"
+                        className="w-full"
+                      />
                     </div>
                   ) : (
                     <img 
@@ -462,7 +498,7 @@ export default function ImagenesAdminPage() {
               </div>
               
               <p className="text-sm text-muted-foreground text-center">
-                ¿Estás seguro de que deseas eliminar {isVideoUrl(deleteConfirm.url) ? 'este video' : 'esta imagen'}?
+                ¿Estás seguro de que deseas eliminar {isVideoUrl(deleteConfirm.url) ? 'este video' : isAudioUrl(deleteConfirm.url) ? 'este audio' : 'esta imagen'}?
               </p>
             </div>
           )}
