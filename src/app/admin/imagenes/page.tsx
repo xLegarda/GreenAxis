@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { ExternalMediaForm } from '@/components/external-media-form'
 
 interface SiteImage {
   id: string
@@ -60,6 +61,7 @@ export default function ImagenesAdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<SiteImage | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [externalFormOpen, setExternalFormOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -348,6 +350,16 @@ export default function ImagenesAdminPage() {
             </Button>
           ))}
         </div>
+        
+        {/* External Media Button */}
+        <Button
+          variant="outline"
+          onClick={() => setExternalFormOpen(true)}
+          className="gap-2 whitespace-nowrap"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Archivo externo
+        </Button>
       </div>
 
       {/* Images/Videos/Audio Grid */}
@@ -550,6 +562,16 @@ export default function ImagenesAdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* External Media Form */}
+      <ExternalMediaForm
+        open={externalFormOpen}
+        onOpenChange={setExternalFormOpen}
+        onSuccess={() => {
+          // Refresh images list after successful registration
+          fetchImages()
+        }}
+      />
     </div>
   )
 }
