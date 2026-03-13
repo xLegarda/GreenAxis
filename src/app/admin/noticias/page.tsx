@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Save, Calendar, ImagePlus, Info, AlertTriangle, Video, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, Calendar, Info, AlertTriangle, Video, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 import { EditorJSComponent, editorDataToText } from '@/components/editor-js'
 import type EditorJS from '@editorjs/editorjs'
+import { MediaPicker } from '@/components/media-picker'
 
 interface News {
   id: string
@@ -40,7 +41,6 @@ export default function NoticiasAdminPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingNews, setEditingNews] = useState<News | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<News | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<EditorJS | null>(null)
   const editorDataRef = useRef<any>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -146,37 +146,6 @@ export default function NoticiasAdminPage() {
       fetchNews()
     } catch (error) {
       toast({ title: 'Error al eliminar', variant: 'destructive' })
-    }
-  }
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'Error', description: 'El archivo es muy grande. Máximo 5MB.', variant: 'destructive' })
-      return
-    }
-
-    const formDataFile = new FormData()
-    formDataFile.append('file', file)
-    formDataFile.append('category', 'news')
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formDataFile
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setFormData(prev => ({ ...prev, imageUrl: data.url }))
-        toast({ title: 'Imagen subida correctamente' })
-      }
-    } catch (error) {
-      console.error('Error uploading:', error)
-      toast({ title: 'Error al subir imagen', variant: 'destructive' })
     }
   }
 
@@ -401,65 +370,22 @@ export default function NoticiasAdminPage() {
 
             {/* Featured Image */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Imagen destacada</Label>
-              </div>
+              <Label>Imagen destacada</Label>
               
-              {/* Image Format Info */}
-              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
-                <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                <div className="text-blue-700 dark:text-blue-300">
-                  <p className="font-medium">Formato recomendado para noticias:</p>
-                  <ul className="text-xs mt-1 space-y-0.5 text-blue-600 dark:text-blue-400">
-                    <li>• Tamaño: <strong>1200 x 630 píxeles</strong> (proporción 1.9:1 - ideal para redes sociales)</li>
-                    <li>• Formato: <strong>JPG, PNG o WebP</strong></li>
-                    <li>• Peso máximo: <strong>5 MB</strong></li>
-                    <li>• Esta imagen aparecerá como vista previa al compartir en redes sociales</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={handleFileUpload}
+              <MediaPicker
+                value={formData.imageUrl}
+                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                accept="image"
+                category="news"
+                keyPrefix={editingNews ? `news-${editingNews.id}` : 'news-new'}
+                recommendedSize="1200x630px"
+                formatHint="Proporción 1.9:1 - ideal para redes sociales. Esta imagen aparecerá como vista previa al compartir."
+                maxSizeMB={5}
               />
               
-              {formData.imageUrl ? (
-                <div className="relative group">
-                  <div className="w-full h-48 rounded-xl overflow-hidden bg-muted border-2 border-dashed border-muted-foreground/20">
-                    <img 
-                      src={formData.imageUrl} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
-                      Cambiar
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Eliminar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-48 rounded-xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary"
-                >
-                  <ImagePlus className="h-10 w-10" />
-                  <span className="text-sm font-medium">Haz clic para subir imagen</span>
-                  <span className="text-xs">JPG, PNG o WebP - Máximo 5MB</span>
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Recomendado: 1200x630px (proporción 1.9:1) - ideal para redes sociales
+              </p>
             </div>
 
             {/* Editor.js Content */}

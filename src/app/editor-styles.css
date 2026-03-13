@@ -155,6 +155,29 @@
   margin: 10px 0;
 }
 
+/* EditorJS icon size adjustments for video and audio tools - Requirements: 6.1, 6.2, 6.5 */
+.ce-toolbar__plus svg,
+.ce-popover__item-icon svg {
+  max-width: 32px !important;
+  max-height: 32px !important;
+}
+
+/* Specifically target video and audio tool icons in the toolbox */
+.ce-popover__item[data-item-name="videoLocal"] .ce-popover__item-icon svg,
+.ce-popover__item[data-item-name="audioLocal"] .ce-popover__item-icon svg {
+  max-width: 32px !important;
+  max-height: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* Ensure icons in upload prompts are appropriately sized */
+.video-upload-prompt svg,
+.audio-upload-prompt svg {
+  max-width: 48px !important;
+  max-height: 48px !important;
+}
+
 /* Dark mode */
 .dark .ce-toolbar__actions {
   background: #1f2937;

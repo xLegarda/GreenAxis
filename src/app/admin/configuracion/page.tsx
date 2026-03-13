@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Save, Upload, X, Image as ImageIcon } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/hooks/use-toast'
+import { MediaPicker } from '@/components/media-picker'
 
 interface PlatformConfig {
   id: string
@@ -45,8 +46,6 @@ export default function ConfiguracionPage() {
   const [config, setConfig] = useState<PlatformConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const logoInputRef = useRef<HTMLInputElement>(null)
-  const faviconInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchConfig()
@@ -88,32 +87,6 @@ export default function ConfiguracionPage() {
       toast({ title: 'Error', description: 'No se pudo guardar la configuración', variant: 'destructive' })
     } finally {
       setSaving(false)
-    }
-  }
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'faviconUrl') => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('key', field === 'logoUrl' ? 'logo' : 'favicon')
-    formData.append('label', field === 'logoUrl' ? 'Logo del sitio' : 'Favicon')
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setConfig(prev => prev ? { ...prev, [field]: data.url } : null)
-        toast({ title: 'Imagen actualizada', description: 'Se subió correctamente' })
-      }
-    } catch (error) {
-      console.error('Error uploading:', error)
-      toast({ title: 'Error', description: 'No se pudo subir la imagen', variant: 'destructive' })
     }
   }
 
@@ -160,68 +133,29 @@ export default function ConfiguracionPage() {
               {/* Logo */}
               <div className="space-y-2">
                 <Label>Logo del Sitio</Label>
-                <div className="flex items-start gap-4">
-                  {config?.logoUrl ? (
-                    <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-accent">
-                      <img src={config.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                      <button
-                        onClick={() => updateConfig('logoUrl', '')}
-                        className="absolute top-1 right-1 p-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/80"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => logoInputRef.current?.click()}
-                      className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors"
-                    >
-                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Subir logo</span>
-                    </button>
-                  )}
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, 'logoUrl')}
-                  />
-                </div>
+                <MediaPicker
+                  value={config?.logoUrl || ''}
+                  onChange={(url) => updateConfig('logoUrl', url)}
+                  accept="image"
+                  category="config"
+                  fixedKey="config-logo"
+                  recommendedSize="200x60px"
+                  formatHint="Formato PNG o SVG con fondo transparente para mejor resultado"
+                />
               </div>
 
               {/* Favicon */}
               <div className="space-y-2">
                 <Label>Favicon (icono de pestaña)</Label>
-                <div className="flex items-start gap-4">
-                  {config?.faviconUrl ? (
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-accent">
-                      <img src={config.faviconUrl} alt="Favicon" className="w-full h-full object-contain" />
-                      <button
-                        onClick={() => updateConfig('faviconUrl', '')}
-                        className="absolute top-0 right-0 p-0.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/80"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => faviconInputRef.current?.click()}
-                      className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 hover:border-primary transition-colors"
-                    >
-                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">Favicon</span>
-                    </button>
-                  )}
-                  <input
-                    ref={faviconInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, 'faviconUrl')}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Recomendado: 32x32 o 64x64 píxeles en formato PNG o ICO</p>
+                <MediaPicker
+                  value={config?.faviconUrl || ''}
+                  onChange={(url) => updateConfig('faviconUrl', url)}
+                  accept="image"
+                  category="config"
+                  fixedKey="config-favicon"
+                  recommendedSize="32x32 o 64x64 píxeles"
+                  formatHint="Formato PNG o ICO. El favicon aparece en la pestaña del navegador"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

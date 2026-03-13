@@ -5,6 +5,8 @@
 README.md
 /public/uploads/
 /.zscripts
+/public/logo.svg
+DOCUMENTACION-PROYECTO.md
 
 # dependencies
 node_modules

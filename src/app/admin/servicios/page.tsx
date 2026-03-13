@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Plus, Pencil, Trash2, Save, GripVertical, Eye, EyeOff, Upload, ImagePlus, Sparkles, FileText, Info } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Pencil, Trash2, Save, GripVertical, Eye, EyeOff, Sparkles, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { MediaPicker } from '@/components/media-picker'
 import { toast } from '@/hooks/use-toast'
 import { 
   Leaf, Recycle, TreePine, Droplets, Wind, Building2, 
@@ -71,9 +72,7 @@ export default function ServiciosAdminPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -170,42 +169,9 @@ export default function ServiciosAdminPage() {
     }
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'Error', description: 'La imagen no puede superar 5MB', variant: 'destructive' })
-      return
-    }
-
-    // Mostrar preview
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string)
-    }
-    reader.readAsDataURL(file)
-
-    const uploadData = new FormData()
-    uploadData.append('file', file)
-    uploadData.append('category', 'services')
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadData
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setFormData(prev => ({ ...prev, imageUrl: data.url }))
-        toast({ title: 'Imagen subida correctamente' })
-      }
-    } catch (error) {
-      console.error('Error uploading:', error)
-      toast({ title: 'Error al subir imagen', variant: 'destructive' })
-    }
+  const handleImageChange = (url: string) => {
+    setFormData(prev => ({ ...prev, imageUrl: url }))
+    setImagePreview(url || null)
   }
 
   const resetForm = () => {
@@ -218,7 +184,6 @@ export default function ServiciosAdminPage() {
       active: true,
       featured: false,
     })
-    setImagePreview(null)
   }
 
   const openEditDialog = (service: Service) => {
@@ -232,7 +197,6 @@ export default function ServiciosAdminPage() {
       active: service.active,
       featured: service.featured,
     })
-    setImagePreview(service.imageUrl || null)
     setDialogOpen(true)
   }
 
@@ -516,62 +480,16 @@ export default function ServiciosAdminPage() {
                 <span className="text-xs text-muted-foreground">Recomendado: 800x600px</span>
               </div>
               
-              {/* Image Format Info */}
-              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
-                <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                <div className="text-blue-700 dark:text-blue-300">
-                  <p className="font-medium">Formato recomendado para imágenes:</p>
-                  <ul className="text-xs mt-1 space-y-0.5 text-blue-600 dark:text-blue-400">
-                    <li>• Tamaño: <strong>800 x 600 píxeles</strong> (proporción 4:3)</li>
-                    <li>• Formato: <strong>JPG, PNG o WebP</strong></li>
-                    <li>• Peso máximo: <strong>5 MB</strong></li>
-                    <li>• Si no subes imagen, se mostrará el icono seleccionado</li>
-                  </ul>
-                </div>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={handleFileUpload}
+              <MediaPicker
+                value={formData.imageUrl}
+                onChange={handleImageChange}
+                accept="image"
+                category="services"
+                keyPrefix="service"
+                recommendedSize="800 x 600 píxeles (proporción 4:3)"
+                formatHint="JPG, PNG o WebP - Peso máximo: 5 MB - Si no subes imagen, se mostrará el icono seleccionado"
+                maxSizeMB={5}
               />
-              
-              {imagePreview || formData.imageUrl ? (
-                <div className="relative group">
-                  <div className="w-full h-48 rounded-xl overflow-hidden bg-muted border-2 border-dashed border-muted-foreground/20">
-                    <img 
-                      src={imagePreview || formData.imageUrl} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Cambiar
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => { setFormData({ ...formData, imageUrl: '' }); setImagePreview(null); }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Eliminar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-48 rounded-xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary"
-                >
-                  <ImagePlus className="h-10 w-10" />
-                  <span className="text-sm font-medium">Haz clic para subir imagen</span>
-                  <span className="text-xs">JPG, PNG o WebP - Máximo 5MB</span>
-                </div>
-              )}
             </div>
 
             {/* Toggles */}

@@ -151,14 +151,17 @@ export async function POST(request: NextRequest) {
       data: { used: true }
     })
     
-    // Generar nuevo token
-    const token = generateResetToken()
+    // Generar nuevo token en texto plano (para el email)
+    const plainToken = generateResetToken()
+    // Hashear el token para guardarlo en BD
+    const hashedToken = crypto.createHash('sha256').update(plainToken).digest('hex')
+    
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
     
     await db.passwordResetToken.create({
       data: {
         email: email.toLowerCase(),
-        token,
+        token: hashedToken, // Guardamos el hash, no el texto plano
         expiresAt,
       }
     })
@@ -168,8 +171,8 @@ export async function POST(request: NextRequest) {
                     request.headers.get('origin') || 
                     'https://greenaxis.com.co'
     
-    // Enviar email
-    await sendResetEmail(email, token, baseUrl)
+    // Enviar email con el token en TEXTO PLANO
+    await sendResetEmail(email, plainToken, baseUrl)
     
     return NextResponse.json({ 
       success: true, 
@@ -191,8 +194,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ valid: false, error: 'Token requerido' }, { status: 400 })
     }
     
+    // Hashear el token recibido de la URL para buscarlo en la BD
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
+    
     const resetToken = await db.passwordResetToken.findUnique({
-      where: { token }
+      where: { token: hashedToken }
     })
     
     if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
@@ -221,8 +227,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 })
     }
     
+    // Hashear el token recibido de la petición para buscarlo en la BD
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
+    
     const resetToken = await db.passwordResetToken.findUnique({
-      where: { token }
+      where: { token: hashedToken }
     })
     
     if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
@@ -238,9 +247,9 @@ export async function PUT(request: NextRequest) {
       data: { password: hashedPassword }
     })
     
-    // Marcar token como usado
+    // Marcar token como usado (buscando por el hash)
     await db.passwordResetToken.update({
-      where: { token },
+      where: { token: hashedToken },
       data: { used: true }
     })
     

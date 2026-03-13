@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import type EditorJS from '@editorjs/editorjs'
+import { createRoot } from 'react-dom/client'
+import { MediaPicker } from './media-picker'
 
 interface EditorProps {
   data?: any
@@ -164,6 +166,151 @@ const i18nConfig = {
   }
 }
 
+/**
+ * Helper function to apply dark mode styles to an element
+ */
+function applyThemeStyles(element: HTMLElement, lightStyles: Record<string, string>, darkStyles: Record<string, string>) {
+  const isDark = document.documentElement.classList.contains('dark')
+  const styles = isDark ? darkStyles : lightStyles
+  
+  Object.entries(styles).forEach(([property, value]) => {
+    element.style.setProperty(property, value)
+  })
+}
+
+/**
+ * Helper function to open MediaPicker modal and return selected URL
+ * This is used by EditorJS tools to select media from library
+ */
+function openMediaPickerModal(accept: 'image' | 'video' | 'audio'): Promise<string | null> {
+  return new Promise((resolve) => {
+    // Create modal container
+    const modalContainer = document.createElement('div')
+    modalContainer.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+    `
+
+    // Create modal content
+    const modalContent = document.createElement('div')
+    modalContent.style.cssText = `
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow: auto;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    `
+    
+    // Check for dark mode and apply dark styles
+    const observer = new MutationObserver(() => {
+      if (document.documentElement.classList.contains('dark')) {
+        modalContent.style.background = '#1f2937'
+        modalContent.style.color = '#ffffff'
+        modalContent.style.borderColor = '#374151'
+      } else {
+        modalContent.style.background = '#ffffff'
+        modalContent.style.color = '#000000'
+        modalContent.style.borderColor = '#e5e7eb'
+      }
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    
+    // Apply initial theme
+    if (document.documentElement.classList.contains('dark')) {
+      modalContent.style.background = '#1f2937'
+      modalContent.style.color = '#ffffff'
+      modalContent.style.borderColor = '#374151'
+    }
+
+    // Create header
+    const header = document.createElement('div')
+    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;'
+    
+    const title = document.createElement('h2')
+    title.textContent = `Seleccionar ${accept === 'image' ? 'Imagen' : accept === 'video' ? 'Video' : 'Audio'}`
+    title.style.cssText = 'font-size: 20px; font-weight: 600; margin: 0;'
+    title.style.color = document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000'
+    
+    const closeButton = document.createElement('button')
+    closeButton.textContent = '×'
+    closeButton.style.cssText = `
+      background: none;
+      border: none;
+      font-size: 32px;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: opacity 0.2s;
+    `
+    closeButton.style.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
+    
+    const closeModal = () => {
+      if (modalContainer.parentNode) {
+        modalContainer.parentNode.removeChild(modalContainer)
+      }
+      resolve(null)
+    }
+    
+    closeButton.addEventListener('click', closeModal)
+
+    header.appendChild(title)
+    header.appendChild(closeButton)
+    modalContent.appendChild(header)
+
+    // Create picker container
+    const pickerContainer = document.createElement('div')
+    modalContent.appendChild(pickerContainer)
+
+    modalContainer.appendChild(modalContent)
+    document.body.appendChild(modalContainer)
+
+    // Close on backdrop click
+    modalContainer.addEventListener('click', (e) => {
+      if (e.target === modalContainer) {
+        closeModal()
+      }
+    })
+
+    // Render MediaPicker using React
+    const root = createRoot(pickerContainer)
+    root.render(
+      <MediaPicker
+        value=""
+        onChange={(url) => {
+          if (modalContainer.parentNode) {
+            modalContainer.parentNode.removeChild(modalContainer)
+          }
+          resolve(url)
+        }}
+        accept={accept}
+        category={accept === 'image' ? 'news' : accept === 'video' ? 'videos' : 'audio'}
+        keyPrefix={accept}
+        showUpload={true}
+        showLibrary={true}
+      />
+    )
+  })
+}
+
 export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) {
   const editorRef = useRef<EditorJS | null>(null)
   const holderRef = useRef<HTMLDivElement>(null)
@@ -205,7 +352,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
         const EditorJS = (await import('@editorjs/editorjs')).default
         const Titulos = await import('./editor-js-header-tools')
         const List = (await import('@editorjs/list')).default
-        const ImageTool = (await import('@editorjs/image')).default
+        const ImageTool = (await import('./editor-js-image-tool')).default
         const Quote = (await import('@editorjs/quote')).default
         const Paragraph = (await import('@editorjs/paragraph')).default
         const Embed = (await import('@editorjs/embed')).default
@@ -252,8 +399,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               }
             },
             image: {
-              class: ImageTool,
-              inlineToolbar: true,
+              class: ImageTool as any,
               config: {
                 uploader: {
                   async uploadByFile(file: File) {
@@ -275,9 +421,12 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       console.error('Upload error:', e)
                     }
                     return { success: 0 }
-                  },
-                  async uploadByUrl(url: string) {
-                    return { success: 1, file: { url } }
+                  }
+                },
+                libraryPicker: {
+                  enabled: true,
+                  onSelect: async () => {
+                    return await openMediaPickerModal('image')
                   }
                 }
               }
@@ -337,6 +486,12 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                     }
                     return { success: 0 }
                   }
+                },
+                libraryPicker: {
+                  enabled: true,
+                  onSelect: async () => {
+                    return await openMediaPickerModal('video')
+                  }
                 }
               }
             },
@@ -363,6 +518,12 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                       console.error('Audio upload error:', e)
                     }
                     return { success: 0 }
+                  }
+                },
+                libraryPicker: {
+                  enabled: true,
+                  onSelect: async () => {
+                    return await openMediaPickerModal('audio')
                   }
                 }
               }

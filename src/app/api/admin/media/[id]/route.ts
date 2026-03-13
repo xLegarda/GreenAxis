@@ -1,0 +1,319 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { getCurrentAdmin } from '@/lib/auth'
+import { findMediaReferences, updateMediaReferences } from '@/lib/media-references'
+import { v2 as cloudinary } from 'cloudinary'
+import { unlink } from 'fs/promises'
+import { existsSync } from 'fs'
+import path from 'path'
+
+// Configure Cloudinary
+if (process.env.CLOUDINARY_URL) {
+  const url = new URL(process.env.CLOUDINARY_URL)
+  cloudinary.config({
+    cloud_name: url.hostname,
+    api_key: url.username,
+    api_secret: url.password,
+    secure: true
+  })
+} else {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
+  })
+}
+
+// Detect if we're in production (Vercel)
+const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
+
+/**
+ * Extract Cloudinary public_id from URL
+ * Example: https://res.cloudinary.com/cloud/image/upload/v123/folder/file.jpg
+ * Returns: folder/file
+ */
+function extractCloudinaryPublicId(url: string): string | null {
+  if (!url.includes('cloudinary.com')) {
+    return null
+  }
+  
+  try {
+    // Split by '/' and find the parts after 'upload'
+    const parts = url.split('/')
+    const uploadIndex = parts.findIndex(part => part === 'upload')
+    
+    if (uploadIndex === -1 || uploadIndex >= parts.length - 1) {
+      return null
+    }
+    
+    // Skip version if present (starts with 'v')
+    let startIndex = uploadIndex + 1
+    if (parts[startIndex].startsWith('v') && !isNaN(Number(parts[startIndex].substring(1)))) {
+      startIndex++
+    }
+    
+    // Get remaining parts and remove extension from last part
+    const publicIdParts = parts.slice(startIndex)
+    const lastPart = publicIdParts[publicIdParts.length - 1]
+    publicIdParts[publicIdParts.length - 1] = lastPart.split('.')[0]
+    
+    return publicIdParts.join('/')
+  } catch (error) {
+    console.error('Error extracting Cloudinary public_id:', error)
+    return null
+  }
+}
+
+/**
+ * Delete file from storage (Cloudinary or filesystem)
+ * Handles missing file errors gracefully
+ */
+async function deleteFileFromStorage(url: string): Promise<void> {
+  try {
+    if (isProduction && url.includes('cloudinary.com')) {
+      // Production: Delete from Cloudinary
+      const publicId = extractCloudinaryPublicId(url)
+      
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId)
+        } catch (cloudinaryError) {
+          // Try as video if image deletion fails
+          try {
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'video' })
+          } catch (videoError) {
+            // Try as raw if video deletion fails
+            try {
+              await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' })
+            } catch (rawError) {
+              console.warn('Cloudinary deletion failed for all resource types:', publicId)
+              // Continue anyway - file might already be deleted
+            }
+          }
+        }
+      }
+    } else if (!isProduction && url.startsWith('/uploads/')) {
+      // Development: Delete from local filesystem
+      const filePath = path.join(process.cwd(), 'public', url)
+      
+      if (existsSync(filePath)) {
+        try {
+          await unlink(filePath)
+        } catch (fsError) {
+          console.warn('Filesystem deletion failed:', filePath, fsError)
+          // Continue anyway - file might already be deleted
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Error deleting file from storage (continuing):', error)
+    // Don't throw - we want to continue with DB deletion
+  }
+}
+
+/**
+ * PUT /api/admin/media/:id
+ * Update media metadata
+ * 
+ * Request Body:
+ * - label (string, optional): New label/name for the media
+ * - description (string, optional): New description
+ * - category (string, optional): New category
+ * - alt (string, optional): New alt text
+ */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  // Check authentication
+  const admin = await getCurrentAdmin()
+  if (!admin) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  try {
+    const { id } = params
+    const body = await request.json()
+    const { label, description, category, alt } = body
+
+    // Validate that at least one field is being updated
+    if (!label && !description && category === undefined && alt === undefined) {
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Debe proporcionar al menos un campo para actualizar' 
+        },
+        { status: 400 }
+      )
+    }
+
+    // Check if media exists
+    const existingMedia = await db.siteImage.findUnique({
+      where: { id }
+    })
+
+    if (!existingMedia) {
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Archivo no encontrado' 
+        },
+        { status: 404 }
+      )
+    }
+
+    // Build update data object, preserving existing values if not provided
+    const updateData: {
+      label?: string
+      description?: string | null
+      category?: string | null
+      alt?: string | null
+      updatedAt: Date
+    } = {
+      updatedAt: new Date()
+    }
+
+    if (label !== undefined) {
+      updateData.label = label
+    }
+    if (description !== undefined) {
+      updateData.description = description
+    }
+    if (category !== undefined) {
+      updateData.category = category
+    }
+    if (alt !== undefined) {
+      updateData.alt = alt
+    }
+
+    // Update the SiteImage record
+    const updatedMedia = await db.siteImage.update({
+      where: { id },
+      data: updateData
+    })
+
+    return NextResponse.json({
+      success: true,
+      media: updatedMedia
+    })
+  } catch (error) {
+    console.error('Error updating media:', error)
+    return NextResponse.json(
+      { 
+        success: false,
+        message: 'Error al actualizar archivo',
+        error: 'internal_error'
+      },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * DELETE /api/admin/media/:id
+ * Delete media file with reference checking
+ * 
+ * Query Parameters:
+ * - force (boolean, default: false): Force delete even if in use
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  // Check authentication
+  const admin = await getCurrentAdmin()
+  if (!admin) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  try {
+    const { id } = params
+    const { searchParams } = new URL(request.url)
+    const force = searchParams.get('force') === 'true'
+
+    // Check if media exists in database
+    const media = await db.siteImage.findUnique({
+      where: { id }
+    })
+
+    if (!media) {
+      return NextResponse.json(
+        { 
+          success: false,
+          deleted: false,
+          message: 'Archivo no encontrado' 
+        },
+        { status: 404 }
+      )
+    }
+
+    // If not force mode, check for references
+    if (!force) {
+      try {
+        const references = await findMediaReferences(media.url)
+        
+        if (references.length > 0) {
+          // File is in use - return references without deleting
+          return NextResponse.json({
+            success: false,
+            deleted: false,
+            message: `Este archivo está siendo usado en ${references.length} lugar${references.length > 1 ? 'es' : ''}`,
+            references: references.map(ref => ({
+              table: ref.table,
+              id: ref.id,
+              field: ref.field,
+              displayName: ref.displayName,
+            }))
+          })
+        }
+      } catch (refError) {
+        console.error('Error checking references:', refError)
+        // If reference check fails, assume file is in use to be safe
+        return NextResponse.json({
+          success: false,
+          deleted: false,
+          message: 'No se pudo verificar el uso del archivo. Por seguridad, no se eliminará.',
+          error: 'reference_check_failed'
+        }, { status: 500 })
+      }
+    }
+
+    // Delete from storage (Cloudinary or filesystem)
+    // This handles missing file errors gracefully
+    await deleteFileFromStorage(media.url)
+
+    // Delete SiteImage record from database
+    await db.siteImage.delete({
+      where: { id }
+    })
+
+    // If force mode and we need to clear references
+    if (force) {
+      try {
+        await updateMediaReferences(media.url, '')
+      } catch (updateError) {
+        console.error('Error updating references after force delete:', updateError)
+        // Don't fail the deletion if reference update fails
+        // The file is already deleted, just log the error
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      deleted: true,
+      message: 'Archivo eliminado correctamente'
+    })
+  } catch (error) {
+    console.error('Error deleting media:', error)
+    return NextResponse.json(
+      { 
+        success: false,
+        deleted: false,
+        message: 'Error al eliminar archivo',
+        error: 'internal_error'
+      },
+      { status: 500 }
+    )
+  }
+}

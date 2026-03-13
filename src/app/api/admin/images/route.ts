@@ -5,8 +5,13 @@ import { getCurrentAdmin } from '@/lib/auth'
 import { existsSync, unlink } from 'fs'
 import path from 'path'
 
-// GET - Listar todas las imágenes (público para que funcione en admin)
+// GET - Listar todas las imágenes (protegido para administradores)
 export async function GET() {
+  const admin = await getCurrentAdmin()
+  if (!admin) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
   try {
     const images = await db.siteImage.findMany({
       orderBy: { createdAt: 'desc' }

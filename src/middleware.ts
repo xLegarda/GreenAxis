@@ -1,31 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Rate limiting para /api/contacto
-const contactRateLimit = new Map<string, { count: number; resetTime: number }>()
-
 export function middleware(request: NextRequest) {
-  // Rate limiting solo para /api/contacto
-  if (request.nextUrl.pathname === '/api/contacto' && request.method === 'POST') {
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown'
-    const now = Date.now()
-    
-    const limit = contactRateLimit.get(ip)
-    if (limit && now < limit.resetTime) {
-      if (limit.count >= 5) {
-        return NextResponse.json(
-          { error: 'Demasiadas solicitudes, intenta en unos minutos' },
-          { status: 429 }
-        )
-      }
-      limit.count++
-    } else {
-      contactRateLimit.set(ip, { count: 1, resetTime: now + 60000 }) // 1 minuto
-    }
-  }
-  
+
   const response = NextResponse.next()
   
   // A02: Security Headers
@@ -45,7 +22,12 @@ export function middleware(request: NextRequest) {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   
   // Strict-Transport-Security: Fuerza HTTPS
-  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  
+  // OWASP Cross-Origin Headers: Defienden contra ataques Spectre y robos de datos a través de recursos cruzados
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
+  response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp')
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-site')
   
   // Content-Security-Policy: Define qué recursos pueden cargarse
   // Configuración permisiva para sitios corporativos

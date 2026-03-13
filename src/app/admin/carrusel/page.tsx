@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Plus, Pencil, Trash2, Save, Eye, EyeOff, Link, Palette, Sparkles, ImagePlus, Info, ExternalLink } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Pencil, Trash2, Save, Link, Palette, Sparkles, ImagePlus, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,6 +18,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
+import { MediaPicker } from '@/components/media-picker'
 
 interface CarouselSlide {
   id: string
@@ -40,7 +41,6 @@ export default function CarruselAdminPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingSlide, setEditingSlide] = useState<CarouselSlide | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -112,31 +112,6 @@ export default function CarruselAdminPage() {
       fetchSlides()
     } catch (error) {
       toast({ title: 'Error al eliminar', variant: 'destructive' })
-    }
-  }
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const uploadData = new FormData()
-    uploadData.append('file', file)
-    uploadData.append('category', 'carousel')
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadData
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setFormData(prev => ({ ...prev, imageUrl: data.url }))
-        toast({ title: 'Imagen subida correctamente' })
-      }
-    } catch (error) {
-      console.error('Error uploading:', error)
-      toast({ title: 'Error al subir imagen', variant: 'destructive' })
     }
   }
 
@@ -310,45 +285,18 @@ export default function CarruselAdminPage() {
           <div className="space-y-6 py-4">
             {/* Image Upload */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Imagen del Slide *</Label>
-                <span className="text-xs text-muted-foreground">1920 x 700px recomendado</span>
-              </div>
+              <Label>Imagen del Slide *</Label>
               
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={handleFileUpload}
+              <MediaPicker
+                value={formData.imageUrl}
+                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                accept="image"
+                category="carousel"
+                keyPrefix={editingSlide ? `carousel-${editingSlide.id}` : 'carousel-new'}
+                recommendedSize="1920x700px"
+                formatHint="Proporción 2.7:1 - El contenido importante debe estar a la izquierda (60% del ancho)"
+                maxSizeMB={5}
               />
-              
-              {formData.imageUrl ? (
-                <div className="relative group">
-                  <div className="w-full h-40 rounded-xl overflow-hidden bg-muted">
-                    <img src={formData.imageUrl} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
-                      <ImagePlus className="h-4 w-4 mr-2" />
-                      Cambiar
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => setFormData({ ...formData, imageUrl: '' })}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Quitar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-40 rounded-xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary"
-                >
-                  <ImagePlus className="h-10 w-10" />
-                  <span className="text-sm font-medium">Haz clic para subir imagen</span>
-                  <span className="text-xs">JPG, PNG o WebP - Máximo 2MB</span>
-                </div>
-              )}
             </div>
 
             {/* Text Content */}

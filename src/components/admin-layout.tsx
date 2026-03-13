@@ -19,9 +19,7 @@ import {
   Users,
   Trash2,
   AlertTriangle,
-  Library,
-  Star,
-  MessageCircle
+  Library
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -34,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface Admin {
   id: string
@@ -133,22 +132,25 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r">
         <div className="p-4 border-b">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative h-10 w-auto">
-              <Image
-                src={logoUrl || '/logo.png'}
-                alt="Logo"
-                width={120}
-                height={40}
-                className="h-10 w-auto object-contain"
-                priority
-              />
-            </div>
-            <div>
-              <span className="font-bold text-foreground">Admin</span>
-              <p className="text-xs text-muted-foreground">Panel de control</p>
-            </div>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="relative h-10 w-auto">
+                <Image
+                  src={logoUrl || '/logo.png'}
+                  alt="Logo"
+                  width={120}
+                  height={40}
+                  className="h-10 w-auto object-contain"
+                  priority
+                />
+              </div>
+              <div>
+                <span className="font-bold text-foreground">Admin</span>
+                <p className="text-xs text-muted-foreground">Panel de control</p>
+              </div>
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
         
         <nav className="flex-1 p-4 space-y-1">
@@ -161,19 +163,16 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                target={item.external ? '_blank' : undefined}
-                rel={item.external ? 'noopener noreferrer' : undefined}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-[#6BBE45] text-white'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                  item.external && 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 )}
               >
                 <Icon className="h-4 w-4" />
                 {item.name}
-                {isActive && !item.external && <ChevronRight className="h-4 w-4 ml-auto" />}
+                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
               </Link>
             )
           })}
@@ -233,6 +232,7 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
           </Link>
           
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="outline" size="sm" asChild>
               <Link href="/" target="_blank">
                 <Home className="h-4 w-4" />
@@ -266,15 +266,12 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    target={item.external ? '_blank' : undefined}
-                    rel={item.external ? 'noopener noreferrer' : undefined}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                       isActive
                         ? 'bg-[#6BBE45] text-white'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                      item.external && 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     )}
                   >
                     <Icon className="h-4 w-4" />

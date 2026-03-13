@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   output: "standalone",
   /* config options here */
   typescript: {
@@ -16,6 +17,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: '*.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
       },
     ],
   },

@@ -124,6 +124,29 @@ function getFileCategory(mimeType: string): 'image' | 'video' | 'audio' {
   return 'image'
 }
 
+// Normalizar nombre de archivo para detección de duplicados
+// Remueve extensión, convierte a minúsculas, remueve patrones de timestamp
+function normalizeFilename(filename: string): string {
+  // Remover extensión
+  const nameWithoutExt = filename.replace(/\.[^/.]+$/, '')
+  
+  // Convertir a minúsculas
+  let normalized = nameWithoutExt.toLowerCase()
+  
+  // Remover patrones de timestamp comunes
+  // Ejemplos: 1234567890-, 2024-01-01-, 20240101-, etc.
+  normalized = normalized.replace(/\d{10,13}-/g, '') // Unix timestamp con guión
+  normalized = normalized.replace(/\d{4}-\d{2}-\d{2}-/g, '') // Fecha YYYY-MM-DD-
+  normalized = normalized.replace(/\d{8}-/g, '') // Fecha YYYYMMDD-
+  normalized = normalized.replace(/-[a-z0-9]{6,8}$/g, '') // Hash al final
+  
+  // Remover guiones y espacios múltiples
+  normalized = normalized.replace(/[-_\s]+/g, '-')
+  normalized = normalized.trim().replace(/^-+|-+$/g, '')
+  
+  return normalized
+}
+
 export async function POST(request: NextRequest) {
   const admin = await getCurrentAdmin()
   if (!admin) {
@@ -134,9 +157,11 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const key = formData.get('key') as string
+    const fixedKey = formData.get('fixedKey') as string | null
     const label = formData.get('label') as string
     const category = formData.get('category') as string | null
     const description = formData.get('description') as string | null
+    const skipDuplicateCheck = formData.get('skipDuplicateCheck') === 'true'
     
     if (!file) {
       return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 })
@@ -173,6 +198,38 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
+    // TASK 4.3: Normalize filename and check for duplicates (unless skipped)
+    if (!skipDuplicateCheck) {
+      const normalizedName = normalizeFilename(file.name)
+      
+      // Query SiteImage for files with similar normalized names
+      const allImages = await db.siteImage.findMany()
+      const duplicates = allImages.filter(img => {
+        const imgNormalizedName = normalizeFilename(img.label)
+        return imgNormalizedName === normalizedName && img.key !== fixedKey
+      })
+      
+      // If duplicates found, return duplicate object in response with suggestions
+      if (duplicates.length > 0) {
+        const suggestions = duplicates.map(dup => ({
+          id: dup.id,
+          label: dup.label,
+          url: dup.url,
+          category: dup.category,
+          key: dup.key
+        }))
+        
+        return NextResponse.json({
+          success: false,
+          duplicate: {
+            exists: true,
+            suggestions
+          },
+          message: 'Se encontraron archivos similares en la biblioteca'
+        })
+      }
+    }
+    
     // Generar nombre único con extensión segura
     const timestamp = Date.now()
     let ext = mimeType.split('/')[1] || 'bin'
@@ -187,13 +244,18 @@ export async function POST(request: NextRequest) {
     
     let publicUrl: string
     
-    // Auto-generar key si no se proporciona
-    const fileKey = key || `${fileCategory}_${timestamp}_${Math.random().toString(36).substring(2, 8)}`
+    // TASK 4.1: Check if fixedKey parameter is provided for file replacement detection
+    // Use fixedKey if provided, otherwise use key, or auto-generate
+    const fileKey = fixedKey || key || `${fileCategory}_${timestamp}_${Math.random().toString(36).substring(2, 8)}`
     
-    // Buscar archivo existente con esa key
+    // TASK 4.1: Query SiteImage for existing record with that key
     const existingImage = await db.siteImage.findUnique({
       where: { key: fileKey }
     })
+    
+    // TASK 4.1: Store old file URL before uploading new file
+    const oldFileUrl = existingImage?.url || null
+    const isReplacement = !!existingImage
     
     if (isProduction) {
       // PRODUCCIÓN: Usar Cloudinary
@@ -214,10 +276,15 @@ export async function POST(request: NextRequest) {
       
       publicUrl = uploadResult.secure_url
       
-      // Si existe imagen anterior en Cloudinary, eliminarla
-      if (existingImage && existingImage.url.includes('cloudinary.com')) {
-        const publicId = existingImage.url.split('/').slice(-2).join('/').split('.')[0]
-        await cloudinary.uploader.destroy(publicId).catch(() => {})
+      // TASK 4.2: After successful upload, if old file exists, delete from Cloudinary (production)
+      if (oldFileUrl && oldFileUrl.includes('cloudinary.com')) {
+        try {
+          const publicId = oldFileUrl.split('/').slice(-2).join('/').split('.')[0]
+          await cloudinary.uploader.destroy(publicId)
+        } catch (error) {
+          // TASK 4.2: Handle missing file errors gracefully (log warning, continue)
+          console.warn('Failed to delete old file from Cloudinary:', error)
+        }
       }
     } else {
       // DESARROLLO: Guardar en sistema de archivos local
@@ -230,15 +297,21 @@ export async function POST(request: NextRequest) {
       await writeFile(filePath, buffer)
       publicUrl = `/uploads/${fileName}`
       
-      // Eliminar archivo anterior si existe
-      if (existingImage) {
-        const oldFilePath = path.join(process.cwd(), 'public', existingImage.url)
-        if (existsSync(oldFilePath)) {
-          await unlink(oldFilePath).catch(() => {})
+      // TASK 4.2: Delete from local filesystem (development) if applicable
+      if (oldFileUrl && oldFileUrl.startsWith('/uploads/')) {
+        try {
+          const oldFilePath = path.join(process.cwd(), 'public', oldFileUrl)
+          if (existsSync(oldFilePath)) {
+            await unlink(oldFilePath)
+          }
+        } catch (error) {
+          // TASK 4.2: Handle missing file errors gracefully (log warning, continue)
+          console.warn('Failed to delete old file from filesystem:', error)
         }
       }
     }
     
+    // TASK 4.2: Update or create SiteImage record with new URL
     if (existingImage) {
       // Actualizar registro
       await db.siteImage.update({
@@ -247,7 +320,7 @@ export async function POST(request: NextRequest) {
           url: publicUrl,
           label: label || existingImage.label,
           description: emptyToNull(description),
-          category: emptyToNull(category) || fileCategory,
+          category: emptyToNull(category) || existingImage.category || fileCategory,
         }
       })
     } else {
@@ -263,11 +336,13 @@ export async function POST(request: NextRequest) {
       })
     }
     
+    // TASK 4.2: Return replaced: true in response if file was replaced
     return NextResponse.json({ 
       success: true, 
       url: publicUrl,
       fileName,
-      key: fileKey
+      key: fileKey,
+      replaced: isReplacement
     })
   } catch (error) {
     console.error('Error uploading file:', error)

@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/hooks/use-toast'
-import { ImageSelector } from '@/components/image-selector'
+import { MediaPicker } from '@/components/media-picker'
 
 interface AboutPage {
   id: string
@@ -243,7 +243,16 @@ export default function QuienesSomosAdminPage() {
               </div>
               <div className="space-y-2">
                 <Label>Imagen</Label>
-                <ImageSelector value={page?.heroImageUrl || ''} onChange={(url) => updateField('heroImageUrl', url)} category="about" />
+                <MediaPicker
+                  value={page?.heroImageUrl || ''}
+                  onChange={(url) => updateField('heroImageUrl', url)}
+                  accept="image"
+                  category="config"
+                  fixedKey="about-hero-image"
+                  recommendedSize="1920x1080px"
+                  formatHint="Imagen principal de la sección hero"
+                  maxSizeMB={5}
+                />
               </div>
             </CardContent>
           </Card>
@@ -264,7 +273,16 @@ export default function QuienesSomosAdminPage() {
               </div>
               <div className="space-y-2">
                 <Label>Imagen</Label>
-                <ImageSelector value={page?.historyImageUrl || ''} onChange={(url) => updateField('historyImageUrl', url)} category="about" />
+                <MediaPicker
+                  value={page?.historyImageUrl || ''}
+                  onChange={(url) => updateField('historyImageUrl', url)}
+                  accept="image"
+                  category="config"
+                  fixedKey="about-history-image"
+                  recommendedSize="800x600px"
+                  formatHint="Imagen para la sección de historia"
+                  maxSizeMB={5}
+                />
               </div>
             </CardContent>
           </Card>
@@ -424,7 +442,16 @@ export default function QuienesSomosAdminPage() {
                       </div>
                       <Textarea value={member.bio} onChange={(e) => updateTeamMember(index, 'bio', e.target.value)} placeholder="Biografía" rows={2} />
                       <div className="flex gap-2">
-                        <ImageSelector value={member.image} onChange={(url) => updateTeamMember(index, 'image', url)} category="team" />
+                        <MediaPicker
+                          value={member.image}
+                          onChange={(url) => updateTeamMember(index, 'image', url)}
+                          accept="image"
+                          category="config"
+                          keyPrefix={`about-team-${index}`}
+                          recommendedSize="400x400px"
+                          formatHint="Foto del miembro del equipo (cuadrada)"
+                          maxSizeMB={2}
+                        />
                         <Button variant="ghost" onClick={() => removeTeamMember(index)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
