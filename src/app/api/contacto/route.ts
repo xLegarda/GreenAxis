@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { validateFullPhone } from '@/lib/phone-validation'
 
 // Configuración de Resend
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
@@ -169,6 +170,13 @@ export async function POST(request: NextRequest) {
     
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: 'Email válido es requerido' }, { status: 400 })
+    }
+    
+    if (phone && typeof phone === 'string') {
+      const phoneValidation = validateFullPhone(phone)
+      if (!phoneValidation.valid) {
+        return NextResponse.json({ error: phoneValidation.error }, { status: 400 })
+      }
     }
     
     if (!message || typeof message !== 'string' || message.trim().length < 10) {

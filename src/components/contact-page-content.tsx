@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { toast } from '@/hooks/use-toast'
+import { COUNTRIES, validatePhone } from '@/lib/phone-validation'
 
 interface PlatformConfig {
   siteName: string
@@ -27,6 +28,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
     name: '',
     email: '',
     phone: '',
+    countryCode: '+57',
     company: '',
     subject: '',
     message: ''
@@ -34,6 +36,8 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
   const [consent, setConsent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [phoneError, setPhoneError] = useState('')
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false)
   
   // Extraer la URL del iframe si existe
   const getEmbedSrc = () => {
@@ -76,15 +80,35 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
       })
       return
     }
+
+    if (formData.phone.trim()) {
+      const phoneValidation = validatePhone(formData.phone, formData.countryCode)
+      if (!phoneValidation.valid) {
+        setPhoneError(phoneValidation.error || 'Número de teléfono inválido')
+        toast({
+          title: 'Error',
+          description: phoneValidation.error || 'Número de teléfono inválido',
+          variant: 'destructive'
+        })
+        return
+      }
+      setPhoneError('')
+    }
     
     setLoading(true)
     
     try {
+      const fullPhone = formData.phone.trim() ? `${formData.countryCode} ${formData.phone.trim()}` : ''
       const response = await fetch('/api/contacto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          email: formData.email,
+          phone: fullPhone,
+          company: formData.company,
+          subject: formData.subject,
+          message: formData.message,
           consent: true
         })
       })
@@ -95,11 +119,13 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
           name: '',
           email: '',
           phone: '',
+          countryCode: '+57',
           company: '',
           subject: '',
           message: ''
         })
         setConsent(false)
+        setPhoneError('')
       } else {
         const errorData = await response.json().catch(() => ({}))
         toast({
@@ -263,14 +289,54 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Teléfono</Label>
+                      <Label htmlFor="phone">Teléfono</Label>
+                      <div className="flex gap-2">
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                            className="flex items-center justify-between w-[120px] h-10 px-3 border border-input bg-background rounded-md text-sm hover:bg-accent"
+                          >
+                            <span>{formData.countryCode}</span>
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </button>
+                          {countryDropdownOpen && (
+                            <div className="absolute z-50 w-[180px] max-h-[200px] overflow-auto mt-1 bg-popover border rounded-md shadow-lg">
+                              {COUNTRIES.map((country) => (
+                                <button
+                                  key={country.code}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({ ...formData, countryCode: country.code })
+                                    setCountryDropdownOpen(false)
+                                    setPhoneError('')
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${
+                                    formData.countryCode === country.code ? 'bg-accent' : ''
+                                  }`}
+                                >
+                                  {country.code} {country.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <Input
                           id="phone"
                           value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          placeholder="+57 300 123 4567"
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^\d\s\-()]/g, '')
+                            setFormData({ ...formData, phone: value })
+                            if (phoneError) setPhoneError('')
+                          }}
+                          placeholder="300 123 4567"
+                          className="flex-1"
                         />
                       </div>
+                      {phoneError && (
+                        <p className="text-sm text-red-500">{phoneError}</p>
+                      )}
+                    </div>
                       <div className="space-y-2">
                         <Label htmlFor="company">Empresa</Label>
                         <Input
