@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { toast } from '@/hooks/use-toast'
-import { COUNTRIES, validatePhone } from '@/lib/phone-validation'
+import { COUNTRIES, validatePhone, getCountryHint } from '@/lib/phone-validation'
 
 interface PlatformConfig {
   siteName: string
@@ -33,6 +33,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
     subject: '',
     message: ''
   })
+  const [phoneHint, setPhoneHint] = useState(getCountryHint('+57'))
   const [consent, setConsent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -310,6 +311,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                                     setFormData({ ...formData, countryCode: country.code })
                                     setCountryDropdownOpen(false)
                                     setPhoneError('')
+                                    setPhoneHint(getCountryHint(country.code))
                                   }}
                                   className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${
                                     formData.countryCode === country.code ? 'bg-accent' : ''
@@ -329,7 +331,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                             setFormData({ ...formData, phone: value })
                             if (phoneError) setPhoneError('')
                           }}
-                          placeholder="300 123 4567"
+                          placeholder={phoneHint}
                           className="flex-1"
                         />
                       </div>

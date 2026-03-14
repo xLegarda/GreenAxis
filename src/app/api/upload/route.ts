@@ -68,9 +68,9 @@ const FILE_SIGNATURES: Record<string, Buffer | null> = {
   'image/webp': Buffer.from([0x52, 0x49, 0x46, 0x46]),
   'image/svg+xml': null,
   // Videos
-  'video/mp4': Buffer.from([0x00, 0x00, 0x00, null]), // MP4 tiene variaciones
+  'video/mp4': Buffer.from([0x00, 0x00, 0x00, 0x18]), // MP4 tiene variaciones
   'video/webm': Buffer.from([0x1A, 0x45, 0xDF, 0xA3]),
-  'video/quicktime': Buffer.from([0x00, 0x00, 0x00, null]), // MOV
+  'video/quicktime': Buffer.from([0x00, 0x00, 0x00, 0x14]), // MOV
   // Audio
   'audio/mpeg': Buffer.from([0xFF, 0xFB]), // MP3 frame sync
   'audio/wav': Buffer.from([0x52, 0x49, 0x46, 0x46]), // RIFF
@@ -386,7 +386,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ 
       error: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error as Error)?.message : undefined
     }, { status: statusCode })
   }
 }

@@ -161,7 +161,7 @@ export default function LegalAdminPage() {
   const handleSave = async (slug: string) => {
     setSaving(slug)
     try {
-      let blocks = null
+      let blocks: string | null = null
       let content = ''
       
       if (editorData[slug]) {

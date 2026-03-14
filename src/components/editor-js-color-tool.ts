@@ -103,13 +103,59 @@ export default class ColorTool {
     if (!range) return
 
     const selectedText = range.extractContents()
-    const span = document.createElement('span')
     
+    // Check if selection is already inside a color span
+    let parent = range.commonAncestorContainer.parentElement
+    let existingSpan: HTMLElement | null = null
+    
+    while (parent) {
+      if (parent.classList.contains(ColorTool.CSS)) {
+        existingSpan = parent
+        break
+      }
+      parent = parent.parentElement
+    }
+    
+    // If clicking the same color, remove the format
+    if (existingSpan && existingSpan.style.color === this.data.color) {
+      const text = existingSpan.textContent || ''
+      const textNode = document.createTextNode(text)
+      existingSpan.parentNode?.replaceChild(textNode, existingSpan)
+      return
+    }
+    
+    // If there's an existing color span, replace it
+    if (existingSpan) {
+      const span = document.createElement('span')
+      span.classList.add(ColorTool.CSS)
+      span.style.color = this.data.color
+      span.textContent = existingSpan.textContent || ''
+      existingSpan.parentNode?.replaceChild(span, existingSpan)
+      return
+    }
+    
+    // Apply new color
+    const span = document.createElement('span')
     span.classList.add(ColorTool.CSS)
     span.style.color = this.data.color
     span.appendChild(selectedText)
     
     range.insertNode(span)
+  }
+
+  handleDblClick(): void {
+    // Remove color format on double click
+    const selection = window.getSelection()
+    if (!selection || !selection.rangeCount) return
+    
+    const range = selection.getRangeAt(0)
+    const parent = range.commonAncestorContainer.parentElement
+    
+    if (parent && parent.classList.contains(ColorTool.CSS)) {
+      const text = parent.textContent || ''
+      const textNode = document.createTextNode(text)
+      parent.parentNode?.replaceChild(textNode, parent)
+    }
   }
 
   checkState(): boolean {

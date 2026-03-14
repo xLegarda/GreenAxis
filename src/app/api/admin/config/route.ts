@@ -51,7 +51,6 @@ export async function PUT(request: Request) {
     let config = await db.platformConfig.findFirst()
     
     const data = {
-      siteName: body.siteName,
       siteUrl: emptyToNull(body.siteUrl),
       siteSlogan: emptyToNull(body.siteSlogan),
       siteDescription: emptyToNull(body.siteDescription),
@@ -93,10 +92,12 @@ export async function PUT(request: Request) {
       primaryColor: emptyToNull(body.primaryColor),
     }
     
+    const siteName = body.siteName || 'Green Axis S.A.S.'
+    
     if (!config) {
       config = await db.platformConfig.create({
         data: {
-          siteName: body.siteName || 'Green Axis S.A.S.',
+          siteName,
           ...data
         }
       })

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
-import { existsSync, unlink } from 'fs'
+import { existsSync } from 'fs'
+import { unlink } from 'fs/promises'
 import path from 'path'
 
 // GET - Listar todas las imágenes (protegido para administradores)
@@ -51,7 +52,7 @@ export async function DELETE(request: NextRequest) {
     if (image.url.startsWith('/uploads/')) {
       const filePath = path.join(process.cwd(), 'public', image.url)
       if (existsSync(filePath)) {
-        await unlink(filePath).catch(() => {})
+        await unlink(filePath).catch((err) => console.error('Error deleting file:', err))
       }
     }
 

@@ -92,7 +92,7 @@ export default function NoticiasAdminPage() {
 
     try {
       // Get editor data
-      let blocks = null
+      let blocks: string | null = null
       let content = formData.content
       
       if (editorDataRef.current) {

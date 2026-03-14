@@ -26,7 +26,7 @@ interface LegalPageContentProps {
 
 export function LegalPageContent({ page, title, defaultContent, config }: LegalPageContentProps) {
   // Parse blocks if available
-  let blocksData = null
+  let blocksData: { blocks?: any[] } | null = null
   if (page?.blocks) {
     try {
       blocksData = JSON.parse(page.blocks)
@@ -69,7 +69,7 @@ export function LegalPageContent({ page, title, defaultContent, config }: LegalP
       <section className="py-12 bg-white dark:bg-[#0a1a1f]">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            {hasEditorBlocks ? (
+            {hasEditorBlocks && blocksData?.blocks ? (
               <article className="news-article-content prose prose-lg max-w-none prose-headings:text-[#005A7A] dark:prose-headings:text-white prose-p:text-gray-600 dark:prose-p:text-gray-300 prose-a:text-[#6BBE45] dark:prose-a:text-[#8BC34A]">
                 {renderEditorBlocks(blocksData.blocks)}
               </article>

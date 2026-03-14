@@ -103,6 +103,40 @@ export default class MarkerTool {
     if (!range) return
 
     const selectedText = range.extractContents()
+    
+    // Check if selection is already inside a marker
+    let parent = range.commonAncestorContainer.parentElement
+    let existingMark: HTMLElement | null = null
+    
+    while (parent) {
+      if (parent.classList.contains(MarkerTool.CSS)) {
+        existingMark = parent
+        break
+      }
+      parent = parent.parentElement
+    }
+    
+    // If clicking the same color, remove the format
+    if (existingMark && existingMark.style.background === this.data.color) {
+      const text = existingMark.textContent || ''
+      const textNode = document.createTextNode(text)
+      existingMark.parentNode?.replaceChild(textNode, existingMark)
+      return
+    }
+    
+    // If there's an existing marker, replace it
+    if (existingMark) {
+      const mark = document.createElement('mark')
+      mark.classList.add(MarkerTool.CSS)
+      mark.style.background = this.data.color
+      mark.style.padding = '0.1em 0.2em'
+      mark.style.borderRadius = '2px'
+      mark.textContent = existingMark.textContent || ''
+      existingMark.parentNode?.replaceChild(mark, existingMark)
+      return
+    }
+    
+    // Apply new marker
     const mark = document.createElement('mark')
     
     mark.classList.add(MarkerTool.CSS)
@@ -112,6 +146,21 @@ export default class MarkerTool {
     mark.appendChild(selectedText)
     
     range.insertNode(mark)
+  }
+
+  handleDblClick(): void {
+    // Remove marker format on double click
+    const selection = window.getSelection()
+    if (!selection || !selection.rangeCount) return
+    
+    const range = selection.getRangeAt(0)
+    const parent = range.commonAncestorContainer.parentElement
+    
+    if (parent && parent.classList.contains(MarkerTool.CSS)) {
+      const text = parent.textContent || ''
+      const textNode = document.createTextNode(text)
+      parent.parentNode?.replaceChild(textNode, parent)
+    }
   }
 
   checkState(): boolean {

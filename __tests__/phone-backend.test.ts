@@ -3,7 +3,7 @@
  * Simula la validación que se hace en el API de contacto
  */
 
-import { validateFullPhone } from '../phone-validation'
+import { validateFullPhone } from '../src/lib/phone-validation'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {

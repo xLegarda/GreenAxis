@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import type EditorJS from '@editorjs/editorjs'
 import { createRoot } from 'react-dom/client'
 import MediaPickerCompact from './media-picker-compact'
+import { MARKER_COLORS, TEXT_COLORS, DARK_MODE_STYLES } from './editor-colors'
 
 interface EditorProps {
   data?: any
@@ -179,6 +180,54 @@ function applyThemeStyles(element: HTMLElement, lightStyles: Record<string, stri
 }
 
 /**
+ * Create uploader config for media types (image, video, audio)
+ * Reduces code duplication across different media uploaders
+ */
+const createMediaUploader = (
+  type: 'image' | 'video' | 'audio',
+  maxSizeMB: number,
+  category: string
+) => ({
+  async uploadByFile(file: File) {
+    // Validate file size
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+      return { success: 0 }
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('key', `${type}-${Date.now()}`)
+    formData.append('label', file.name)
+    formData.append('category', category)
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return { success: 1, file: { url: data.url } }
+      } else if (response.status === 413) {
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+        alert(`El archivo (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+      }
+    } catch (e) {
+      console.error(`${type} upload error:`, e)
+    }
+    return { success: 0 }
+  },
+  libraryPicker: {
+    enabled: true,
+    onSelect: async () => {
+      return await openMediaPickerModal(type)
+    }
+  }
+})
+
+/**
  * Helper function to open MediaPicker modal and return selected URL
  * This is used by EditorJS tools to select media from library
  */
@@ -215,26 +264,19 @@ function openMediaPickerModal(accept: 'image' | 'video' | 'audio'): Promise<stri
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     `
     
-    // Check for dark mode and apply dark styles
-    const observer = new MutationObserver(() => {
-      if (document.documentElement.classList.contains('dark')) {
-        modalContent.style.background = '#1f2937'
-        modalContent.style.color = '#ffffff'
-        modalContent.style.borderColor = '#374151'
-      } else {
-        modalContent.style.background = '#ffffff'
-        modalContent.style.color = '#000000'
-        modalContent.style.borderColor = '#e5e7eb'
-      }
-    })
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    
-    // Apply initial theme
-    if (document.documentElement.classList.contains('dark')) {
-      modalContent.style.background = '#1f2937'
-      modalContent.style.color = '#ffffff'
-      modalContent.style.borderColor = '#374151'
+    // Apply theme
+    const applyTheme = () => {
+      const isDark = document.documentElement.classList.contains('dark')
+      const styles = isDark ? DARK_MODE_STYLES.modal : DARK_MODE_STYLES.light.modal
+      modalContent.style.background = styles.background
+      modalContent.style.color = styles.color
+      modalContent.style.borderColor = styles.borderColor
     }
+    
+    // Observer for theme changes
+    const observer = new MutationObserver(applyTheme)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    applyTheme()
 
     // Create header
     const header = document.createElement('div')
@@ -243,25 +285,14 @@ function openMediaPickerModal(accept: 'image' | 'video' | 'audio'): Promise<stri
     const title = document.createElement('h2')
     title.textContent = `Seleccionar ${accept === 'image' ? 'Imagen' : accept === 'video' ? 'Video' : 'Audio'}`
     title.style.cssText = 'font-size: 20px; font-weight: 600; margin: 0;'
-    title.style.color = document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000'
     
     const closeButton = document.createElement('button')
     closeButton.textContent = '×'
     closeButton.style.cssText = `
-      background: none;
-      border: none;
-      font-size: 32px;
-      cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-      transition: opacity 0.2s;
+      background: none; border: none; font-size: 32px; cursor: pointer; padding: 0;
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      line-height: 1; transition: opacity 0.2s;
     `
-    closeButton.style.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
     
     const closeModal = () => {
       if (modalContainer.parentNode) {
@@ -401,39 +432,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             image: {
               class: ImageTool as any,
               config: {
-                uploader: {
-                  async uploadByFile(file: File) {
-                    // Validate file size (10MB max for images)
-                    const maxSizeBytes = 10 * 1024 * 1024
-                    if (file.size > maxSizeBytes) {
-                      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-                      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube la imagen directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      return { success: 0 }
-                    }
-
-                    const formData = new FormData()
-                    formData.append('file', file)
-                    formData.append('key', `news-${Date.now()}`)
-                    formData.append('label', file.name)
-                    formData.append('category', 'news')
-                    try {
-                      const response = await fetch('/api/upload', {
-                        method: 'POST',
-                        body: formData
-                      })
-                      if (response.ok) {
-                        const data = await response.json()
-                        return { success: 1, file: { url: data.url } }
-                      } else if (response.status === 413) {
-                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-                        alert(`El archivo (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube la imagen directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      }
-                    } catch (e) {
-                      console.error('Upload error:', e)
-                    }
-                    return { success: 0 }
-                  }
-                },
+                uploader: createMediaUploader('image', 10, 'news'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {
@@ -476,39 +475,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             videoLocal: {
               class: VideoTool as any,
               config: {
-                uploader: {
-                  async uploadByFile(file: File) {
-                    // Validate file size (100MB max for videos)
-                    const maxSizeBytes = 100 * 1024 * 1024
-                    if (file.size > maxSizeBytes) {
-                      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-                      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el video directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      return { success: 0 }
-                    }
-
-                    const formData = new FormData()
-                    formData.append('file', file)
-                    formData.append('key', `video-${Date.now()}`)
-                    formData.append('label', file.name)
-                    formData.append('category', 'videos')
-                    try {
-                      const response = await fetch('/api/upload', {
-                        method: 'POST',
-                        body: formData
-                      })
-                      if (response.ok) {
-                        const data = await response.json()
-                        return { success: 1, file: { url: data.url } }
-                      } else if (response.status === 413) {
-                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-                        alert(`El video (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el video directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      }
-                    } catch (e) {
-                      console.error('Video upload error:', e)
-                    }
-                    return { success: 0 }
-                  }
-                },
+                uploader: createMediaUploader('video', 100, 'videos'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {
@@ -520,39 +487,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             audioLocal: {
               class: AudioTool as any,
               config: {
-                uploader: {
-                  async uploadByFile(file: File) {
-                    // Validate file size (20MB max for audio)
-                    const maxSizeBytes = 20 * 1024 * 1024
-                    if (file.size > maxSizeBytes) {
-                      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-                      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el audio directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      return { success: 0 }
-                    }
-
-                    const formData = new FormData()
-                    formData.append('file', file)
-                    formData.append('key', `audio-${Date.now()}`)
-                    formData.append('label', file.name)
-                    formData.append('category', 'audio')
-                    try {
-                      const response = await fetch('/api/upload', {
-                        method: 'POST',
-                        body: formData
-                      })
-                      if (response.ok) {
-                        const data = await response.json()
-                        return { success: 1, file: { url: data.url } }
-                      } else if (response.status === 413) {
-                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-                        alert(`El audio (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el audio directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-                      }
-                    } catch (e) {
-                      console.error('Audio upload error:', e)
-                    }
-                    return { success: 0 }
-                  }
-                },
+                uploader: createMediaUploader('audio', 20, 'audio'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {
@@ -570,33 +505,13 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             markerColor: {
               class: MarkerTool as any,
               config: {
-                colors: [
-                  { name: 'Amarillo', value: 'rgba(255, 235, 59, 0.4)' },
-                  { name: 'Verde', value: 'rgba(107, 190, 69, 0.4)' },
-                  { name: 'Azul', value: 'rgba(59, 130, 246, 0.4)' },
-                  { name: 'Rosa', value: 'rgba(236, 72, 153, 0.4)' },
-                  { name: 'Naranja', value: 'rgba(249, 115, 22, 0.4)' },
-                  { name: 'Púrpura', value: 'rgba(139, 92, 246, 0.4)' },
-                  { name: 'Cian', value: 'rgba(6, 182, 212, 0.4)' },
-                  { name: 'Rojo', value: 'rgba(239, 68, 68, 0.4)' },
-                ]
+                colors: MARKER_COLORS
               }
             },
             textColor: {
               class: ColorTool as any,
               config: {
-                colors: [
-                  '#000000',
-                  '#374151',
-                  '#6BBE45',
-                  '#005A7A',
-                  '#DC2626',
-                  '#EA580C',
-                  '#CA8A04',
-                  '#7C3AED',
-                  '#DB2777',
-                  '#0891B2',
-                ]
+                colors: TEXT_COLORS
               }
             },
             link: {

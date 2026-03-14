@@ -3,7 +3,7 @@
  * Ejecutar con: tsx src/lib/__tests__/phone-validation.test.ts
  */
 
-import { validatePhone, validateFullPhone, COUNTRIES } from '../phone-validation'
+import { validatePhone, validateFullPhone, COUNTRIES } from '../src/lib/phone-validation'
 
 // Helper para afirmar
 function assert(condition: boolean, message: string): void {
@@ -17,7 +17,7 @@ function runTests() {
   console.log('\n🧪 Ejecutando pruebas de validación de teléfono...\n')
 
   // ==================== PRUEBAS DE validatePhone ====================
-  
+
   console.log('--- Pruebas de validatePhone ---\n')
 
   // Prueba 1: Número válido para Colombia
@@ -51,7 +51,7 @@ function runTests() {
   // Prueba 8: Brasil - 11 dígitos (móvil)
   const result8 = validatePhone('11987654321', '+55')
   assert(result8.valid === true, 'Prueba 8: Número brasileño móvil válido (11 dígitos)')
-  
+
   // Prueba 8b: Brasil - 10 dígitos (fijo)
   const result8b = validatePhone('1133334444', '+55')
   assert(result8b.valid === true, 'Prueba 8b: Número brasileño fijo válido (10 dígitos)')
@@ -117,7 +117,7 @@ function runTests() {
   assert(result23.valid === true, 'Prueba 23: Número con paréntesis y guiones')
 
   // ==================== PRUEBAS DE validateFullPhone ====================
-  
+
   console.log('\n--- Pruebas de validateFullPhone ---\n')
 
   // Prueba 24: Número completo con código de país
@@ -141,7 +141,7 @@ function runTests() {
   assert(result28.valid === false, 'Prueba 28: Código de país no válido')
 
   // ==================== PRUEBAS DE LONGITUD POR PAÍS ====================
-  
+
   console.log('\n--- Pruebas de longitudes específicas ---\n')
 
   // Prueba 29: Argentina - longitud exacta 10
@@ -157,7 +157,7 @@ function runTests() {
   assert(result30b.valid === true, 'Prueba 30b: Alemania - 11 dígitos (válido)')
 
   // ==================== RESUMEN ====================
-  
+
   console.log('\n' + '='.repeat(50))
   console.log('✅ PRUEBAS COMPLETADAS EXITOSAMENTE')
   console.log('='.repeat(50) + '\n')

@@ -52,7 +52,7 @@ export function MediaPickerModal({
         
         <div className="py-4">
           <MediaPicker
-            value={value}
+            value={value || ''}
             onChange={handleChange}
             accept={accept}
             category={category}
