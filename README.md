@@ -523,3 +523,406 @@ canCreateAdmin(): Promise<boolean>
   path: '/'
 }
 ```
+🛡️ Seguridad
+Puntuación General: 8.5/10 (Producción Ready)
+El proyecto ha pasado por un audit de seguridad completo documentado en .kiro/security-audit-report.md. La aplicación cumple con los estándares de OWASP Top 10 2021 y está lista para producción.
+
+Middleware de Seguridad
+Archivo: src/middleware.ts
+
+Funcionalidades Implementadas:
+
+Headers de Seguridad (aplicados a todas las rutas):
+
+X-Frame-Options: DENY - Previene clickjacking
+X-Content-Type-Options: nosniff - Previene MIME sniffing
+X-XSS-Protection: 1; mode=block - Filtro XSS legacy
+Referrer-Policy: strict-origin-when-cross-origin - Control de referrer
+Permissions-Policy - Deshabilita APIs sensibles (camera, microphone, geolocation)
+Strict-Transport-Security - Fuerza HTTPS (max-age=31536000; includeSubDomains)
+Content-Security-Policy - Políticas detalladas de contenido
+Rate Limiting:
+
+/api/contacto (POST): 5 requests por minuto por IP
+/api/auth/login (POST): 5 intentos, 15 minutos de lockout
+Implementado con Map en memoria (resetea con restart del servidor)
+Protección de Rutas:
+
+Verifica autenticación en todas las rutas /admin/*
+Redirect a /portal-interno si no hay sesión válida
+Permite acceso público a rutas no protegidas
+Content Security Policy (CSP):
+
+default-src 'self'
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com
+style-src 'self' 'unsafe-inline'
+img-src 'self' data: https: blob:
+font-src 'self' data:
+connect-src 'self' https://www.google-analytics.com
+frame-src 'self' https://www.google.com https://www.youtube.com
+media-src 'self' blob: data:
+Headers de Seguridad (Implementados)
+Archivo: src/middleware.ts
+
+'X-Frame-Options': 'DENY'                    // Previene clickjacking
+'X-Content-Type-Options': 'nosniff'          // Previene MIME sniffing
+'X-XSS-Protection': '1; mode=block'          // Filtro XSS legacy
+'Referrer-Policy': 'strict-origin-when-cross-origin'
+'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+'Content-Security-Policy': [políticas detalladas]
+Rate Limiting
+Implementado en: src/middleware.ts
+
+Endpoints Protegidos:
+
+Login (/api/auth/login):
+
+Límite: 5 intentos fallidos por email
+Ventana: 15 minutos
+Almacenamiento: Map en memoria (por email)
+Mensaje: "Demasiados intentos de login. Intenta de nuevo en X minutos"
+Reset: Automático después de 15 minutos
+Contacto (/api/contacto):
+
+Límite: 5 requests por IP
+Ventana: 1 minuto (60 segundos)
+Almacenamiento: Map en memoria (por IP)
+Mensaje: "Demasiadas solicitudes. Por favor espera un momento"
+Reset: Automático después de 1 minuto
+Implementación:
+
+// Rate limit para contacto
+const contactRateLimit = new Map<string, { count: number; resetTime: number }>()
+
+if (request.nextUrl.pathname === '/api/contacto' && request.method === 'POST') {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const now = Date.now()
+  
+  const limit = contactRateLimit.get(ip)
+  if (limit && now < limit.resetTime) {
+    if (limit.count >= 5) {
+      return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+    }
+    limit.count++
+  } else {
+    contactRateLimit.set(ip, { count: 1, resetTime: now + 60000 })
+  }
+}
+
+📱 Responsive Design
+Breakpoints (Tailwind CSS 4)
+sm: 640px   - Móviles grandes (landscape)
+md: 768px   - Tablets
+lg: 1024px  - Laptops
+xl: 1280px  - Desktops
+2xl: 1536px - Pantallas grandes
+Componentes Responsive
+Todos los componentes están optimizados para móvil con enfoque mobile-first:
+
+Header:
+
+Menú hamburguesa en móvil (< md)
+Navegación completa en desktop (≥ md)
+Logo responsive con tamaños adaptativos
+Toggle de tema visible en todos los tamaños
+Carrusel:
+
+Imágenes adaptativas con object-fit
+Textos con tamaños responsive (text-2xl → text-5xl)
+Botones con padding adaptativo
+Controles de navegación ocultos en móvil
+Grids:
+
+Servicios: 1 columna (móvil) → 2 (tablet) → 3 (desktop)
+Noticias: 1 columna (móvil) → 2 (tablet) → 3 (desktop)
+Valores/Features: 1 columna (móvil) → 2 (desktop)
+Formularios:
+
+Inputs con tamaño touch-friendly (min 44px altura)
+Labels siempre visibles
+Mensajes de error claros
+Botones de tamaño adecuado para touch
+Imágenes:
+
+Next.js Image con optimización automática
+Lazy loading nativo
+Placeholder blur (opcional)
+Formatos modernos (WebP, AVIF) vía Cloudinary
+Panel Admin:
+
+Sidebar colapsable en móvil
+Tablas con scroll horizontal en móvil
+Formularios apilados en móvil
+Drag & drop compatible con touch
+Accesibilidad (WCAG 2.1)
+Implementado:
+
+Todos los componentes shadcn/ui son accesibles por defecto (Radix UI)
+Atributos ARIA en componentes interactivos
+Navegación por teclado en todos los elementos
+Focus visible en todos los controles
+Contraste de colores adecuado (AA)
+Alt text en todas las imágenes
+Labels asociados a inputs
+Mensajes de error descriptivos
+Skip links para navegación rápida
+
+🔍 SEO y Analytics
+Configuración SEO
+Metadatos Configurables (desde /admin/configuracion):
+
+siteName - Nombre del sitio (usado en title tags)
+siteDescription - Descripción para meta description
+metaKeywords - Keywords para SEO (separadas por comas)
+siteUrl - URL pública del sitio (para Open Graph)
+Open Graph tags - Generados automáticamente en cada página
+Canonical URLs - Configurados en layout principal
+Optimizaciones SEO Implementadas:
+
+Títulos descriptivos en todas las páginas
+Meta descriptions únicas por página
+URLs amigables (slugs) para noticias
+Imágenes con alt text
+Estructura semántica HTML5
+Sitemap.xml (recomendado agregar)
+robots.txt configurado en /public/robots.txt
+Google Analytics
+Configuración: Variable googleAnalytics en PlatformConfig (campo en DB)
+
+Componentes:
+
+google-analytics.tsx - Script de Google Tag Manager
+analytics-loader.tsx - Carga condicional de analytics
+Implementación:
+
+Script de Google Tag Manager (gtag.js)
+Tracking automático de pageviews
+Eventos personalizados (configurables)
+Solo se carga si hay ID configurado
+Compatible con modo oscuro/claro
+Configuración en Admin:
+
+Ir a /admin/configuracion
+Agregar Google Analytics ID (formato: G-XXXXXXXXXX)
+Guardar configuración
+El script se carga automáticamente en todas las páginas públicas
+📧 Sistema de Emails
+Resend Integration
+Uso Actual:
+
+Recuperación de contraseña
+Notificaciones de mensajes de contacto (opcional)
+Configuración:
+
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+await resend.emails.send({
+  from: process.env.RESEND_FROM_EMAIL,
+  to: email,
+  subject: 'Recuperación de contraseña',
+  html: emailTemplate
+})
+Límites:
+
+Plan gratuito: 100 emails/día
+Plan Pro: 50,000 emails/mes
+
+📊 Rendimiento y Optimización
+Optimizaciones Implementadas
+Next.js 16:
+
+Output standalone (bundle optimizado, ~50% más pequeño)
+Optimización automática de imágenes con Sharp
+Code splitting automático por ruta
+Server Components por defecto (menos JavaScript al cliente)
+Streaming SSR para carga progresiva
+Prefetching automático de links visibles
+Cloudinary:
+
+Transformación y optimización automática de imágenes
+Formatos modernos (WebP, AVIF) con fallback
+CDN global con 200+ puntos de presencia
+Lazy loading de imágenes
+Responsive images con srcset
+Compresión inteligente (quality: auto)
+Turso Database:
+
+Base de datos distribuida con baja latencia
+Réplicas edge en múltiples regiones
+Conexiones desde el edge más cercano
+Queries optimizadas con Prisma
+Connection pooling automático
+Prisma ORM:
+
+Queries optimizadas y compiladas
+Connection pooling eficiente
+Cliente generado optimizado
+Lazy loading de relaciones
+Batch queries cuando es posible
+Caché del Cliente:
+
+TanStack React Query para data fetching
+Caché automático de requests
+Revalidación en background
+Optimistic updates
+Deduplicación de requests
+Bundle Optimization:
+
+Tree shaking automático
+Minificación de JavaScript y CSS
+Compresión gzip/brotli
+Lazy loading de componentes pesados
+Dynamic imports para código no crítico
+Métricas Esperadas (Core Web Vitals)
+Objetivos:
+
+Time to First Byte (TTFB): < 200ms (con Turso edge)
+Largest Contentful Paint (LCP): < 2.5s (bueno)
+First Input Delay (FID): < 100ms (bueno)
+Cumulative Layout Shift (CLS): < 0.1 (bueno)
+First Contentful Paint (FCP): < 1.8s (bueno)
+Factores que Afectan Performance:
+
+Tamaño de imágenes del carrusel (optimizar a < 500KB)
+Número de slides activos en carrusel (recomendado: 3-5)
+Cantidad de servicios destacados en home (recomendado: 3-6)
+Uso de Editor.js (carga diferida en admin)
+Conexión a Turso (latencia depende de región)
+Recomendaciones de Optimización
+Imágenes:
+
+Usar formato WebP/AVIF cuando sea posible
+Comprimir imágenes antes de subir (< 500KB)
+Usar dimensiones apropiadas (no subir 4K para mostrar 800px)
+Habilitar blur placeholder en Next.js Image
+Contenido:
+
+Limitar número de noticias destacadas en home (3-4)
+Paginar listados largos
+Lazy load de componentes pesados (Editor.js, mapas)
+Caché:
+
+Implementar fix de caché (prioridad alta)
+Configurar revalidación apropiada por ruta
+Usar ISR (Incremental Static Regeneration) cuando sea posible
+Monitoreo:
+
+Configurar Vercel Analytics o similar
+Monitorear Core Web Vitals
+Identificar páginas lentas
+Optimizar queries de base de datos lentasndimiento
+Optimizaciones Implementadas
+Next.js:
+
+Output standalone (bundle optimizado)
+Caché agresivo de páginas (⚠️ requiere invalidación manual)
+Optimización automática de imágenes
+Code splitting automático
+Server Components por defecto
+Cloudinary:
+
+Transformación y optimización automática de imágenes
+Formatos modernos (WebP, AVIF)
+CDN global
+Lazy loading
+Turso:
+
+Base de datos distribuida con baja latencia
+Réplicas globales
+Conexiones edge
+Prisma:
+
+Queries optimizadas
+Connection pooling
+Cliente generado optimizado
+Métricas Esperadas
+Time to First Byte (TTFB): < 200ms (con Turso edge)
+Largest Contentful Paint (LCP): < 2.5s
+First Input Delay (FID): < 100ms
+Cumulative Layout Shift (CLS): < 0.1
+
+🎨 Personalización y Branding
+Sistema de Temas (Modo Oscuro/Claro)
+Tecnología: next-themes v0.4.6
+
+Componentes:
+
+theme-provider.tsx - Provider de next-themes que envuelve la aplicación
+theme-toggle.tsx - Botón para cambiar entre modos (sol/luna)
+Características:
+
+Persistencia automática en localStorage
+Sin flash de contenido incorrecto (FOUC)
+Transiciones suaves entre temas
+Detección automática de preferencia del sistema
+Tres opciones: light, dark, system
+Implementación:
+
+// Uso en componentes
+import { useTheme } from 'next-themes'
+
+const { theme, setTheme } = useTheme()
+setTheme('dark') // 'light', 'dark', 'system'
+Variables CSS (definidas en src/app/globals.css):
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --primary: 142 71% 45%;        /* Verde corporativo #6BBE45 */
+  /* ... más variables */
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  /* ... variables para modo oscuro */
+}
+Configuración Visual
+Colores:
+
+Color primario: #6BBE45 (verde corporativo de Green Axis)
+Configurable desde panel admin (campo primaryColor en PlatformConfig)
+Sistema de colores semánticos (primary, secondary, accent, destructive, muted)
+Adaptación automática a modo oscuro
+Tipografía:
+
+Sistema de fuentes de Tailwind (sans-serif stack)
+Escalas responsive (text-sm → text-5xl)
+Line heights optimizados para legibilidad
+Font weights: 400 (normal), 500 (medium), 600 (semibold), 700 (bold)
+Espaciado:
+
+Sistema de spacing de Tailwind (0.25rem increments)
+Container con max-width responsive
+Padding y margin consistentes
+Gap en grids y flexbox
+Animaciones:
+
+Framer Motion para animaciones complejas (carrusel, modales)
+Tailwind Animate para transiciones simples
+Animaciones de entrada/salida suaves
+Respeta preferencia de usuario (prefers-reduced-motion)
+Elementos Configurables
+Desde Panel Admin (/admin/configuracion):
+
+Logo y favicon
+Nombre del sitio, slogan y descripción
+Colores del tema (color primario)
+Textos del footer y redes sociales
+Links de redes sociales (Facebook, Instagram, Twitter, LinkedIn, TikTok, YouTube)
+Número de WhatsApp y mensaje predeterminado
+Email de notificaciones (para recibir mensajes de contacto)
+Datos de contacto (dirección, teléfono, email)
+Google Analytics ID
+Google Maps embed code
+Configuración de sección "About" del home
+Mostrar/ocultar sección de mapa
+Desde Otras Secciones Admin:
+
+Contenido de todas las páginas (servicios, noticias, about, legales)
+Imágenes del sitio por categorías
+Carrusel principal (slides con gradientes y animaciones)
+Orden de servicios y slides (drag & drop)
