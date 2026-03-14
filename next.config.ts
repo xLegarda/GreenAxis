@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   images: {
+    loader: 'custom',
+    loaderFile: './src/lib/cloudinary-loader.ts',
     remotePatterns: [
       {
         protocol: 'https',

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, Calendar, User, Share2, Facebook, Linkedin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { renderEditorBlocks } from '@/components/editor-js'
-import { getCloudinaryImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
+import { getHeroResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 
 // X (Twitter) SVG Icon
 function XIcon({ className }: { className?: string }) {
@@ -79,10 +79,11 @@ export function NewsDetailContent({ news, config, shareUrl }: NewsDetailContentP
         {news.imageUrl ? (
           <div className="absolute inset-0">
             <Image
-              src={isCloudinaryUrl(news.imageUrl) ? getCloudinaryImageUrl(news.imageUrl, { format: 'auto', quality: 'auto', width: 1200 }) : news.imageUrl}
+              src={isCloudinaryUrl(news.imageUrl) ? getHeroResponsiveUrl(news.imageUrl) : news.imageUrl}
               alt={news.title}
               fill
               className="object-cover"
+              sizes="100vw"
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />

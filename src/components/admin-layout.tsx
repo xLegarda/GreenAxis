@@ -249,40 +249,60 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
         </div>
       </div>
       
-      {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setSidebarOpen(false)}>
-          <div 
-            className="absolute right-0 top-0 bottom-0 w-64 bg-card p-4 pt-20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <nav className="space-y-1">
+      {/* Mobile Sidebar - con overlay y animación */}
+      <div
+        className={cn(
+          'lg:hidden fixed inset-0 z-40 transition-opacity duration-300',
+          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={() => setSidebarOpen(false)}
+        style={{ background: 'rgba(0,0,0,0.5)' }}
+      >
+        <div
+          className={cn(
+            'absolute right-0 top-0 bottom-0 w-72 max-w-[85vw] bg-card flex flex-col transition-transform duration-300 ease-in-out',
+            sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header del sidebar */}
+          <div className="flex items-center justify-between p-4 pt-16 border-b">
+            <span className="font-bold text-foreground">Menú Admin</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-1.5 rounded-lg hover:bg-accent transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          {/* Nav items con scroll */}
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href || 
+                const isActive = pathname === item.href ||
                   (item.href !== '/admin' && pathname.startsWith(item.href))
-                
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                       isActive
                         ? 'bg-[#6BBE45] text-white'
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 shrink-0" />
                     {item.name}
                   </Link>
                 )
               })}
-            </nav>
-            
-            <div className="mt-8 pt-4 border-t">
-              <div className="flex items-center gap-3 mb-4">
+          </nav>
+
+          <div className="p-4 border-t">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-full bg-[#6BBE45]/10 flex items-center justify-center">
                   <User className="h-4 w-4 text-[#6BBE45]" />
                 </div>
@@ -295,11 +315,11 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
                 <LogOut className="h-4 w-4 mr-2" />
                 Cerrar sesión
               </Button>
-              
+
               {adminCount > 1 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={() => {
                     setSidebarOpen(false)
@@ -310,10 +330,9 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
                   Eliminar mi cuenta
                 </Button>
               )}
-            </div>
           </div>
         </div>
-      )}
+      </div>
       
       {/* Main Content */}
       <main className="flex-1 lg:pt-0 pt-16">

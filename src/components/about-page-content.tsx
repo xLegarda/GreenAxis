@@ -141,6 +141,7 @@ export function AboutPageContent({ config, aboutPage }: AboutPageContentProps) {
                   src={aboutPage.historyImageUrl || "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80"}
                   alt="Nuestra historia"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                 />
               </div>
@@ -287,6 +288,7 @@ export function AboutPageContent({ config, aboutPage }: AboutPageContentProps) {
                       src={member.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop"}
                       alt={member.name}
                       fill
+                      sizes="128px"
                       className="object-cover"
                     />
                   </div>

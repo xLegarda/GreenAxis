@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Leaf, Recycle, TreePine, Droplets, Wind, Building2, CheckCircle, ArrowRight, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Sparkles, Phone, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { getServiceImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
+import { getServiceResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 
 interface Service {
   id: string
@@ -134,10 +134,11 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                       <div className="relative h-48 overflow-hidden">
                         {service.imageUrl ? (
                           <Image
-                            src={isCloudinaryUrl(service.imageUrl) ? getServiceImageUrl(service.imageUrl) : service.imageUrl}
+                            src={isCloudinaryUrl(service.imageUrl) ? getServiceResponsiveUrl(service.imageUrl) : service.imageUrl}
                             alt={service.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           />
                         ) : (
                           <div className="absolute inset-0 bg-gradient-to-br from-[#6BBE45] to-[#005A7A] dark:from-[#8BC34A] dark:to-[#2a7a8a] flex items-center justify-center">
@@ -213,10 +214,11 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                       <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl group">
                         {service.imageUrl ? (
                           <Image
-                            src={isCloudinaryUrl(service.imageUrl) ? getServiceImageUrl(service.imageUrl) : service.imageUrl}
+                            src={isCloudinaryUrl(service.imageUrl) ? getServiceResponsiveUrl(service.imageUrl) : service.imageUrl}
                             alt={service.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 1024px) 100vw, 50vw"
                           />
                         ) : (
                           <div className="absolute inset-0 bg-gradient-to-br from-[#005A7A] to-[#6BBE45] dark:from-[#003D52] dark:to-[#8BC34A] flex items-center justify-center">

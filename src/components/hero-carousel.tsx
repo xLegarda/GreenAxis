@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { getHeroImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
+import { getHeroResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 
 
 interface CarouselSlide {
@@ -171,17 +171,18 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           <>
             {/* Background Image */}
             <div className="absolute inset-0 overflow-hidden">
-              <Image
-                src={isCloudinaryUrl(slide.imageUrl) ? getHeroImageUrl(slide.imageUrl) : slide.imageUrl}
-                alt={slide.title || 'Slide'}
-                fill
-                className="object-cover"
-                style={{
-                  transform: isActive ? `scale(${zoomProgress})` : 'scale(1.08)',
-                  transition: isActive ? 'none' : 'none'
-                }}
-                priority={index === 0}
-              />
+                <Image
+                  src={isCloudinaryUrl(slide.imageUrl) ? getHeroResponsiveUrl(slide.imageUrl) : slide.imageUrl}
+                  alt={slide.title || 'Slide'}
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                  style={{
+                    transform: isActive ? `scale(${zoomProgress})` : 'scale(1.08)',
+                    transition: isActive ? 'none' : 'none'
+                  }}
+                  priority={index === 0}
+                />
               {/* Gradient Overlay */}
               {showGradient && (
                 <div className="absolute inset-0" style={gradientStyle} />

@@ -82,19 +82,36 @@ export function getCloudinaryImageUrl(
   return `${baseUrl}${transformString}/${rest}`
 }
 
-// Preset helpers for common use cases
+/**
+ * Preset helpers for common use cases.
+ * 
+ * Note: When using with Next.js <Image /> component, use the responsive versions
+ * to allow the Cloudinary Loader to handle width/srcset automatically.
+ */
 
-/** For hero/carousel images (full width, high quality) */
+/** For hero/carousel images (full width) */
 export const getHeroImageUrl = (url: string) =>
   getCloudinaryImageUrl(url, { format: 'auto', quality: 'auto', width: 1920 })
+
+/** For next/image hero - returns URL without fixed width */
+export const getHeroResponsiveUrl = (url: string) =>
+  isCloudinaryUrl(url) ? getCloudinaryImageUrl(url, { format: 'auto', quality: 'auto' }) : url
 
 /** For news cards and grid thumbnails */
 export const getThumbnailImageUrl = (url: string) =>
   getCloudinaryImageUrl(url, { format: 'auto', quality: 'auto', width: 800 })
 
+/** For next/image thumbnail */
+export const getThumbnailResponsiveUrl = (url: string) =>
+  isCloudinaryUrl(url) ? getCloudinaryImageUrl(url, { format: 'auto', quality: 'auto' }) : url
+
 /** For service images (medium size) */
 export const getServiceImageUrl = (url: string) =>
   getCloudinaryImageUrl(url, { format: 'auto', quality: 'auto', width: 1000 })
+
+/** For next/image service */
+export const getServiceResponsiveUrl = (url: string) =>
+  isCloudinaryUrl(url) ? getCloudinaryImageUrl(url, { format: 'auto', quality: 'auto' }) : url
 
 /** For small thumbnails in admin panels */
 export const getAdminThumbnailUrl = (url: string) =>

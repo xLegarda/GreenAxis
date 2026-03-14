@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { ArrowRight, Calendar, User, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
-import { getThumbnailImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
+import { getThumbnailResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 
 interface News {
   id: string
@@ -71,10 +71,11 @@ export function NewsPageContent({ news, currentPage, totalPages, total, config }
                     <div className="relative h-52 overflow-hidden">
                       {article.imageUrl ? (
                         <Image
-                          src={isCloudinaryUrl(article.imageUrl) ? getThumbnailImageUrl(article.imageUrl) : article.imageUrl}
+                          src={isCloudinaryUrl(article.imageUrl) ? getThumbnailResponsiveUrl(article.imageUrl) : article.imageUrl}
                           alt={article.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
                         <div className="absolute inset-0 gradient-nature flex items-center justify-center">

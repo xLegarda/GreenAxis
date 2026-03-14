@@ -181,7 +181,6 @@ export default function ServiciosAdminPage() {
 
   const handleImageChange = (url: string) => {
     setFormData(prev => ({ ...prev, imageUrl: url }))
-    setImagePreview(url || null)
   }
 
   const resetForm = () => {
@@ -370,7 +369,7 @@ export default function ServiciosAdminPage() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl w-full mx-4 sm:mx-auto max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {editingService ? (
@@ -527,13 +526,13 @@ export default function ServiciosAdminPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button 
-              onClick={handleSave} 
-              className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white"
+            <Button
+              onClick={handleSave}
+              className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white w-full sm:w-auto"
             >
               <Save className="h-4 w-4 mr-2" />
               {editingService ? 'Guardar cambios' : 'Crear servicio'}

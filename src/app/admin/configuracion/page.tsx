@@ -99,28 +99,31 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Configuración General</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Configuración General</h1>
           <p className="text-sm text-muted-foreground">Personaliza la información de tu sitio web</p>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="gradient-nature text-white">
+        <Button onClick={handleSave} disabled={saving} className="gradient-nature text-white w-full sm:w-auto shrink-0">
           <Save className="h-4 w-4 mr-2" />
           {saving ? 'Guardando...' : 'Guardar Cambios'}
         </Button>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="bg-card">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="contacto">Contacto</TabsTrigger>
-          <TabsTrigger value="redes">Redes Sociales</TabsTrigger>
-          <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-          <TabsTrigger value="footer">Footer</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="general" className="space-y-4 sm:space-y-6">
+        {/* Tabs con scroll horizontal en móvil */}
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <TabsList className="bg-card flex w-max sm:w-auto min-w-full sm:min-w-0">
+            <TabsTrigger value="general" className="shrink-0">General</TabsTrigger>
+            <TabsTrigger value="contacto" className="shrink-0">Contacto</TabsTrigger>
+            <TabsTrigger value="redes" className="shrink-0">Redes</TabsTrigger>
+            <TabsTrigger value="whatsapp" className="shrink-0">WhatsApp</TabsTrigger>
+            <TabsTrigger value="footer" className="shrink-0">Footer</TabsTrigger>
+            <TabsTrigger value="seo" className="shrink-0">SEO</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* General */}
         <TabsContent value="general">

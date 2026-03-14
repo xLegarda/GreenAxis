@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { ArrowRight, Leaf, Recycle, TreePine, Droplets, Wind, Building2, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { getServiceImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
+import { getServiceResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 
 interface Service {
   id: string
@@ -101,10 +101,11 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                     {service.imageUrl ? (
                       <>
                         <Image
-                          src={isCloudinaryUrl(service.imageUrl) ? getServiceImageUrl(service.imageUrl) : service.imageUrl}
+                          src={isCloudinaryUrl(service.imageUrl) ? getServiceResponsiveUrl(service.imageUrl) : service.imageUrl}
                           alt={service.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#005A7A]/80 via-[#005A7A]/20 to-transparent dark:from-[#0f252d]/80" />
                       </>
