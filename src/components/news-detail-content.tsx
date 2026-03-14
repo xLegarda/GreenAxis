@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, Calendar, User, Share2, Facebook, Linkedin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { renderEditorBlocks } from '@/components/editor-js'
+import { getCloudinaryImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 
 // X (Twitter) SVG Icon
 function XIcon({ className }: { className?: string }) {
@@ -59,7 +60,8 @@ export function NewsDetailContent({ news, config, shareUrl }: NewsDetailContentP
   }
   
   // Parse blocks if available
-  let blocksData = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let blocksData: any = null
   if (news.blocks) {
     try {
       blocksData = JSON.parse(news.blocks)
@@ -68,7 +70,7 @@ export function NewsDetailContent({ news, config, shareUrl }: NewsDetailContentP
     }
   }
 
-  const hasEditorBlocks = blocksData && blocksData.blocks && blocksData.blocks.length > 0
+  const hasEditorBlocks = blocksData?.blocks && blocksData.blocks.length > 0
   
   return (
     <>
@@ -77,7 +79,7 @@ export function NewsDetailContent({ news, config, shareUrl }: NewsDetailContentP
         {news.imageUrl ? (
           <div className="absolute inset-0">
             <Image
-              src={news.imageUrl}
+              src={isCloudinaryUrl(news.imageUrl) ? getCloudinaryImageUrl(news.imageUrl, { format: 'auto', quality: 'auto', width: 1200 }) : news.imageUrl}
               alt={news.title}
               fill
               className="object-cover"

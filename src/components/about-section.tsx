@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { CheckCircle, Target, Users, Award } from 'lucide-react'
+import { getServiceImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 
 interface PlatformConfig {
   siteName: string
@@ -69,7 +70,7 @@ export function AboutSection({ config }: AboutSectionProps) {
   
   // Mapear iconos
   const getIconComponent = (iconName: string) => {
-    const icons: Record<string, React.ComponentType<{ className?: string }>> = {
+    const icons: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
       Users,
       Target,
       Award,
@@ -86,7 +87,9 @@ export function AboutSection({ config }: AboutSectionProps) {
           <div className="relative">
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
               <Image
-                src={config.aboutImageUrl || "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&q=80"}
+                src={config.aboutImageUrl && isCloudinaryUrl(config.aboutImageUrl)
+                  ? getServiceImageUrl(config.aboutImageUrl)
+                  : (config.aboutImageUrl || "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&q=80")}
                 alt="Equipo de trabajo ambiental"
                 fill
                 className="object-cover"

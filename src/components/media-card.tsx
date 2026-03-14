@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ImageIcon, Video, Music, Check, Trash2, Info } from 'lucide-react'
+import { getAdminThumbnailUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -153,7 +154,7 @@ export function MediaCard({
             // Lazy loading for images - Requirements: 14.4
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={item.url}
+              src={isCloudinaryUrl(item.url) ? getAdminThumbnailUrl(item.url) : item.url}
               alt={item.label}
               loading="lazy"
               className="w-full h-full object-cover"

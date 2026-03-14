@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getThumbnailImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 import Image from 'next/image'
 import { ArrowRight, Calendar, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -56,7 +57,7 @@ export function NewsSection({ news }: NewsSectionProps) {
               <div className="relative h-52 overflow-hidden">
                 {article.imageUrl ? (
                   <Image
-                    src={article.imageUrl}
+                    src={isCloudinaryUrl(article.imageUrl) ? getThumbnailImageUrl(article.imageUrl) : article.imageUrl}
                     alt={article.title}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"

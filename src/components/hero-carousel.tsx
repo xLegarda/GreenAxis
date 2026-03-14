@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { getHeroImageUrl, isCloudinaryUrl } from '@/lib/cloudinary'
+
 
 interface CarouselSlide {
   id: string
@@ -170,7 +172,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
             {/* Background Image */}
             <div className="absolute inset-0 overflow-hidden">
               <Image
-                src={slide.imageUrl}
+                src={isCloudinaryUrl(slide.imageUrl) ? getHeroImageUrl(slide.imageUrl) : slide.imageUrl}
                 alt={slide.title || 'Slide'}
                 fill
                 className="object-cover"
@@ -237,11 +239,13 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         )
         
         // Si tiene link, envolver en Link
-        const Wrapper = slide.linkUrl ? ({ children }: { children: React.ReactNode }) => (
-          <Link href={slide.linkUrl} className="block w-full h-full cursor-pointer">
+        const linkUrl = slide.linkUrl
+        const Wrapper = linkUrl ? ({ children }: { children: React.ReactNode }) => (
+          <Link href={linkUrl} className="block w-full h-full cursor-pointer">
             {children}
           </Link>
         ) : ({ children }: { children: React.ReactNode }) => <>{children}</>
+
         
         return (
           <div
