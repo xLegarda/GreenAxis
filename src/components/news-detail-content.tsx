@@ -2,10 +2,11 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, User, Share2, Facebook, Linkedin } from 'lucide-react'
+import { ArrowLeft, Calendar, User, Share2, Facebook, Linkedin, Instagram } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { renderEditorBlocks } from '@/components/editor-js'
 import { getHeroResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
+import { useToast } from '@/hooks/use-toast'
 
 // X (Twitter) SVG Icon
 function XIcon({ className }: { className?: string }) {
@@ -49,6 +50,8 @@ interface NewsDetailContentProps {
 }
 
 export function NewsDetailContent({ news, config, shareUrl }: NewsDetailContentProps) {
+  const { toast } = useToast()
+
   const formatDate = (date: Date | string | null) => {
     if (!date) return ''
     const d = new Date(date)
@@ -57,6 +60,51 @@ export function NewsDetailContent({ news, config, shareUrl }: NewsDetailContentP
       month: 'long',
       day: 'numeric'
     })
+  }
+
+  const handleInstagramShare = async () => {
+    const text = `${news.title}\n\n${shareUrl}`
+    
+    // Verificar si el portapapeles está disponible
+    if (!navigator.clipboard) {
+      // Fallback: usar método antiguo
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      try {
+        document.execCommand('copy')
+        toast({
+          title: "¡Enlace copiado!",
+          description: "Pega el enlace en Instagram para compartir.",
+        })
+      } catch (err) {
+        toast({
+          variant: "destructive",
+          title: "Error al copiar",
+          description: `Copia este enlace manualmente: ${shareUrl}`,
+        })
+      }
+      document.body.removeChild(textarea)
+      return
+    }
+    
+    try {
+      await navigator.clipboard.writeText(text)
+      toast({
+        title: "¡Enlace copiado!",
+        description: "Pega el enlace en Instagram para compartir.",
+      })
+    } catch (err) {
+      console.error('Error copying to clipboard:', err)
+      toast({
+        variant: "destructive",
+        title: "Error al copiar",
+        description: `Copia este enlace manualmente: ${shareUrl}`,
+      })
+    }
   }
   
   // Parse blocks if available
@@ -204,6 +252,13 @@ export function NewsDetailContent({ news, config, shareUrl }: NewsDetailContentP
                   >
                     <WhatsAppIcon className="h-5 w-5" />
                   </a>
+                  <button
+                    onClick={handleInstagramShare}
+                    title="Compartir en Instagram"
+                    className="p-2 rounded-full bg-accent text-muted-foreground hover:bg-gradient-to-tr hover:from-[#f9ce34] hover:via-[#ee2a7b] hover:to-[#6228d7] hover:text-white transition-colors"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </button>
                   <a
                     href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
                     target="_blank"
