@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Save, GripVertical, Eye, EyeOff, Sparkles, FileText, Info } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, GripVertical, Eye, EyeOff, Sparkles, FileText, Info, RefreshCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -74,11 +74,26 @@ function buildBlocksFromContent(content: string) {
   }
 }
 
+function getShortDescriptionPreview(service: Pick<Service, 'shortBlocks' | 'description'>): string {
+  if (service.shortBlocks) {
+    try {
+      const data = JSON.parse(service.shortBlocks)
+      const text = editorDataToText(data).replace(/\s+/g, ' ').trim()
+      if (text) return text
+    } catch {
+      // Fall through
+    }
+  }
+
+  return service.description?.trim() || ''
+}
+
 interface Service {
   id: string
   title: string
   slug?: string | null
   description: string | null
+  shortBlocks?: string | null
   content: string | null
   blocks?: string | null
   icon: string | null
@@ -93,7 +108,9 @@ export default function ServiciosAdminPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
+  const [slugEdited, setSlugEdited] = useState(false)
   const editorDataRef = useRef<any>(null)
+  const shortEditorDataRef = useRef<any>(null)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; service: Service | null }>({
     open: false,
     service: null
@@ -102,6 +119,7 @@ export default function ServiciosAdminPage() {
 
   const [formData, setFormData] = useState({
     title: '',
+    slug: '',
     description: '',
     content: '',
     icon: 'Leaf',
@@ -131,6 +149,10 @@ export default function ServiciosAdminPage() {
     editorDataRef.current = data
   }, [])
 
+  const handleShortEditorChange = useCallback((data: any) => {
+    shortEditorDataRef.current = data
+  }, [])
+
   const handleSave = async () => {
     if (!formData.title.trim()) {
       toast({ title: 'Error', description: 'El título es obligatorio', variant: 'destructive' })
@@ -140,22 +162,24 @@ export default function ServiciosAdminPage() {
     try {
       let blocks: string | null = null
       let content = formData.content
+      let shortBlocks: string | null = null
 
       if (editorDataRef.current) {
         blocks = JSON.stringify(editorDataRef.current)
         content = editorDataToText(editorDataRef.current)
       }
 
-      const nextSlug = generateSlug(formData.title)
-      const slug = editingService
-        ? (editingService.title === formData.title && editingService.slug ? editingService.slug : nextSlug)
-        : nextSlug
+      if (shortEditorDataRef.current) {
+        shortBlocks = JSON.stringify(shortEditorDataRef.current)
+      }
+
+      const slug = formData.slug?.trim() ? generateSlug(formData.slug) : generateSlug(formData.title)
 
       const url = '/api/servicios'
       const method = editingService ? 'PUT' : 'POST'
       const body = editingService 
-        ? { ...formData, id: editingService.id, slug, blocks, content }
-        : { ...formData, slug, blocks, content }
+        ? { ...formData, id: editingService.id, slug, blocks, content, shortBlocks }
+        : { ...formData, slug, blocks, content, shortBlocks }
 
       const response = await fetch(url, {
         method,
@@ -225,6 +249,7 @@ export default function ServiciosAdminPage() {
   const resetForm = () => {
     setFormData({
       title: '',
+      slug: '',
       description: '',
       content: '',
       icon: 'Leaf',
@@ -232,7 +257,9 @@ export default function ServiciosAdminPage() {
       active: true,
       featured: false,
     })
+    setSlugEdited(false)
     editorDataRef.current = null
+    shortEditorDataRef.current = null
   }
 
   const openEditDialog = (service: Service) => {
@@ -248,9 +275,20 @@ export default function ServiciosAdminPage() {
       blocksData = buildBlocksFromContent(service.content)
     }
 
+    // Load shortBlocks for short description
+    let shortBlocksData = null
+    if (service.shortBlocks) {
+      try {
+        shortBlocksData = JSON.parse(service.shortBlocks)
+      } catch {
+        shortBlocksData = null
+      }
+    }
+
     setEditingService(service)
     setFormData({
       title: service.title,
+      slug: service.slug || generateSlug(service.title),
       description: service.description || '',
       content: service.content || '',
       icon: service.icon || 'Leaf',
@@ -258,7 +296,9 @@ export default function ServiciosAdminPage() {
       active: service.active,
       featured: service.featured,
     })
+    setSlugEdited(false)
     editorDataRef.current = blocksData
+    shortEditorDataRef.current = shortBlocksData
     setDialogOpen(true)
   }
 
@@ -366,9 +406,18 @@ export default function ServiciosAdminPage() {
                         <Badge variant="secondary" className="text-xs">Inactivo</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                      {service.description || 'Sin descripción'}
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                      {getShortDescriptionPreview(service) || 'Sin descripción'}
                     </p>
+                    {service.slug ? (
+                      <p className="text-xs text-muted-foreground font-mono truncate mt-1">
+                        /servicios/{service.slug}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-amber-600 font-medium mt-1">
+                        Sin slug (se genera al guardar)
+                      </p>
+                    )}
                   </div>
                   
                   {/* Actions */}
@@ -430,24 +479,79 @@ export default function ServiciosAdminPage() {
           <div className="space-y-6 py-4">
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Ej: Gestión de Residuos"
-                  className="text-base"
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => {
+                      const title = e.target.value
+                      setFormData((prev) => ({
+                        ...prev,
+                        title,
+                        ...(slugEdited ? {} : { slug: generateSlug(title) }),
+                      }))
+                    }}
+                    placeholder="Ej: Gestión de Residuos"
+                    className="text-base"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="slug">Slug (URL)</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSlugEdited(false)
+                        setFormData((prev) => ({ ...prev, slug: generateSlug(prev.title) }))
+                      }}
+                      disabled={!formData.title.trim()}
+                      className="h-8"
+                      title="Regenerar slug desde el título"
+                    >
+                      <RefreshCcw className="h-3.5 w-3.5 mr-2" />
+                      Regenerar
+                    </Button>
+                  </div>
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => {
+                      setSlugEdited(true)
+                      setFormData((prev) => ({ ...prev, slug: generateSlug(e.target.value) }))
+                    }}
+                    placeholder="gestion-de-residuos"
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    URL:{' '}
+                    <span className="font-mono">
+                      /servicios/{formData.slug || generateSlug(formData.title) || '...'}
+                    </span>
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descripción corta</Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Breve descripción del servicio"
+                <Label>Descripción corta</Label>
+                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
+                  <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                  <div className="text-blue-700 dark:text-blue-300">
+                    <p className="font-medium">Editor para listado de servicios</p>
+                    <p className="text-xs mt-1 text-blue-600 dark:text-blue-400">
+                      Esta descripción aparece en las tarjetas de servicios. Usa pocas palabras.
+                    </p>
+                  </div>
+                </div>
+
+                <EditorJSComponent
+                  data={shortEditorDataRef.current}
+                  onChange={handleShortEditorChange}
+                  placeholder="Descripción corta para el listado..."
                 />
               </div>
             </div>
@@ -455,8 +559,8 @@ export default function ServiciosAdminPage() {
             {/* Content */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="content">Contenido detallado</Label>
-                <span className="text-xs text-muted-foreground">Editor de bloques</span>
+                <Label htmlFor="content">Contenido completo</Label>
+                <span className="text-xs text-muted-foreground">Página interna del servicio</span>
               </div>
 
               <div className="flex items-start gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm">
@@ -622,5 +726,3 @@ export default function ServiciosAdminPage() {
     </div>
   )
 }
-
-

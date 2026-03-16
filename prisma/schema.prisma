@@ -82,9 +82,10 @@ model Service {
   id          String   @id @default(cuid())
   title       String
   slug        String?  @unique  // URL amigable (ej: gestion-de-residuos)
-  description String?
-  content     String?  // Contenido detallado en markdown (fallback)
-  blocks      String?  // Contenido en formato Editor.js JSON
+  description String?  // Descripción corta (para tarjetas/listados)
+  shortBlocks String?  // Descripción corta en Editor.js (vista pública)
+  content     String?  // Contenido completo en markdown (fallback)
+  blocks      String?  // Contenido completo en formato Editor.js (página detalle)
   icon        String?  // Nombre del icono de Lucide
   imageUrl    String?
   order       Int      @default(0)

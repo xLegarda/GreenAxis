@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Leaf, Recycle, TreePine, Droplets, Wind, Building2, CheckCircle, ArrowRight, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Sparkles, Phone, Mail } from 'lucide-react'
+import { Leaf, Recycle, TreePine, Droplets, Wind, Building2, ArrowRight, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Sparkles, Phone, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getServiceResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
@@ -10,7 +10,9 @@ interface Service {
   title: string
   slug?: string | null
   description: string | null
+  shortBlocks?: string | null
   content: string | null
+  blocks?: string | null
   icon: string | null
   imageUrl: string | null
   featured?: boolean
@@ -53,8 +55,59 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
     return iconName && iconMap[iconName] ? iconMap[iconName] : Leaf
   }
 
+  const stripHtml = (input: string) => input.replace(/<[^>]*>/g, '')
+
   const getServiceHref = (service: Service) => {
     return service.slug ? `/servicios/${service.slug}` : `/servicios#servicio-${service.id}`
+  }
+
+  const getShortDescriptionText = (service: Service): string => {
+    if (service.shortBlocks) {
+      try {
+        const data = JSON.parse(service.shortBlocks)
+        if (Array.isArray(data?.blocks)) {
+          const text = data.blocks
+            .map((block: any) => {
+              switch (block?.type) {
+                case 'paragraph':
+                case 'header':
+                case 'titulo1':
+                case 'titulo2':
+                case 'titulo3':
+                case 'titulo4':
+                  return stripHtml(block?.data?.text || '')
+                case 'list':
+                  return (block?.data?.items || []).map((item: string) => stripHtml(item)).join(' • ')
+                case 'quote':
+                  return stripHtml(block?.data?.text || '')
+                default:
+                  return ''
+              }
+            })
+            .filter(Boolean)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+
+          if (text) return text
+        }
+      } catch {
+        // Fall through
+      }
+    }
+
+    return service.description?.trim() || ''
+  }
+
+  const renderShortDescription = (service: Service, variant: 'card' | 'detail' = 'card') => {
+    const text = getShortDescriptionText(service)
+    if (!text) return null
+
+    if (variant === 'detail') {
+      return <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg leading-relaxed">{text}</p>
+    }
+
+    return <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">{text}</p>
   }
 
   // Separar servicios destacados
@@ -167,11 +220,11 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                           </Link>
                         </div>
                         
-                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
-                          {service.description}
-                        </p>
+                        <div className="mb-4">
+                          {renderShortDescription(service, 'card')}
+                        </div>
                         
-                        <Link 
+                        <Link
                           href={serviceHref}
                           className="inline-flex items-center text-[#6BBE45] dark:text-[#8BC34A] font-medium hover:gap-2 gap-1 transition-all text-sm"
                         >
@@ -256,41 +309,11 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                       </div>
                       
                       <Link href={serviceHref} className="text-2xl md:text-3xl font-bold text-[#005A7A] dark:text-white hover:underline">
-                        {service.title}
-                      </Link>
-                      
-                      <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-                        {service.description}
-                      </p>
-                      
-                      {service.content && (
-                        <div className="bg-white dark:bg-[#0f252d] rounded-xl p-6 space-y-3">
-                          {service.content.split('\n').filter(line => line.trim()).map((line, i) => {
-                            if (line.startsWith('- **') && line.endsWith('**')) {
-                              // It's a bullet point with bold text
-                              const text = line.replace('- **', '').replace('**', '')
-                              return (
-                                <div key={i} className="flex items-start gap-2">
-                                  <CheckCircle className="h-5 w-5 text-[#6BBE45] dark:text-[#8BC34A] shrink-0 mt-0.5" />
-                                  <span className="text-gray-700 dark:text-gray-300 font-medium">{text}</span>
-                                </div>
-                              )
-                            } else if (line.startsWith('- ')) {
-                              return (
-                                <div key={i} className="flex items-start gap-2">
-                                  <CheckCircle className="h-5 w-5 text-[#6BBE45] dark:text-[#8BC34A] shrink-0 mt-0.5" />
-                                  <span className="text-gray-700 dark:text-gray-300">{line.replace('- ', '')}</span>
-                                </div>
-                              )
-                            } else if (line.startsWith('**') && line.endsWith('**')) {
-                              return <p key={i} className="font-semibold text-[#005A7A] dark:text-white">{line.replace(/\*\*/g, '')}</p>
-                            } else {
-                              return <p key={i} className="text-gray-600 dark:text-gray-400">{line}</p>
-                            }
-                          })}
-                        </div>
-                      )}
-                      
+                      {service.title}
+                    </Link>
+                    
+                    {renderShortDescription(service, 'detail')}
+                    
                       <div className="pt-4">
                         <Button asChild className="bg-[#6BBE45] hover:bg-[#5CAE38] dark:bg-[#8BC34A] dark:hover:bg-[#7AB83A] text-white">
                           <Link href="/contacto">

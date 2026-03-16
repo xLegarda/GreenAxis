@@ -66,6 +66,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     title: service.title,
     slug: service.slug,
     description: service.description,
+    shortBlocks: service.shortBlocks,
     content: service.content,
     blocks: service.blocks,
     icon: service.icon,
