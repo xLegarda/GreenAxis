@@ -1,4 +1,4 @@
-// Custom Link Tool for Editor.js - Simple inline link with popup
+// Custom Link Tool for Editor.js - Beautiful inline link popup
 
 interface LinkData {
   link: string
@@ -6,7 +6,8 @@ interface LinkData {
 
 export default class LinkTool {
   private data: LinkData
-  private button: HTMLButtonElement
+  private readonly popupSelector = '.link-tool-popup'
+  private toolButton: HTMLButtonElement | null = null
 
   static get isInline() {
     return true
@@ -32,17 +33,16 @@ export default class LinkTool {
 
   constructor() {
     this.data = { link: '' }
-    this.button = document.createElement('button')
   }
 
   render(): HTMLButtonElement {
-    this.button.type = 'button'
-    this.button.classList.add('ce-inline-tool', 'ce-toolbar__tool')
-    this.button.innerHTML = LinkTool.icon
-    this.button.title = 'Enlace'
-    this.button.style.width = '24px'
-    this.button.style.height = '24px'
-    return this.button
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.classList.add('ce-inline-tool')
+    button.innerHTML = LinkTool.icon
+    button.title = 'Enlace'
+    this.toolButton = button
+    return button
   }
 
   surround(range: Range): void {
@@ -55,6 +55,37 @@ export default class LinkTool {
     } else if (!range.collapsed) {
       this.showInputPopup(range)
     }
+  }
+
+  private removeExistingPopup(): void {
+    const existingPopup = document.querySelector(this.popupSelector)
+    if (existingPopup) existingPopup.remove()
+  }
+
+  private getPopupMount(anchorEl?: Element | null): HTMLElement {
+    if (!anchorEl) return document.body
+
+    const dialogContent = anchorEl.closest('[data-slot="dialog-content"]') as HTMLElement | null
+    if (dialogContent) return dialogContent
+
+    return document.body
+  }
+
+  private positionPopup(popup: HTMLElement, mount: HTMLElement, anchorEl: HTMLElement): void {
+    const anchorRect = anchorEl.getBoundingClientRect()
+
+    if (mount === document.body) {
+      popup.style.position = 'fixed'
+      popup.style.top = `${anchorRect.bottom + 4}px`
+      popup.style.left = `${anchorRect.left}px`
+      return
+    }
+
+    popup.style.position = 'absolute'
+    const mountRect = mount.getBoundingClientRect()
+    // If the dialog content is scrollable, we must account for its scroll offset
+    popup.style.top = `${anchorRect.bottom - mountRect.top + mount.scrollTop + 4}px`
+    popup.style.left = `${anchorRect.left - mountRect.left + mount.scrollLeft}px`
   }
 
   private findLinkInSelection(): HTMLAnchorElement | null {
@@ -72,53 +103,95 @@ export default class LinkTool {
   }
 
   private showInputPopup(range: Range): void {
+    const savedRange = range.cloneRange()
+    this.removeExistingPopup()
+
     const popup = document.createElement('div')
     popup.className = 'link-tool-popup'
     popup.style.cssText = `
-      position: absolute;
-      z-index: 1000;
+      z-index: 9999;
       display: flex;
-      gap: 6px;
-      padding: 6px 8px;
-      background: #fff;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      pointer-events: auto;
     `
 
     if (document.documentElement.classList.contains('dark')) {
       popup.style.background = '#1f2937'
     }
 
+    // Prevent Editor.js / Radix Dialog from treating popup clicks as "outside"
+    popup.addEventListener('pointerdown', (e) => {
+      e.stopPropagation()
+    })
+    popup.addEventListener('mousedown', (e) => {
+      e.stopPropagation()
+    })
+    popup.addEventListener('click', (e) => {
+      e.stopPropagation()
+    })
+
+    // URL Input
     const input = document.createElement('input')
     input.type = 'text'
-    input.placeholder = 'URL'
+    input.placeholder = 'Ingresa la URL...'
     input.style.cssText = `
-      padding: 6px 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 4px;
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
       font-size: 13px;
       outline: none;
-      width: 180px;
+      width: 200px;
+      transition: border-color 0.2s;
     `
 
-    if (document.documentElement.classList.contains('dark')) {
-      input.style.background = '#374151'
-      input.style.borderColor = '#4b5563'
-      input.style.color = '#fff'
-    }
+    input.style.background = document.documentElement.classList.contains('dark') ? '#374151' : '#fff'
+    input.style.borderColor = document.documentElement.classList.contains('dark') ? '#4b5563' : '#e5e7eb'
+    input.style.color = document.documentElement.classList.contains('dark') ? '#fff' : '#1f2937'
 
+    input.addEventListener('pointerdown', (e) => {
+      e.stopPropagation()
+    })
+    input.addEventListener('mousedown', (e) => {
+      e.stopPropagation()
+    })
+    input.addEventListener('click', (e) => {
+      e.stopPropagation()
+    })
+
+    input.addEventListener('mouseenter', () => {
+      input.style.borderColor = '#6BBE45'
+    })
+    input.addEventListener('mouseleave', () => {
+      input.style.borderColor = document.documentElement.classList.contains('dark') ? '#4b5563' : '#e5e7eb'
+    })
+
+    // Save Button
     const saveBtn = document.createElement('button')
-    saveBtn.textContent = '✓'
+    saveBtn.textContent = 'Guardar'
     saveBtn.style.cssText = `
-      padding: 6px 10px;
-      background: #10b981;
+      padding: 8px 16px;
+      background: #6BBE45;
       color: white;
       border: none;
-      border-radius: 4px;
-      font-size: 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
+      transition: background 0.2s;
     `
+    
+    saveBtn.addEventListener('mouseenter', () => {
+      saveBtn.style.background = '#5CAE38'
+    })
+    saveBtn.addEventListener('mouseleave', () => {
+      saveBtn.style.background = '#6BBE45'
+    })
 
     const save = () => {
       const url = input.value.trim()
@@ -132,68 +205,118 @@ export default class LinkTool {
         finalUrl = 'https://' + url
       }
 
-      const link = document.createElement('a')
-      link.href = finalUrl
-      link.target = '_self'
-      link.rel = 'noopener noreferrer'
-      link.style.color = '#3b82f6'
-      link.style.textDecoration = 'underline'
+       const link = document.createElement('a')
+       link.href = finalUrl
+       link.target = '_self'
+       link.rel = 'noopener noreferrer'
+       link.style.color = '#3b82f6'
+       link.style.textDecoration = 'underline'
 
-      const contents = range.extractContents()
-      link.appendChild(contents)
-      range.insertNode(link)
+       const contents = savedRange.extractContents()
+       link.appendChild(contents)
+       savedRange.insertNode(link)
 
-      popup.remove()
-    }
+       // Place caret after the inserted link
+       const selection = window.getSelection()
+       if (selection) {
+         selection.removeAllRanges()
+         const afterLink = document.createRange()
+         afterLink.setStartAfter(link)
+         afterLink.collapse(true)
+         selection.addRange(afterLink)
+       }
+
+       popup.remove()
+     }
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') save()
-      if (e.key === 'Escape') popup.remove()
+      e.stopPropagation()
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        save()
+      }
+      if (e.key === 'Escape') {
+        popup.remove()
+      }
     })
 
-    saveBtn.addEventListener('click', save)
+    saveBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      save()
+    })
 
     popup.appendChild(input)
     popup.appendChild(saveBtn)
 
-    document.body.appendChild(popup)
+    // Position popup near the toolbar button instead of the text
+    const buttonEl = (this.toolButton?.isConnected ? this.toolButton : null)
+      ?? (document.querySelector('.ce-inline-tool[title="Enlace"]') as HTMLElement | null)
+    const mount = this.getPopupMount(buttonEl)
+    if (buttonEl) {
+      this.positionPopup(popup, mount, buttonEl)
+    }
 
-    const rect = this.button.getBoundingClientRect()
-    popup.style.top = (rect.bottom + window.scrollY + 4) + 'px'
-    popup.style.left = (rect.left + window.scrollX) + 'px'
+    mount.appendChild(popup)
 
-    setTimeout(() => input.focus(), 50)
+    // Focus input
+    setTimeout(() => {
+      try {
+        input.focus({ preventScroll: true })
+      } catch {
+        input.focus()
+      }
+    }, 50)
 
+    // Close popup when clicking outside
     const closePopup = (e: MouseEvent) => {
-      if (!popup.contains(e.target as Node) && e.target !== this.button) {
+      if (!popup.contains(e.target as Node)) {
         popup.remove()
-        document.removeEventListener('click', closePopup)
+        document.removeEventListener('mousedown', closePopup)
       }
     }
-    setTimeout(() => document.addEventListener('click', closePopup), 100)
+    
+    setTimeout(() => {
+      document.addEventListener('mousedown', closePopup)
+    }, 200)
   }
 
   private showRemoveOption(link: HTMLAnchorElement): void {
+    this.removeExistingPopup()
+
     const popup = document.createElement('div')
     popup.className = 'link-tool-popup'
     popup.style.cssText = `
-      position: absolute;
-      z-index: 1000;
+      z-index: 9999;
       display: flex;
-      gap: 6px;
-      padding: 6px 8px;
-      background: #fff;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      pointer-events: auto;
     `
 
     if (document.documentElement.classList.contains('dark')) {
       popup.style.background = '#1f2937'
     }
 
+    // Prevent Editor.js / Radix Dialog from treating popup clicks as "outside"
+    popup.addEventListener('pointerdown', (e) => {
+      e.stopPropagation()
+    })
+    popup.addEventListener('mousedown', (e) => {
+      e.stopPropagation()
+    })
+    popup.addEventListener('click', (e) => {
+      e.stopPropagation()
+    })
+
+    // URL display
     const urlText = document.createElement('span')
-    urlText.textContent = link.href.length > 25 ? link.href.substring(0, 25) + '...' : link.href
+    urlText.textContent = link.href.length > 30 ? link.href.substring(0, 30) + '...' : link.href
     urlText.style.cssText = `
       font-size: 12px;
       color: #6b7280;
@@ -202,19 +325,32 @@ export default class LinkTool {
       text-overflow: ellipsis;
       white-space: nowrap;
     `
+    if (document.documentElement.classList.contains('dark')) {
+      urlText.style.color = '#9ca3af'
+    }
 
+    // Remove Button
     const removeBtn = document.createElement('button')
-    removeBtn.textContent = '✕'
+    removeBtn.textContent = 'Eliminar'
     removeBtn.title = 'Eliminar enlace'
     removeBtn.style.cssText = `
-      padding: 4px 8px;
+      padding: 6px 12px;
       background: #ef4444;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
+      transition: background 0.2s;
     `
+
+    removeBtn.addEventListener('mouseenter', () => {
+      removeBtn.style.background = '#dc2626'
+    })
+    removeBtn.addEventListener('mouseleave', () => {
+      removeBtn.style.background = '#ef4444'
+    })
 
     removeBtn.addEventListener('click', () => {
       const parent = link.parentNode
@@ -230,19 +366,27 @@ export default class LinkTool {
     popup.appendChild(urlText)
     popup.appendChild(removeBtn)
 
-    document.body.appendChild(popup)
+    // Position popup near the toolbar button
+    const buttonEl = (this.toolButton?.isConnected ? this.toolButton : null)
+      ?? (document.querySelector('.ce-inline-tool[title="Enlace"]') as HTMLElement | null)
+    const mount = this.getPopupMount(buttonEl)
+    if (buttonEl) {
+      this.positionPopup(popup, mount, buttonEl)
+    }
 
-    const rect = link.getBoundingClientRect()
-    popup.style.top = (rect.bottom + window.scrollY + 4) + 'px'
-    popup.style.left = (rect.left + window.scrollX) + 'px'
+    mount.appendChild(popup)
 
+    // Close popup when clicking outside
     const closePopup = (e: MouseEvent) => {
       if (!popup.contains(e.target as Node)) {
         popup.remove()
-        document.removeEventListener('click', closePopup)
+        document.removeEventListener('mousedown', closePopup)
       }
     }
-    setTimeout(() => document.addEventListener('click', closePopup), 100)
+    
+    setTimeout(() => {
+      document.addEventListener('mousedown', closePopup)
+    }, 200)
   }
 
   checkState(): boolean {
