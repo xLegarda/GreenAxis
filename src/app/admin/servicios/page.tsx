@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Save, GripVertical, Eye, EyeOff, Sparkles, FileText } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Plus, Pencil, Trash2, Save, GripVertical, Eye, EyeOff, Sparkles, FileText, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -19,6 +18,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import MediaPickerCompact from '@/components/media-picker-compact'
 import { toast } from '@/hooks/use-toast'
+import { EditorJSComponent, editorDataToText } from '@/components/editor-js'
 import { 
   Leaf, Recycle, TreePine, Droplets, Wind, Building2, 
   Sun, CloudRain, Mountain, Flower2, Landmark, Factory,
@@ -55,11 +55,32 @@ const iconCategories = [
   { id: 'infraestructura', label: '🏛️ Infraestructura' },
 ]
 
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function buildBlocksFromContent(content: string) {
+  const lines = content.split('\n').map((line) => line.trim()).filter(Boolean)
+  return {
+    blocks: lines.map((text) => ({
+      type: 'paragraph',
+      data: { text }
+    }))
+  }
+}
+
 interface Service {
   id: string
   title: string
+  slug?: string | null
   description: string | null
   content: string | null
+  blocks?: string | null
   icon: string | null
   imageUrl: string | null
   order: number
@@ -72,6 +93,7 @@ export default function ServiciosAdminPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
+  const editorDataRef = useRef<any>(null)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; service: Service | null }>({
     open: false,
     service: null
@@ -105,6 +127,10 @@ export default function ServiciosAdminPage() {
     }
   }
 
+  const handleEditorChange = useCallback((data: any) => {
+    editorDataRef.current = data
+  }, [])
+
   const handleSave = async () => {
     if (!formData.title.trim()) {
       toast({ title: 'Error', description: 'El título es obligatorio', variant: 'destructive' })
@@ -112,11 +138,24 @@ export default function ServiciosAdminPage() {
     }
 
     try {
+      let blocks: string | null = null
+      let content = formData.content
+
+      if (editorDataRef.current) {
+        blocks = JSON.stringify(editorDataRef.current)
+        content = editorDataToText(editorDataRef.current)
+      }
+
+      const nextSlug = generateSlug(formData.title)
+      const slug = editingService
+        ? (editingService.title === formData.title && editingService.slug ? editingService.slug : nextSlug)
+        : nextSlug
+
       const url = '/api/servicios'
       const method = editingService ? 'PUT' : 'POST'
       const body = editingService 
-        ? { ...formData, id: editingService.id }
-        : formData
+        ? { ...formData, id: editingService.id, slug, blocks, content }
+        : { ...formData, slug, blocks, content }
 
       const response = await fetch(url, {
         method,
@@ -193,9 +232,22 @@ export default function ServiciosAdminPage() {
       active: true,
       featured: false,
     })
+    editorDataRef.current = null
   }
 
   const openEditDialog = (service: Service) => {
+    let blocksData = null
+    if (service.blocks) {
+      try {
+        blocksData = JSON.parse(service.blocks)
+      } catch {
+        blocksData = null
+      }
+    }
+    if (!blocksData && service.content) {
+      blocksData = buildBlocksFromContent(service.content)
+    }
+
     setEditingService(service)
     setFormData({
       title: service.title,
@@ -206,6 +258,7 @@ export default function ServiciosAdminPage() {
       active: service.active,
       featured: service.featured,
     })
+    editorDataRef.current = blocksData
     setDialogOpen(true)
   }
 
@@ -367,26 +420,11 @@ export default function ServiciosAdminPage() {
         )}
       </div>
 
-      {/* Dialog */}
+      {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl w-full mx-4 sm:mx-auto max-h-[90dvh] overflow-y-auto">
+        <DialogContent className="!max-w-[800px] !w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {editingService ? (
-                <>
-                  <Pencil className="h-5 w-5" />
-                  Editar Servicio
-                </>
-              ) : (
-                <>
-                  <Plus className="h-5 w-5" />
-                  Nuevo Servicio
-                </>
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              Completa la información del servicio. Los campos marcados con * son obligatorios.
-            </DialogDescription>
+            <DialogTitle>{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
@@ -416,18 +454,26 @@ export default function ServiciosAdminPage() {
 
             {/* Content */}
             <div className="space-y-2">
-              <Label htmlFor="content">Contenido detallado</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={5}
-                placeholder="Describe el servicio en detalle. Puedes usar **texto en negrita** para resaltar información importante."
-                className="resize-none"
+              <div className="flex items-center justify-between">
+                <Label htmlFor="content">Contenido detallado</Label>
+                <span className="text-xs text-muted-foreground">Editor de bloques</span>
+              </div>
+
+              <div className="flex items-start gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm">
+                <Info className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                <div className="text-green-700 dark:text-green-300">
+                  <p className="font-medium">Tips del editor:</p>
+                  <p className="text-xs mt-1 text-green-600 dark:text-green-400">
+                    Usa el boton + para anadir bloques. Imagenes y multimedia funcionan igual que en noticias.
+                  </p>
+                </div>
+              </div>
+
+              <EditorJSComponent
+                data={editorDataRef.current}
+                onChange={handleEditorChange}
+                placeholder="Escribe aqui el contenido del servicio..."
               />
-              <p className="text-xs text-muted-foreground">
-                💡 Este contenido se mostrará en la página detallada del servicio.
-              </p>
             </div>
 
             {/* Icon Selector */}
@@ -576,3 +622,5 @@ export default function ServiciosAdminPage() {
     </div>
   )
 }
+
+

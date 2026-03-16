@@ -3,6 +3,16 @@ import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 
+// Helper para generar slug
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export async function GET() {
   try {
     const services = await db.service.findMany({
@@ -26,11 +36,21 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    let slug = body.slug || generateSlug(body.title)
+
+    // Verificar si el slug ya existe
+    const existingSlug = await db.service.findUnique({ where: { slug } })
+    if (existingSlug) {
+      slug = `${slug}-${Date.now()}`
+    }
+
     const service = await db.service.create({
       data: {
         title: body.title,
+        slug,
         description: body.description || null,
         content: body.content || null,
+        blocks: body.blocks || null,
         icon: body.icon || null,
         imageUrl: body.imageUrl || null,
         order: body.order || 0,
@@ -64,12 +84,29 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
     
+    // Handle slug on update
+    let slug = body.slug
+    if (body.regenerateSlug || (!slug && body.title)) {
+      slug = generateSlug(body.title)
+    }
+    if (slug) {
+      // Ensure uniqueness excluding the current record
+      const existing = await db.service.findFirst({
+        where: { slug, NOT: { id: body.id } }
+      })
+      if (existing) {
+        slug = `${slug}-${Date.now()}`
+      }
+    }
+
     const service = await db.service.update({
       where: { id: body.id },
       data: {
         title: body.title,
+        slug: slug || undefined,
         description: body.description || null,
         content: body.content || null,
+        blocks: body.blocks || null,
         icon: body.icon || null,
         imageUrl: body.imageUrl || null,
         order: body.order,
@@ -81,6 +118,9 @@ export async function PUT(request: NextRequest) {
     // Revalidar el caché después de actualizar un servicio
     revalidatePath('/servicios', 'page')
     revalidatePath('/', 'page')
+    if (service.slug) {
+      revalidatePath(`/servicios/${service.slug}`, 'page')
+    }
     
     return NextResponse.json(service)
   } catch (error) {

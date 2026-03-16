@@ -8,6 +8,7 @@ import { getServiceResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 interface Service {
   id: string
   title: string
+  slug?: string | null
   description: string | null
   content: string | null
   icon: string | null
@@ -50,6 +51,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export function ServicesPageContent({ services, config }: ServicesPageContentProps) {
   const getIconComponent = (iconName: string | null) => {
     return iconName && iconMap[iconName] ? iconMap[iconName] : Leaf
+  }
+
+  const getServiceHref = (service: Service) => {
+    return service.slug ? `/servicios/${service.slug}` : `/servicios#servicio-${service.id}`
   }
 
   // Separar servicios destacados
@@ -116,6 +121,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredServices.map((service) => {
                 const IconComponent = getIconComponent(service.icon)
+                const serviceHref = getServiceHref(service)
                 
                 return (
                   <Card 
@@ -131,7 +137,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                     
                     <CardContent className="p-0">
                       {/* Image or Icon */}
-                      <div className="relative h-48 overflow-hidden">
+                      <Link href={serviceHref} className="relative h-48 overflow-hidden block">
                         {service.imageUrl ? (
                           <Image
                             src={isCloudinaryUrl(service.imageUrl) ? getServiceResponsiveUrl(service.imageUrl) : service.imageUrl}
@@ -146,7 +152,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      </div>
+                      </Link>
                       
                       {/* Content */}
                       <div className="p-6">
@@ -156,9 +162,9 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                               <IconComponent className="h-5 w-5 text-[#6BBE45] dark:text-[#8BC34A]" />
                             </div>
                           )}
-                          <h3 className="text-xl font-bold text-[#005A7A] dark:text-white">
+                          <Link href={serviceHref} className="text-xl font-bold text-[#005A7A] dark:text-white hover:underline">
                             {service.title}
-                          </h3>
+                          </Link>
                         </div>
                         
                         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
@@ -166,7 +172,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                         </p>
                         
                         <Link 
-                          href={`#servicio-${service.id}`}
+                          href={serviceHref}
                           className="inline-flex items-center text-[#6BBE45] dark:text-[#8BC34A] font-medium hover:gap-2 gap-1 transition-all text-sm"
                         >
                           Ver detalles
@@ -201,6 +207,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
             {services.map((service, index) => {
               const IconComponent = getIconComponent(service.icon)
               const isEven = index % 2 === 0
+              const serviceHref = getServiceHref(service)
               
               return (
                 <div 
@@ -211,7 +218,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                   <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-8 lg:gap-12 items-center`}>
                     {/* Image */}
                     <div className="w-full lg:w-1/2">
-                      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl group">
+                      <Link href={serviceHref} className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl group block">
                         {service.imageUrl ? (
                           <Image
                             src={isCloudinaryUrl(service.imageUrl) ? getServiceResponsiveUrl(service.imageUrl) : service.imageUrl}
@@ -234,7 +241,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                             </span>
                           </div>
                         )}
-                      </div>
+                      </Link>
                     </div>
                     
                     {/* Content */}
@@ -248,9 +255,9 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
                         </span>
                       </div>
                       
-                      <h3 className="text-2xl md:text-3xl font-bold text-[#005A7A] dark:text-white">
+                      <Link href={serviceHref} className="text-2xl md:text-3xl font-bold text-[#005A7A] dark:text-white hover:underline">
                         {service.title}
-                      </h3>
+                      </Link>
                       
                       <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
                         {service.description}
@@ -346,3 +353,5 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
     </>
   )
 }
+
+

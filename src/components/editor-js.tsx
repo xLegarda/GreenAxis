@@ -79,7 +79,9 @@ const i18nConfig = {
         "Message": "Mensaje",
       },
       "link": {
-        "Add a link": "Añadir un enlace"
+        "Add a link": "Añadir un enlace",
+        "Link": "Enlace",
+        "Remove link": "Quitar enlace"
       },
       "stub": {
         'The block can not be displayed correctly.': 'El bloque no puede mostrarse correctamente.'
@@ -138,9 +140,6 @@ const i18nConfig = {
       "audioLocal": {
         "Audio": "Audio",
         "Add an audio": "Añadir un audio"
-      },
-      "inlineCode": {
-        "InlineCode": "Código"
       },
       "textColor": {
         "Text Color": "Color de texto"
@@ -387,9 +386,8 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
         const Quote = (await import('@editorjs/quote')).default
         const Paragraph = (await import('@editorjs/paragraph')).default
         const Embed = (await import('@editorjs/embed')).default
-        const InlineCode = (await import('@editorjs/inline-code')).default
         const Marker = (await import('@editorjs/marker')).default
-        const LinkTool = (await import('@editorjs/link')).default
+        const Link = (await import('./editor-js-link-tool')).default
         const Underline = (await import('@editorjs/underline')).default
         const Strikethrough = (await import('./editor-js-strikethrough-tool')).default
         const VideoTool = (await import('./editor-js-video-tool')).default
@@ -429,6 +427,14 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                 defaultStyle: 'unordered'
               }
             },
+            quote: {
+              class: Quote,
+              inlineToolbar: true,
+              config: {
+                quotePlaceholder: 'Escribe una cita...',
+                captionPlaceholder: 'Autor...'
+              }
+            },
             image: {
               class: ImageTool as any,
               config: {
@@ -439,14 +445,6 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                     return await openMediaPickerModal('image')
                   }
                 }
-              }
-            },
-            quote: {
-              class: Quote,
-              inlineToolbar: true,
-              config: {
-                quotePlaceholder: 'Escribe una cita...',
-                captionPlaceholder: 'Autor...'
               }
             },
             paragraph: {
@@ -496,9 +494,6 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
                 }
               }
             },
-            inlineCode: {
-              class: InlineCode
-            },
             marker: {
               class: Marker
             },
@@ -515,11 +510,8 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
               }
             },
             link: {
-              class: LinkTool,
-              inlineToolbar: true,
-              config: {
-                endpoint: false
-              }
+              class: Link,
+              inlineToolbar: true
             },
             underline: {
               class: Underline

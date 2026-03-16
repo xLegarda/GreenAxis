@@ -8,6 +8,7 @@ import { getServiceResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
 interface Service {
   id: string
   title: string
+  slug?: string | null
   description: string | null
   icon: string | null
   imageUrl: string | null
@@ -42,6 +43,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export function ServicesSection({ services }: ServicesSectionProps) {
   const getIconComponent = (iconName: string | null) => {
     return iconName && iconMap[iconName] ? iconMap[iconName] : Leaf
+  }
+
+  const getServiceHref = (service: Service) => {
+    return service.slug ? `/servicios/${service.slug}` : `/servicios#servicio-${service.id}`
   }
 
   // Mostrar servicios destacados primero, luego los demás
@@ -80,6 +85,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayServices.map((service) => {
             const IconComponent = getIconComponent(service.icon)
+            const serviceHref = getServiceHref(service)
             
             return (
               <Card 
@@ -97,7 +103,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                 
                 <CardContent className="p-0">
                   {/* Image or Icon Background */}
-                  <div className="relative h-48 overflow-hidden">
+                  <Link href={serviceHref} className="relative h-48 overflow-hidden block">
                     {service.imageUrl ? (
                       <>
                         <Image
@@ -124,7 +130,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                         {service.title}
                       </h3>
                     </div>
-                  </div>
+                  </Link>
                   
                   {/* Content */}
                   <div className="p-5">
@@ -142,7 +148,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                       </div>
                       
                       <Link 
-                        href={`/servicios#servicio-${service.id}`}
+                        href={serviceHref}
                         className="inline-flex items-center text-[#6BBE45] dark:text-[#8BC34A] font-medium text-sm hover:gap-2 gap-1 transition-all group/link"
                       >
                         Conocer más

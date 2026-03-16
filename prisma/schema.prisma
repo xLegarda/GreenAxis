@@ -81,8 +81,10 @@ model PlatformConfig {
 model Service {
   id          String   @id @default(cuid())
   title       String
+  slug        String?  @unique  // URL amigable (ej: gestion-de-residuos)
   description String?
-  content     String?  // Contenido detallado en markdown
+  content     String?  // Contenido detallado en markdown (fallback)
+  blocks      String?  // Contenido en formato Editor.js JSON
   icon        String?  // Nombre del icono de Lucide
   imageUrl    String?
   order       Int      @default(0)

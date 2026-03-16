@@ -36,6 +36,13 @@ export async function getAllServices() {
   })
 }
 
+// Obtener servicio por slug
+export async function getServiceBySlug(slug: string) {
+  return db.service.findUnique({
+    where: { slug }
+  })
+}
+
 // Obtener noticias publicadas
 export async function getNews(page: number = 1, limit: number = 6) {
   const skip = (page - 1) * limit
