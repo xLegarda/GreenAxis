@@ -137,9 +137,16 @@ const LOCKOUT_TIME = 60 * 60 * 1000 // 1 hora en milisegundos
 export async function POST(request: NextRequest) {
   try {
     // Obtener IP del cliente para Rate Limiting
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown'
+    const ip = request.headers.get('x-real-ip') ?? 
+           request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 
+           'unknown'
+
+        // Registrar el intento exitoso para el rate limiting
+    const current = messageAttempts.get(ip) || { count: 0, lastAttempt: 0 }
+    messageAttempts.set(ip, {
+      count: current.count + 1,
+      lastAttempt: Date.now()
+    })
     
     // Verificar rate limiting
     const attempts = messageAttempts.get(ip)
@@ -203,13 +210,6 @@ export async function POST(request: NextRequest) {
         ...sanitizedData,
         consent: true,
       }
-    })
-    
-    // Registrar el intento exitoso para el rate limiting
-    const current = messageAttempts.get(ip) || { count: 0, lastAttempt: 0 }
-    messageAttempts.set(ip, {
-      count: current.count + 1,
-      lastAttempt: Date.now()
     })
     
     // Obtener email de notificación de la configuración

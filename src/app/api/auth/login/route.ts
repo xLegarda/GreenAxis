@@ -9,9 +9,9 @@ const LOCKOUT_TIME = 15 * 60 * 1000 // 15 minutos
 export async function POST(request: NextRequest) {
   try {
     // Obtener IP del cliente
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown'
+    const ip = request.headers.get('x-real-ip') ?? 
+           request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 
+           'unknown'
     
     // Verificar rate limiting
     const attempts = loginAttempts.get(ip)
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     loginAttempts.delete(ip)
     
     // Crear sesión
-    await createSession(admin.id)
+    await createSession(admin.id, ip)
     
     return NextResponse.json({ 
       success: true, 
