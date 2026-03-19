@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { validateFullPhone } from '@/lib/phone-validation'
+import DOMPurify from 'isomorphic-dompurify'
 
 // Configuración de Resend
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
@@ -13,9 +14,30 @@ function isValidEmail(email: string): boolean {
   return emailRegex.test(email)
 }
 
-// Sanitización básica de input
+// Sanitización de input para prevenir XSS - codifica entidades HTML
 function sanitizeInput(input: string, maxLength: number): string {
-  return input.trim().substring(0, maxLength)
+  if (!input) return ''
+  // Encode HTML entities
+  const encoded = input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+  return encoded.substring(0, maxLength)
+}
+
+// Sanitización para mensaje - permite HTML seguro con DOMPurify
+function sanitizeMessage(input: string, maxLength: number): string {
+  if (!input) return ''
+  // Use DOMPurify to sanitize HTML, allowing only safe tags
+  const sanitized = DOMPurify.sanitize(input.replace(/\n/g, '<br>'), {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u'],
+    ALLOWED_ATTR: [],
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
+  })
+  return sanitized.substring(0, maxLength)
 }
 
 // Enviar email de notificación al admin
@@ -137,16 +159,9 @@ const LOCKOUT_TIME = 60 * 60 * 1000 // 1 hora en milisegundos
 export async function POST(request: NextRequest) {
   try {
     // Obtener IP del cliente para Rate Limiting
-    const ip = request.headers.get('x-real-ip') ?? 
-           request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 
-           'unknown'
-
-        // Registrar el intento exitoso para el rate limiting
-    const current = messageAttempts.get(ip) || { count: 0, lastAttempt: 0 }
-    messageAttempts.set(ip, {
-      count: current.count + 1,
-      lastAttempt: Date.now()
-    })
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
     
     // Verificar rate limiting
     const attempts = messageAttempts.get(ip)
@@ -201,7 +216,7 @@ export async function POST(request: NextRequest) {
       phone: phone ? sanitizeInput(phone, 20) : null,
       company: company ? sanitizeInput(company, 100) : null,
       subject: subject ? sanitizeInput(subject, 200) : null,
-      message: sanitizeInput(message, 2000),
+      message: sanitizeMessage(message, 2000),
     }
     
     // Crear mensaje en la base de datos
@@ -210,6 +225,13 @@ export async function POST(request: NextRequest) {
         ...sanitizedData,
         consent: true,
       }
+    })
+    
+    // Registrar el intento exitoso para el rate limiting
+    const current = messageAttempts.get(ip) || { count: 0, lastAttempt: 0 }
+    messageAttempts.set(ip, {
+      count: current.count + 1,
+      lastAttempt: Date.now()
     })
     
     // Obtener email de notificación de la configuración

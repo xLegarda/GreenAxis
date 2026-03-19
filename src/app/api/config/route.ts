@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentAdmin } from '@/lib/auth'
+import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'

@@ -120,7 +120,9 @@ export function MediaLibraryBrowser({
       const response = await fetch(`/api/admin/media?${params.toString()}`)
       
       if (!response.ok) {
-        throw new Error('Error al cargar archivos multimedia')
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
+        console.error('Failed to fetch media items:', response.status, errorData)
+        throw new Error(errorData.error || 'Error al cargar archivos multimedia')
       }
 
       const data = await response.json()

@@ -101,6 +101,7 @@ interface Service {
   order: number
   active: boolean
   featured: boolean
+  showSummary: boolean
 }
 
 export default function ServiciosAdminPage() {
@@ -126,6 +127,7 @@ export default function ServiciosAdminPage() {
     imageUrl: '',
     active: true,
     featured: false,
+    showSummary: true,
   })
 
   useEffect(() => {
@@ -256,6 +258,7 @@ export default function ServiciosAdminPage() {
       imageUrl: '',
       active: true,
       featured: false,
+      showSummary: true,
     })
     setSlugEdited(false)
     editorDataRef.current = null
@@ -295,6 +298,7 @@ export default function ServiciosAdminPage() {
       imageUrl: service.imageUrl || '',
       active: service.active,
       featured: service.featured,
+      showSummary: service.showSummary,
     })
     setSlugEdited(false)
     editorDataRef.current = blocksData
@@ -316,12 +320,12 @@ export default function ServiciosAdminPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Servicios
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -330,7 +334,7 @@ export default function ServiciosAdminPage() {
         </div>
         <Button 
           onClick={() => { resetForm(); setEditingService(null); setDialogOpen(true); }} 
-          className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white shadow-lg shadow-green-500/20"
+          className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white shadow-lg shadow-green-500/20 w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Servicio
@@ -471,12 +475,15 @@ export default function ServiciosAdminPage() {
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="!max-w-[800px] !w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Formulario para {editingService ? 'editar' : 'crear'} un servicio
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
@@ -590,7 +597,7 @@ export default function ServiciosAdminPage() {
                   variant={selectedCategory === 'all' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedCategory('all')}
-                  className={selectedCategory === 'all' ? 'bg-[#6BBE45] hover:bg-[#5CAE38]' : ''}
+                  className={`text-xs sm:text-sm ${selectedCategory === 'all' ? 'bg-[#6BBE45] hover:bg-[#5CAE38]' : ''}`}
                 >
                   Todos
                 </Button>
@@ -600,7 +607,7 @@ export default function ServiciosAdminPage() {
                     variant={selectedCategory === cat.id ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={selectedCategory === cat.id ? 'bg-[#6BBE45] hover:bg-[#5CAE38]' : ''}
+                    className={`text-xs sm:text-sm ${selectedCategory === cat.id ? 'bg-[#6BBE45] hover:bg-[#5CAE38]' : ''}`}
                   >
                     {cat.label}
                   </Button>
@@ -608,7 +615,7 @@ export default function ServiciosAdminPage() {
               </div>
               
               {/* Icon Grid */}
-              <div className="grid grid-cols-6 sm:grid-cols-9 gap-2 p-4 bg-muted/50 rounded-xl max-h-48 overflow-y-auto">
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-9 gap-2 p-3 sm:p-4 bg-muted/50 rounded-xl max-h-48 overflow-y-auto">
                 {filteredIcons.map((opt) => {
                   const IconComp = opt.icon
                   const isSelected = formData.icon === opt.value
@@ -617,15 +624,15 @@ export default function ServiciosAdminPage() {
                       key={opt.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon: opt.value })}
-                      className={`p-3 rounded-xl transition-all flex flex-col items-center gap-1 ${
+                      className={`p-2 sm:p-3 rounded-xl transition-all flex flex-col items-center gap-1 ${
                         isSelected 
                           ? 'bg-[#6BBE45] text-white shadow-lg scale-105' 
                           : 'bg-background hover:bg-accent text-foreground'
                       }`}
                       title={opt.label}
                     >
-                      <IconComp className="h-5 w-5" />
-                      <span className="text-[10px] truncate w-full text-center">{opt.label}</span>
+                      <IconComp className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-[9px] sm:text-[10px] truncate w-full text-center">{opt.label}</span>
                     </button>
                   )
                 })}
@@ -652,37 +659,47 @@ export default function ServiciosAdminPage() {
             </div>
 
             {/* Toggles */}
-            <div className="flex flex-wrap items-center gap-6 p-4 bg-muted/50 rounded-xl">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-4 p-4 bg-muted/50 rounded-xl">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="active" className="cursor-pointer flex-1">
+                  {formData.active ? '✅ Activo' : '⏸️ Inactivo'}
+                </Label>
                 <Switch
                   id="active"
                   checked={formData.active}
                   onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
                 />
-                <Label htmlFor="active" className="cursor-pointer">
-                  {formData.active ? '✅ Activo' : '⏸️ Inactivo'}
-                </Label>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="featured" className="cursor-pointer flex-1">
+                  {formData.featured ? '⭐ Destacado' : '☆ No destacado'}
+                </Label>
                 <Switch
                   id="featured"
                   checked={formData.featured}
                   onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
                 />
-                <Label htmlFor="featured" className="cursor-pointer">
-                  {formData.featured ? '⭐ Destacado' : '☆ No destacado'}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="showSummary" className="cursor-pointer flex-1">
+                  {formData.showSummary ? '📝 Mostrar resumen' : '🚫 Ocultar resumen'}
                 </Label>
+                <Switch
+                  id="showSummary"
+                  checked={formData.showSummary}
+                  onCheckedChange={(checked) => setFormData({ ...formData, showSummary: checked })}
+                />
               </div>
             </div>
           </div>
 
-          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto order-2 sm:order-1">
               Cancelar
             </Button>
             <Button
               onClick={handleSave}
-              className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white w-full sm:w-auto"
+              className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white w-full sm:w-auto order-1 sm:order-2"
             >
               <Save className="h-4 w-4 mr-2" />
               {editingService ? 'Guardar cambios' : 'Crear servicio'}

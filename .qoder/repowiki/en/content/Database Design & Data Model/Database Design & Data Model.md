@@ -8,7 +8,20 @@
 - [custom1.db.sql](file://db/custom1.db.sql)
 - [actions.ts](file://src/lib/actions.ts)
 - [auth.ts](file://src/lib/auth.ts)
+- [route.ts](file://src/app/api/servicios/route.ts)
+- [ensure-service-columns.ts](file://scripts/ensure-service-columns.ts)
+- [services-section.tsx](file://src/components/services-section.tsx)
+- [service-detail-content.tsx](file://src/components/service-detail-content.tsx)
+- [page.tsx](file://src/app/admin/servicios/page.tsx)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated Service entity documentation to include the new `shortBlocks` column
+- Added content management enhancement details for separate preview and detailed content representations
+- Updated data access patterns to reflect the new column handling
+- Enhanced service management interface documentation
+- Updated data validation rules to include the new content field
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -24,6 +37,8 @@
 
 ## Introduction
 This document describes the GreenAxis database schema and data model, focusing on the entities PlatformConfig, Service, News, CarouselSlide, SiteImage, Admin, ContactMessage, LegalPage, AboutPage, PasswordResetToken, and SocialFeedConfig. It documents primary/foreign keys, indexes, constraints, validation rules, business logic, ORM access patterns, caching strategies, performance considerations, data lifecycle, retention, archival rules, migration paths, and security/privacy/access control mechanisms.
+
+**Updated** Enhanced with documentation for the new `shortBlocks` column in the services table, providing separate preview and detailed content representations for improved content management.
 
 ## Project Structure
 The database schema is defined via Prisma and backed by SQLite/Turso. The Prisma client is configured to use a LibSQL adapter for production-like environments. The schema file defines all models, field types, defaults, and relations. Two SQL dump files define the initial database structure and indexes.
@@ -52,7 +67,7 @@ ADAPTER --> SQLITE
 - [schema.prisma:1-277](file://prisma/schema.prisma#L1-L277)
 
 ## Core Components
-This section documents each entity’s schema, constraints, and business rules.
+This section documents each entity's schema, constraints, and business rules.
 
 - PlatformConfig
   - Purpose: Global site configuration (branding, contact, social links, SEO, analytics, theme).
@@ -67,9 +82,10 @@ This section documents each entity’s schema, constraints, and business rules.
   - Purpose: Services offered by the company with rich content support.
   - Primary key: id (String, cuid).
   - Unique index: slug.
-  - Fields: title, slug, description, content, blocks (EditorJS JSON), icon, imageUrl, order, active, featured.
+  - Fields: title, slug, description, **shortBlocks**, content, blocks (EditorJS JSON), icon, imageUrl, order, active, featured.
   - Defaults: order=0, active=true, featured=false.
   - Validation/business logic: active controls visibility; featured highlights; slug uniqueness ensures SEO-friendly URLs.
+  - **Enhanced** The new `shortBlocks` column provides separate preview content representation for service listings, while `content` serves as fallback markdown and `blocks` contains full EditorJS JSON for detail pages.
 
 - News
   - Purpose: Blog/news articles with rich content and publishing workflow.
@@ -118,7 +134,7 @@ This section documents each entity’s schema, constraints, and business rules.
   - Validation/business logic: slug uniqueness; manualDate allows manual update timestamps.
 
 - AboutPage
-  - Purpose: Comprehensive “About Us” content with multiple sections.
+  - Purpose: Comprehensive "About Us" content with multiple sections.
   - Primary key: id (String, cuid).
   - Fields: Hero, History, Mission/Vision, Values, Team, Why Choose Us, CTA, Stats, Certifications, Location toggles and content (JSON/text).
   - Defaults: Many sections enabled/disabled by default; JSON fields for structured content.
@@ -240,6 +256,7 @@ string id PK
 string title
 string slug UK
 string description
+string shortBlocks
 string content
 string blocks
 string icon
@@ -402,6 +419,7 @@ datetime updatedAt
   - Site images: ordered by createdAt desc; lookup by key.
 - Upserts and updates:
   - Application logic handles creation/update of PlatformConfig and other entities; Prisma provides create/update methods.
+  - **Enhanced** Service management now supports separate content handling through `shortBlocks` for preview and `blocks`/`content` for detailed views.
 - Authentication and sessions:
   - Admin authentication hashes passwords, verifies credentials, creates signed session cookies, and enforces expiration.
 
@@ -417,7 +435,7 @@ Actions->>Prisma : db.service.findMany({ where : { active : true }, orderBy : { 
 Prisma->>DB : SELECT * FROM Service WHERE active=1 ORDER BY order ASC
 DB-->>Prisma : Rows
 Prisma-->>Actions : Services[]
-Actions-->>UI : Render services
+Actions-->>UI : Render services with shortBlocks preview
 UI->>Auth : authenticateAdmin(email, password)
 Auth->>Prisma : db.admin.findUnique({ where : { email } })
 Prisma->>DB : SELECT * FROM Admin WHERE email=?
@@ -449,6 +467,9 @@ Auth-->>UI : Session created
   - active flags control visibility; order fields control presentation sequence.
 - Publishing workflow:
   - News requires published=true to appear in listings; publishedAt tracks publish time.
+- **Enhanced** Content management:
+  - Service entities now support dual content representation: `shortBlocks` for preview lists, `blocks` for detailed EditorJS content, and `content` as markdown fallback.
+  - `shortBlocks` enables separate preview content that can be optimized for list displays.
 - Security:
   - Admin passwords are hashed; session cookies are HttpOnly, Secure (prod), SameSite strict, and expire after 7 days.
   - Maximum admin accounts enforced via environment variable.
@@ -465,7 +486,7 @@ Auth-->>UI : Session created
 ### Sample Data Structures
 Representative rows for key entities (descriptive only):
 - PlatformConfig: branding, contact, social, analytics, theme fields with defaults.
-- Service: title, slug, content/blocks, icon, imageUrl, order, active, featured.
+- Service: title, slug, description/shortBlocks, content/blocks, icon, imageUrl, order, active, featured.
 - News: title, slug, excerpt, content, imageUrl, author, published, featured, publishedAt, blocks, showCoverInContent, imageCaption.
 - SiteImage: key, label, url, alt, category, createdAt/updatedAt.
 - CarouselSlide: title/subtitle/description, imageUrl, buttons/links, gradient/animation options, order, active.
@@ -489,10 +510,33 @@ Representative rows for key entities (descriptive only):
 - [schema.prisma:214-222](file://prisma/schema.prisma#L214-L222)
 - [schema.prisma:188-198](file://prisma/schema.prisma#L188-L198)
 
+### Content Management Enhancement
+**New** The Service entity now supports enhanced content management through the `shortBlocks` column:
+
+- **shortBlocks**: Separate EditorJS JSON content specifically designed for service preview lists and summary displays. This allows administrators to create optimized preview content that differs from the full service detail content.
+- **Content Hierarchy**: 
+  - `shortBlocks` → Preview content for service cards and listings
+  - `blocks` → Full EditorJS content for detailed service pages
+  - `content` → Markdown fallback for backward compatibility
+- **Frontend Integration**: 
+  - Services section uses `shortBlocks` for preview text extraction
+  - Service detail pages prioritize `blocks` content, falling back to `content` if needed
+- **Administrative Interface**: Dedicated EditorJS component for managing preview content alongside the main content editor
+
+**Section sources**
+- [schema.prisma:86](file://prisma/schema.prisma#L86)
+- [route.ts:51-52](file://src/app/api/servicios/route.ts#L51-L52)
+- [route.ts:108-109](file://src/app/api/servicios/route.ts#L108-L109)
+- [ensure-service-columns.ts:64-65](file://scripts/ensure-service-columns.ts#L64-L65)
+- [services-section.tsx:12-16](file://src/components/services-section.tsx#L12-L16)
+- [service-detail-content.tsx:21](file://src/components/service-detail-content.tsx#L21)
+- [page.tsx:77-89](file://src/app/admin/servicios/page.tsx#L77-L89)
+
 ## Dependency Analysis
 - Prisma client depends on LibSQL adapter for Turso connectivity.
 - Application actions depend on Prisma models for CRUD operations.
 - Authentication module depends on Admin model and cookie store.
+- **Enhanced** Service management now depends on both EditorJS content processing and dual content field handling.
 - No explicit foreign keys are defined in the schema; referential integrity is enforced at application level.
 
 ```mermaid
@@ -501,12 +545,16 @@ Actions["actions.ts"] --> Prisma["Prisma Client"]
 Auth["auth.ts"] --> Prisma
 Prisma --> Adapter["LibSQL Adapter"]
 Adapter --> Turso["Turso (SQLite)"]
+ServicesAdmin["services-admin-page.tsx"] --> EditorJS["EditorJS Component"]
+ServicesAdmin --> ServiceAPI["service-api.ts"]
+ServiceAPI --> Prisma
 ```
 
 **Diagram sources**
 - [actions.ts:1-136](file://src/lib/actions.ts#L1-L136)
 - [auth.ts:1-170](file://src/lib/auth.ts#L1-L170)
 - [db.ts:1-21](file://src/lib/db.ts#L1-L21)
+- [page.tsx:106-104](file://src/app/admin/servicios/page.tsx#L106-L104)
 
 **Section sources**
 - [db.ts:1-21](file://src/lib/db.ts#L1-L21)
@@ -516,18 +564,21 @@ Adapter --> Turso["Turso (SQLite)"]
 - Indexes:
   - Unique indexes on slug (Service, News), token (PasswordResetToken), email (Admin), and key (SiteImage) improve lookup performance.
   - Consider adding composite indexes for frequent queries (e.g., published + createdAt for News).
+  - **Enhanced** Service queries should consider indexing for active/featured combinations for improved listing performance.
 - Pagination:
   - News uses skip/take for pagination; ensure proper indexing on published and createdAt.
+  - **Enhanced** Service listings benefit from active/featured ordering optimization.
 - Caching:
   - PlatformConfig and AboutPage are likely static or infrequently changing; cache in memory or CDN for reduced DB load.
   - CarouselSlides and SiteImages can be cached with short TTLs.
+  - **Enhanced** Service preview content (`shortBlocks`) can be cached separately from detailed content for improved list performance.
 - ORM:
   - Use select projections to avoid loading unnecessary fields.
   - Batch reads/writes where possible.
+  - **Enhanced** Consider selective field loading for service entities to optimize list vs detail page performance.
 - Storage:
   - Store media URLs and keep SiteImage minimal; compute thumbnails externally.
-
-[No sources needed since this section provides general guidance]
+  - **Enhanced** Separate content storage allows for different optimization strategies for preview vs detailed content.
 
 ## Troubleshooting Guide
 - Missing PlatformConfig:
@@ -540,6 +591,10 @@ Adapter --> Turso["Turso (SQLite)"]
   - Tokens expire in 1 hour; ensure clients handle expiration and prompt re-request.
 - Session issues:
   - Verify cookie attributes (HttpOnly, Secure, SameSite) and expiration; clear stale cookies on logout.
+- **New** Service content issues:
+  - Verify `shortBlocks` EditorJS JSON validity; ensure proper parsing before display.
+  - Check content fallback chain: `shortBlocks` → `description` → empty string for preview text.
+  - Validate that service detail pages properly handle missing `blocks` content by falling back to `content`.
 
 **Section sources**
 - [actions.ts:6-22](file://src/lib/actions.ts#L6-L22)
@@ -548,14 +603,17 @@ Adapter --> Turso["Turso (SQLite)"]
 - [schema.prisma:217](file://prisma/schema.prisma#L217)
 
 ## Conclusion
-The GreenAxis data model centers on a small set of cohesive entities supporting content management, media, administration, and marketing. Prisma provides straightforward ORM access with LibSQL adapter connectivity. Strong defaults and unique constraints simplify onboarding and reduce data inconsistencies. Application-level logic enforces business rules, security, and session management. Future enhancements should focus on targeted indexing, caching, and robust migration/versioning strategies.
+The GreenAxis data model centers on a small set of cohesive entities supporting content management, media, administration, and marketing. Prisma provides straightforward ORM access with LibSQL adapter connectivity. Strong defaults and unique constraints simplify onboarding and reduce data inconsistencies. Application-level logic enforces business rules, security, and session management.
 
-[No sources needed since this section summarizes without analyzing specific files]
+**Enhanced** The addition of the `shortBlocks` column in the Service entity significantly improves content management capabilities by enabling separate preview and detailed content representations. This enhancement supports better user experience in service listings while maintaining flexible content authoring workflows.
+
+Future enhancements should focus on targeted indexing, caching strategies for dual content types, robust migration/versioning strategies, and continued optimization of content delivery patterns.
 
 ## Appendices
 
 ### Database Schema Initialization and Indexes
 - Initial schema and indexes are defined in SQL dump files. These establish unique constraints and basic table structures aligned with the Prisma schema.
+- **Enhanced** Service table now includes the `shortBlocks` column for improved content management.
 
 **Section sources**
 - [custom.db.sql:195-209](file://db/custom.db.sql#L195-L209)
@@ -566,19 +624,19 @@ The GreenAxis data model centers on a small set of cohesive entities supporting 
   - Content entities (Service, News, LegalPage, AboutPage) evolve via admin edits; media (SiteImage) persists with metadata.
   - ContactMessage is ephemeral; archive processed messages if needed.
   - PasswordResetToken is short-lived (1 hour) and marked used after consumption.
+  - **Enhanced** Service content now includes separate lifecycle management for preview (`shortBlocks`) and detailed (`blocks`) content.
 - Retention:
   - Define retention for ContactMessage and PasswordResetToken based on compliance needs.
+  - **Enhanced** Consider retention policies for service content versions and EditorJS block data.
 - Archival:
   - Consider archiving old News posts or moving inactive SiteImage records to cold storage.
-
-[No sources needed since this section provides general guidance]
+  - **Enhanced** Archive unused service content variants and maintain content versioning for audit trails.
 
 ### Migration Paths and Version Management
 - Use Prisma Migrate for schema changes; maintain a single source of truth in schema.prisma.
 - For Turso, ensure migrations are applied consistently across replicas.
 - Back up schema.prisma and migration files; track breaking changes carefully.
-
-[No sources needed since this section provides general guidance]
+- **Enhanced** Service content migration strategy should handle `shortBlocks` column addition and content conversion from existing preview text.
 
 ### Security, Privacy, and Access Control
 - Authentication:
@@ -587,8 +645,10 @@ The GreenAxis data model centers on a small set of cohesive entities supporting 
   - Role-based access control (role field) can gate admin routes; enforce at API boundaries.
 - Privacy:
   - Consent flag on ContactMessage aligns with privacy requirements; ensure data minimization and lawful basis for processing.
+  - **Enhanced** Service content management should respect privacy considerations for preview content.
 - Transport and storage:
   - Use HTTPS in production; secure Turso connection with auth token.
+- **Enhanced** Content validation and sanitization should be applied to both `shortBlocks` and `blocks` EditorJS content to prevent XSS attacks.
 
 **Section sources**
 - [auth.ts:11-18](file://src/lib/auth.ts#L11-L18)

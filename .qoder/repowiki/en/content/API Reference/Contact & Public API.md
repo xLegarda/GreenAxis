@@ -10,6 +10,12 @@
 - [middleware.ts](file://src/middleware.ts)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Enhanced IP address extraction logic with improved handling of forwarded IP addresses
+- Refined rate limiting implementation for more accurate abuse prevention
+- Updated security considerations to reflect better IP detection mechanisms
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -48,14 +54,14 @@ API_Route --> PhoneUtil
 **Diagram sources**
 - [page.tsx:1-20](file://src/app/contacto/page.tsx#L1-L20)
 - [contact-page-content.tsx:1-414](file://src/components/contact-page-content.tsx#L1-L414)
-- [route.ts:1-302](file://src/app/api/contacto/route.ts#L1-L302)
+- [route.ts:1-324](file://src/app/api/contacto/route.ts#L1-L324)
 - [phone-validation.ts:1-113](file://src/lib/phone-validation.ts#L1-L113)
 - [schema.prisma:172-185](file://prisma/schema.prisma#L172-L185)
 
 **Section sources**
 - [page.tsx:1-20](file://src/app/contacto/page.tsx#L1-L20)
 - [contact-page-content.tsx:1-414](file://src/components/contact-page-content.tsx#L1-L414)
-- [route.ts:1-302](file://src/app/api/contacto/route.ts#L1-L302)
+- [route.ts:1-324](file://src/app/api/contacto/route.ts#L1-L324)
 - [phone-validation.ts:1-113](file://src/lib/phone-validation.ts#L1-L113)
 - [schema.prisma:172-185](file://prisma/schema.prisma#L172-L185)
 
@@ -68,12 +74,12 @@ API_Route --> PhoneUtil
 
 Key behaviors:
 - Request validation and sanitization occur server-side
-- Rate limiting is enforced per client IP
+- Rate limiting is enforced per client IP with enhanced IP extraction
 - On successful submission, a notification email is sent to the configured admin email
 - Administrative endpoints allow listing, marking as read, and deleting messages
 
 **Section sources**
-- [route.ts:137-301](file://src/app/api/contacto/route.ts#L137-L301)
+- [route.ts:159-323](file://src/app/api/contacto/route.ts#L159-L323)
 - [contact-page-content.tsx:73-147](file://src/components/contact-page-content.tsx#L73-L147)
 - [phone-validation.ts:48-112](file://src/lib/phone-validation.ts#L48-L112)
 - [schema.prisma:172-185](file://prisma/schema.prisma#L172-L185)
@@ -90,6 +96,7 @@ participant DB as "Prisma ContactMessage"
 participant Email as "Resend API"
 Client->>Form : "User fills form"
 Form->>API : "POST /api/contacto {payload}"
+API->>API : "Extract IP from x-forwarded-for/x-real-ip"
 API->>API : "Validate + Sanitize inputs"
 API->>DB : "Create ContactMessage"
 API->>API : "Update rate limit counter"
@@ -101,14 +108,14 @@ Form-->>Client : "Show success state"
 
 **Diagram sources**
 - [contact-page-content.tsx:103-115](file://src/components/contact-page-content.tsx#L103-L115)
-- [route.ts:137-229](file://src/app/api/contacto/route.ts#L137-L229)
+- [route.ts:159-251](file://src/app/api/contacto/route.ts#L159-L251)
 
 ## Detailed Component Analysis
 
 ### Public Endpoint: POST /api/contacto
 - Purpose: Accept contact form submissions from the public
 - Authentication: None required for submission
-- Rate limiting: Per-IP sliding window (5 requests per hour)
+- Rate limiting: Per-IP sliding window (5 requests per hour) with enhanced IP extraction
 - Request body fields:
   - name: string, required, minimum length 2
   - email: string, required, valid email format
@@ -123,30 +130,37 @@ Form-->>Client : "Show success state"
   - Rate-limited: { error: string }, status 429
   - Internal errors: { error: string }, status 500
 
+**Enhanced IP Address Extraction**:
+The endpoint now implements robust IP address extraction from multiple sources to handle various deployment scenarios:
+- Primary: `x-forwarded-for` header (standard for reverse proxies/load balancers)
+- Secondary: `x-real-ip` header (common with certain proxy configurations)
+- Fallback: 'unknown' when neither header is present
+
+**Improved Rate Limiting Logic**:
+- Tracks attempts per IP in memory with enhanced accuracy
+- Enforces a maximum of 5 messages per hour per IP address
+- Returns a human-readable message indicating remaining minutes
+- Handles IP address extraction edge cases for better abuse prevention
+
 Validation and sanitization:
 - Basic trimming and length limits applied to all string fields
 - Email validated with a regex pattern
 - Phone number validation supports multiple countries and requires a country prefix
 - Consent flag is mandatory
 
-Rate limiting:
-- Tracks attempts per IP in memory
-- Enforces a maximum of 5 messages per hour
-- Returns a human-readable message indicating remaining minutes
-
 Security:
 - Uses secure headers via middleware
 - Email notifications are sent via a dedicated provider API
-- IP-based rate limiting helps mitigate abuse
+- Enhanced IP-based rate limiting helps mitigate abuse from various network topologies
 
 Administrative endpoints (GET/PUT/DELETE):
 - GET: Lists all messages (admin-only)
-- PUT: Updates a message’s read status (admin-only)
+- PUT: Updates a message's read status (admin-only)
 - DELETE: Removes a message (admin-only)
 - Requires admin authentication
 
 **Section sources**
-- [route.ts:137-301](file://src/app/api/contacto/route.ts#L137-L301)
+- [route.ts:159-323](file://src/app/api/contacto/route.ts#L159-L323)
 - [phone-validation.ts:48-112](file://src/lib/phone-validation.ts#L48-L112)
 - [middleware.ts:8-43](file://src/middleware.ts#L8-L43)
 
@@ -196,13 +210,13 @@ MWARE["middleware.ts"] --> API
 
 **Diagram sources**
 - [contact-page-content.tsx:103-115](file://src/components/contact-page-content.tsx#L103-L115)
-- [route.ts:1-302](file://src/app/api/contacto/route.ts#L1-L302)
+- [route.ts:1-324](file://src/app/api/contacto/route.ts#L1-L324)
 - [phone-validation.ts:1-113](file://src/lib/phone-validation.ts#L1-L113)
 - [schema.prisma:172-185](file://prisma/schema.prisma#L172-L185)
 - [middleware.ts:1-58](file://src/middleware.ts#L1-L58)
 
 **Section sources**
-- [route.ts:1-302](file://src/app/api/contacto/route.ts#L1-L302)
+- [route.ts:1-324](file://src/app/api/contacto/route.ts#L1-L324)
 - [contact-page-content.tsx:1-414](file://src/components/contact-page-content.tsx#L1-L414)
 - [phone-validation.ts:1-113](file://src/lib/phone-validation.ts#L1-L113)
 - [schema.prisma:172-185](file://prisma/schema.prisma#L172-L185)
@@ -210,10 +224,9 @@ MWARE["middleware.ts"] --> API
 
 ## Performance Considerations
 - Rate limiting is enforced in-memory and does not persist across process restarts. For production deployments with multiple instances, consider a distributed store (e.g., Redis) to maintain consistent limits.
+- Enhanced IP extraction handles various proxy configurations efficiently
 - Email delivery depends on external provider availability and latency; consider adding retry/backoff and monitoring.
 - Database writes are synchronous; ensure database performance is adequate for expected load.
-
-[No sources needed since this section provides general guidance]
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -225,6 +238,7 @@ Common issues and resolutions:
   - Phone number invalid: ensure the number includes a valid country code and matches the expected digit count for that region
 - Rate limiting:
   - Too many requests: wait for the hourly lockout to expire (feedback indicates remaining minutes)
+  - IP extraction issues: ensure your reverse proxy forwards `x-forwarded-for` or `x-real-ip` headers correctly
 - Network or CORS issues:
   - Verify the frontend can reach /api/contacto from the same origin/same site policy
 - Email notifications not received:
@@ -233,14 +247,12 @@ Common issues and resolutions:
   - Ensure admin authentication is established before accessing GET/PUT/DELETE
 
 **Section sources**
-- [route.ts:166-188](file://src/app/api/contacto/route.ts#L166-L188)
-- [route.ts:144-160](file://src/app/api/contacto/route.ts#L144-L160)
+- [route.ts:188-210](file://src/app/api/contacto/route.ts#L188-L210)
+- [route.ts:166-182](file://src/app/api/contacto/route.ts#L166-L182)
 - [contact-page-content.tsx:76-97](file://src/components/contact-page-content.tsx#L76-L97)
 
 ## Conclusion
-The contact form API provides a straightforward, validated, and rate-limited submission mechanism with optional administrative capabilities. The frontend integrates seamlessly by posting to /api/contacto, while the backend ensures data quality, security, and optional admin visibility.
-
-[No sources needed since this section summarizes without analyzing specific files]
+The contact form API provides a straightforward, validated, and rate-limited submission mechanism with enhanced IP address extraction and refined abuse prevention. The frontend integrates seamlessly by posting to /api/contacto, while the backend ensures data quality, security, and optional admin visibility with improved IP detection for various deployment scenarios.
 
 ## Appendices
 
@@ -262,7 +274,7 @@ The contact form API provides a straightforward, validated, and rate-limited sub
   - Internal error: { error: string }, status 500
 
 **Section sources**
-- [route.ts:137-229](file://src/app/api/contacto/route.ts#L137-L229)
+- [route.ts:159-251](file://src/app/api/contacto/route.ts#L159-L251)
 
 ### Administrative Endpoints
 - GET /api/contacto: List all messages (admin-only)
@@ -270,7 +282,7 @@ The contact form API provides a straightforward, validated, and rate-limited sub
 - DELETE /api/contacto?id=...: Delete a message (admin-only)
 
 **Section sources**
-- [route.ts:231-301](file://src/app/api/contacto/route.ts#L231-L301)
+- [route.ts:253-323](file://src/app/api/contacto/route.ts#L253-L323)
 
 ### Client Implementation Examples
 - HTML/JavaScript fetch example:
@@ -282,14 +294,32 @@ The contact form API provides a straightforward, validated, and rate-limited sub
 
 **Section sources**
 - [contact-page-content.tsx:73-147](file://src/components/contact-page-content.tsx#L73-L147)
-- [route.ts:137-229](file://src/app/api/contacto/route.ts#L137-L229)
+- [route.ts:159-251](file://src/app/api/contacto/route.ts#L159-L251)
 
 ### Security Considerations
 - Secure headers are applied globally via middleware
-- Rate limiting reduces abuse potential
+- Enhanced rate limiting with improved IP extraction reduces abuse potential
 - Email notifications are sent via a dedicated provider API
 - Consent requirement aligns with data protection expectations
+- Multiple IP header support accommodates various deployment architectures
 
 **Section sources**
 - [middleware.ts:8-43](file://src/middleware.ts#L8-L43)
-- [route.ts:132-160](file://src/app/api/contacto/route.ts#L132-L160)
+- [route.ts:154-182](file://src/app/api/contacto/route.ts#L154-L182)
+
+### Enhanced IP Address Extraction Details
+The contact form endpoint implements a comprehensive IP address extraction strategy:
+
+**Header Priority Order**:
+1. `x-forwarded-for`: Standard header for reverse proxies and load balancers
+2. `x-real-ip`: Alternative header used by certain proxy configurations
+3. Fallback: 'unknown' when neither header is present
+
+**Benefits**:
+- Improved accuracy in containerized and cloud environments
+- Better support for various reverse proxy configurations
+- Enhanced abuse prevention through more reliable IP detection
+- Reduced false positives in rate limiting enforcement
+
+**Section sources**
+- [route.ts:161-164](file://src/app/api/contacto/route.ts#L161-L164)

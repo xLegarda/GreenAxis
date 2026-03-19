@@ -218,44 +218,45 @@ export default function NoticiasAdminPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Noticias / Blog</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Noticias / Blog</h1>
           <p className="text-sm text-muted-foreground">
             Crear y editar artículos con editor avanzado {total > 0 && `(${total} total)`}
           </p>
         </div>
-        <Button onClick={() => { resetForm(); setEditingNews(null); editorDataRef.current = null; setDialogOpen(true); }} className="gradient-nature text-white">
-          <Plus className="h-4 w-4 mr-2" />Nueva Noticia
+        <Button onClick={() => { resetForm(); setEditingNews(null); editorDataRef.current = null; setDialogOpen(true); }} className="gradient-nature text-white w-full sm:w-auto">
+          <Plus className="h-4 w-4 mr-2" />
+          Nueva Noticia
         </Button>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {news.map((item) => (
           <Card key={item.id} className={!item.published ? 'opacity-60' : ''}>
-            <CardContent className="p-4 flex items-center gap-4">
+            <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
               {item.imageUrl ? (
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-accent shrink-0">
+                <div className="w-full sm:w-20 h-32 sm:h-20 rounded-lg overflow-hidden bg-accent shrink-0">
                   <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className="w-20 h-20 rounded-lg bg-accent shrink-0 flex items-center justify-center">
+                <div className="w-full sm:w-20 h-32 sm:h-20 rounded-lg bg-accent shrink-0 flex items-center justify-center">
                   <Video className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 w-full">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold truncate">{item.title}</h3>
                   {item.published ? (
-                    <Badge className="bg-primary text-primary-foreground">Publicado</Badge>
+                    <Badge className="bg-primary text-primary-foreground text-xs">Publicado</Badge>
                   ) : (
-                    <Badge variant="secondary">Borrador</Badge>
+                    <Badge variant="secondary" className="text-xs">Borrador</Badge>
                   )}
-                  {item.featured && <Badge variant="outline">Destacado</Badge>}
+                  {item.featured && <Badge variant="outline" className="text-xs">Destacado</Badge>}
                 </div>
-                <p className="text-sm text-muted-foreground line-clamp-1">{item.excerpt}</p>
-                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{item.excerpt}</p>
+                <div className="flex items-center gap-3 sm:gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
                   {item.author && <span>{item.author}</span>}
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
@@ -263,7 +264,7 @@ export default function NoticiasAdminPage() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <Button variant="ghost" size="icon" onClick={() => openEditDialog(item)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -286,8 +287,8 @@ export default function NoticiasAdminPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 pt-6 border-t">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-6 border-t">
+          <div className="text-sm text-muted-foreground text-center sm:text-left">
             Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, total)} de {total} noticias
           </div>
           <div className="flex items-center gap-2">
@@ -297,12 +298,12 @@ export default function NoticiasAdminPage() {
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(currentPage - 1)}
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Anterior
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Anterior</span>
             </Button>
             
-            <span className="text-sm text-muted-foreground px-3">
-              Página {currentPage} de {totalPages}
+            <span className="text-sm text-muted-foreground px-2 sm:px-3">
+              {currentPage}/{totalPages}
             </span>
             
             <Button
@@ -311,8 +312,8 @@ export default function NoticiasAdminPage() {
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(currentPage + 1)}
             >
-              Siguiente
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <span className="hidden sm:inline">Siguiente</span>
+              <ChevronRight className="h-4 w-4 sm:ml-1" />
             </Button>
           </div>
         </div>
@@ -320,12 +321,12 @@ export default function NoticiasAdminPage() {
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="!max-w-[800px] !w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{editingNews ? 'Editar Noticia' : 'Nueva Noticia'}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">{editingNews ? 'Editar Noticia' : 'Nueva Noticia'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
             {/* Title, Author and Date - Full width row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -419,28 +420,31 @@ export default function NoticiasAdminPage() {
             </div>
 
             {/* Options */}
-            <div className="flex flex-wrap items-center gap-6 pt-4 border-t">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-4 sm:gap-6 pt-4 border-t">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                <Label>Publicar</Label>
                 <Switch
                   checked={formData.published}
                   onCheckedChange={(checked) => setFormData({ ...formData, published: checked })}
                 />
-                <Label>Publicar</Label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                <Label>Destacado</Label>
                 <Switch
                   checked={formData.featured}
                   onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
                 />
-                <Label>Destacado</Label>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} className="gradient-nature text-white">
-              <Save className="h-4 w-4 mr-2" />Guardar
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto order-2 sm:order-1">
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} className="gradient-nature text-white w-full sm:w-auto order-1 sm:order-2">
+              <Save className="h-4 w-4 mr-2" />
+              Guardar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -448,9 +452,9 @@ export default function NoticiasAdminPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
+            <DialogTitle className="flex items-center gap-2 text-destructive text-base sm:text-lg">
               <AlertTriangle className="h-5 w-5" />
               Eliminar noticia
             </DialogTitle>
@@ -467,13 +471,14 @@ export default function NoticiasAdminPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="w-full sm:w-auto">
               Cancelar
             </Button>
             <Button 
               variant="destructive" 
               onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+              className="w-full sm:w-auto"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Eliminar

@@ -1,5 +1,49 @@
 // Custom Link Tool for Editor.js - Beautiful inline link popup
 
+/**
+ * Sanitize a link href to prevent XSS attacks
+ * Blocks javascript:, data:, vbscript:, file: protocols
+ */
+function sanitizeLinkHref(href: string | null | undefined): string {
+  if (!href) return ''
+  
+  const trimmedHref = href.trim()
+  const lowerHref = trimmedHref.toLowerCase()
+  
+  // Block all dangerous protocols
+  if (lowerHref.startsWith('javascript:')) return ''
+  if (lowerHref.startsWith('data:')) return ''
+  if (lowerHref.startsWith('vbscript:')) return ''
+  if (lowerHref.startsWith('file:')) return ''
+  
+  // Allow relative URLs
+  if (trimmedHref.startsWith('/')) return trimmedHref
+  
+  // Allow anchor links
+  if (trimmedHref.startsWith('#')) return trimmedHref
+  
+  // Validate absolute URLs - only allow http and https
+  try {
+    const parsedUrl = new URL(trimmedHref)
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return ''
+    }
+    return trimmedHref
+  } catch {
+    // If it's not a valid URL, try adding https://
+    if (!trimmedHref.startsWith('http://') && !trimmedHref.startsWith('https://')) {
+      try {
+        const urlWithProtocol = `https://${trimmedHref}`
+        new URL(urlWithProtocol)
+        return urlWithProtocol
+      } catch {
+        return ''
+      }
+    }
+    return ''
+  }
+}
+
 interface LinkData {
   link: string
 }
@@ -205,8 +249,12 @@ export default class LinkTool {
         finalUrl = 'https://' + url
       }
 
+      // Sanitize URL to prevent XSS
+      const safeUrl = sanitizeLinkHref(finalUrl)
+      if (!safeUrl) return
+
        const link = document.createElement('a')
-       link.href = finalUrl
+       link.href = safeUrl
        link.target = '_self'
        link.rel = 'noopener noreferrer'
        link.style.color = '#3b82f6'

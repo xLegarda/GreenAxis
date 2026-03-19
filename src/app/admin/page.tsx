@@ -45,7 +45,7 @@ const adminSections = [
   },
   {
     title: 'Imágenes',
-    description: 'Biblioteca de imágenes del sitio',
+    description: 'Biblioteca de imágenes, videos y audios del sitio',
     icon: ImageIcon,
     href: '/admin/imagenes',
     color: 'bg-orange-500/10 text-orange-500'
@@ -83,15 +83,15 @@ const adminSections = [
 
 export default function AdminPage() {
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">Panel de Administración</h1>
-        <p className="text-muted-foreground">Gestiona el contenido de tu sitio web</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Panel de Administración</h1>
+        <p className="text-sm text-muted-foreground mt-1">Gestiona el contenido de tu sitio web</p>
       </div>
       
       {/* Sections Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {adminSections.map((section) => {
           const Icon = section.icon
           return (
@@ -102,12 +102,12 @@ export default function AdminPage() {
               rel={section.external ? 'noopener noreferrer' : undefined}
             >
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer border-0 bg-card">
-                <CardHeader>
-                  <div className={`w-12 h-12 rounded-xl ${section.color} flex items-center justify-center mb-3`}>
-                    <Icon className="h-6 w-6" />
+                <CardHeader className="p-4 sm:p-6">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${section.color} flex items-center justify-center mb-3`}>
+                    <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
-                  <CardTitle className="text-lg">{section.title}</CardTitle>
-                  <CardDescription>{section.description}</CardDescription>
+                  <CardTitle className="text-base sm:text-lg">{section.title}</CardTitle>
+                  <CardDescription className="text-sm">{section.description}</CardDescription>
                 </CardHeader>
               </Card>
             </Link>

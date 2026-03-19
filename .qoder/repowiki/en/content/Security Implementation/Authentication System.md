@@ -17,6 +17,14 @@
 - [package.json](file://package.json)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Enhanced session security with IP address verification and user agent validation
+- Updated verifySession function to include comprehensive IP and user agent validation
+- Improved IP address extraction from HTTP headers with fallback mechanisms
+- Strengthened session security monitoring with real-time validation
+- Modified session cookie storage to include IP and user agent information
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -30,11 +38,11 @@
 10. [Conclusion](#conclusion)
 
 ## Introduction
-This document describes the authentication system for GreenAxis, focusing on bcrypt password hashing with 12 rounds, session-based authentication with secure cookie management, user registration flow, and password reset functionality. It explains the authentication middleware, login/logout endpoints, session token generation and expiration handling, secure cookie attributes, user validation, credential verification, and authentication state management. It also covers security measures against brute force attacks, session hijacking prevention, and secure password handling practices.
+This document describes the authentication system for GreenAxis, focusing on bcrypt password hashing with 12 rounds, session-based authentication with secure cookie management, user registration flow, and password reset functionality. The system now includes enhanced security measures with IP address verification and user agent validation for session management, providing robust protection against session hijacking and unauthorized access attempts. It explains the authentication middleware, login/logout endpoints, session token generation and expiration handling, secure cookie attributes, user validation, credential verification, and authentication state management. It also covers security measures against brute force attacks, session hijacking prevention, and secure password handling practices.
 
 ## Project Structure
 The authentication system spans backend API routes, shared authentication utilities, database models, and frontend pages for password reset. Key areas:
-- Backend utilities: password hashing, session creation/verification, admin operations
+- Backend utilities: password hashing, session creation/verification with enhanced security, admin operations
 - API endpoints: login, logout, check, reset-password, setup, delete-account
 - Database models: Admin and PasswordResetToken
 - Frontend pages: password reset initiation and completion flows
@@ -81,11 +89,11 @@ AU --> DB
 - [reset-password/route.ts:1-262](file://src/app/api/auth/reset-password/route.ts#L1-L262)
 - [setup/route.ts:1-63](file://src/app/api/auth/setup/route.ts#L1-L63)
 - [delete-account/route.ts:1-43](file://src/app/api/auth/delete-account/route.ts#L1-L43)
-- [auth.ts:1-170](file://src/lib/auth.ts#L1-L170)
+- [auth.ts:1-175](file://src/lib/auth.ts#L1-L175)
 - [db.ts:1-21](file://src/lib/db.ts#L1-L21)
 
 **Section sources**
-- [auth.ts:1-170](file://src/lib/auth.ts#L1-L170)
+- [auth.ts:1-175](file://src/lib/auth.ts#L1-L175)
 - [login/route.ts:1-91](file://src/app/api/auth/login/route.ts#L1-L91)
 - [logout/route.ts:1-13](file://src/app/api/auth/logout/route.ts#L1-L13)
 - [check/route.ts:1-21](file://src/app/api/auth/check/route.ts#L1-L21)
@@ -98,30 +106,32 @@ AU --> DB
 
 ## Core Components
 - Password hashing and verification: bcrypt with 12 rounds
-- Session management: secure cookie with httpOnly, secure, sameSite strict, 7-day expiry
+- Session management: secure cookie with httpOnly, secure, sameSite strict, 7-day expiry, IP and user agent validation
 - Admin operations: existence checks, counting, creation, deletion with limits
-- Authentication utilities: token generation, session lifecycle, current admin retrieval
+- Authentication utilities: token generation, session lifecycle, current admin retrieval with enhanced security
 - Database models: Admin and PasswordResetToken with appropriate constraints
 
 Key implementation references:
 - bcrypt configuration and helpers: [auth.ts:6-18](file://src/lib/auth.ts#L6-L18)
-- session cookie attributes and lifecycle: [auth.ts:26-77](file://src/lib/auth.ts#L26-L77)
-- admin creation and validation: [auth.ts:122-153](file://src/lib/auth.ts#L122-L153)
+- session cookie attributes and lifecycle with IP/user agent: [auth.ts:26-50](file://src/lib/auth.ts#L26-L50)
+- enhanced session verification with validation: [auth.ts:52-89](file://src/lib/auth.ts#L52-L89)
+- admin creation and validation: [auth.ts:123-155](file://src/lib/auth.ts#L123-L155)
 - reset token generation and storage: [reset-password/route.ts:10-167](file://src/app/api/auth/reset-password/route.ts#L10-L167)
 - rate limiting and brute force protection: [login/route.ts:4-7](file://src/app/api/auth/login/route.ts#L4-L7)
 
 **Section sources**
 - [auth.ts:6-18](file://src/lib/auth.ts#L6-L18)
-- [auth.ts:26-77](file://src/lib/auth.ts#L26-L77)
-- [auth.ts:122-153](file://src/lib/auth.ts#L122-L153)
+- [auth.ts:26-50](file://src/lib/auth.ts#L26-L50)
+- [auth.ts:52-89](file://src/lib/auth.ts#L52-L89)
+- [auth.ts:123-155](file://src/lib/auth.ts#L123-L155)
 - [reset-password/route.ts:10-167](file://src/app/api/auth/reset-password/route.ts#L10-L167)
 - [login/route.ts:4-7](file://src/app/api/auth/login/route.ts#L4-L7)
 
 ## Architecture Overview
-The authentication system follows a layered architecture:
+The authentication system follows a layered architecture with enhanced security measures:
 - Middleware applies security headers to all requests
-- API routes handle authentication operations
-- Shared auth utilities encapsulate cryptographic and session logic
+- API routes handle authentication operations with IP extraction
+- Shared auth utilities encapsulate cryptographic, session logic, and security validation
 - Database models define Admin and PasswordResetToken entities
 - Frontend pages trigger password reset workflows via API calls
 
@@ -135,17 +145,20 @@ participant DB as "Database"
 Client->>MW : Request with security headers
 MW-->>Client : Response with security headers
 Client->>API : POST /api/auth/login
+API->>API : Extract IP from headers (x-real-ip/x-forwarded-for)
 API->>Util : authenticateAdmin(email, password)
 Util->>DB : findUnique({ email })
 DB-->>Util : Admin record or null
 Util-->>API : { id, email, name } or null
-API->>Util : createSession(adminId)
+API->>Util : createSession(adminId, ip)
 Util->>Util : generateSessionToken()
+Util->>Util : Store IP and user-agent in cookie
 Util->>DB : optional session persistence
 Util-->>API : token
 API-->>Client : JSON { success, admin } with Set-Cookie
 Client->>API : GET /api/auth/check
 API->>Util : getCurrentAdmin()
+Util->>Util : verifySession() with IP/user-agent validation
 Util->>DB : findUnique({ id }) via session
 DB-->>Util : Admin record
 Util-->>API : Admin info
@@ -161,7 +174,8 @@ API-->>Client : JSON { success }
 - [login/route.ts:1-91](file://src/app/api/auth/login/route.ts#L1-L91)
 - [check/route.ts:1-21](file://src/app/api/auth/check/route.ts#L1-L21)
 - [logout/route.ts:1-13](file://src/app/api/auth/logout/route.ts#L1-L13)
-- [auth.ts:26-77](file://src/lib/auth.ts#L26-L77)
+- [auth.ts:26-50](file://src/lib/auth.ts#L26-L50)
+- [auth.ts:52-89](file://src/lib/auth.ts#L52-L89)
 - [db.ts:1-21](file://src/lib/db.ts#L1-L21)
 
 ## Detailed Component Analysis
@@ -180,7 +194,7 @@ Implementation highlights:
 - [auth.ts:11-18](file://src/lib/auth.ts#L11-L18)
 - [reset-password/route.ts:242](file://src/app/api/auth/reset-password/route.ts#L242)
 
-### Session-Based Authentication and Secure Cookies
+### Enhanced Session-Based Authentication and Secure Cookies
 - Session token generation uses cryptographically secure random bytes
 - Sessions stored in a signed cookie with:
   - httpOnly: prevents XSS reading
@@ -188,41 +202,53 @@ Implementation highlights:
   - sameSite strict: mitigates CSRF
   - 7-day expiry
   - path /
-- Session verification parses cookie, validates expiry, and clears expired sessions
+  - IP address and user agent validation for enhanced security
+- Session verification parses cookie, validates expiry, IP address, and user agent, and clears compromised sessions
 - Logout destroys the session cookie
+
+**Updated** Enhanced with comprehensive IP address and user agent validation for session security monitoring
 
 Implementation highlights:
 - Token generation: [auth.ts:21-23](file://src/lib/auth.ts#L21-L23)
-- Cookie creation: [auth.ts:34-44](file://src/lib/auth.ts#L34-L44)
-- Session verification: [auth.ts:50-71](file://src/lib/auth.ts#L50-L71)
-- Session destruction: [auth.ts:74-77](file://src/lib/auth.ts#L74-L77)
+- Cookie creation with IP/user-agent: [auth.ts:26-50](file://src/lib/auth.ts#L26-L50)
+- Enhanced session verification with validation: [auth.ts:52-89](file://src/lib/auth.ts#L52-L89)
+- Session destruction: [auth.ts:92-95](file://src/lib/auth.ts#L92-L95)
 - Logout endpoint: [logout/route.ts:1-13](file://src/app/api/auth/logout/route.ts#L1-L13)
 
 ```mermaid
 flowchart TD
-Start(["Session Creation"]) --> GenToken["Generate Random Token"]
-GenToken --> BuildCookie["Build Cookie Payload<br/>{ adminId, token, expiresAt }"]
+Start(["Enhanced Session Creation"]) --> GenToken["Generate Random Token"]
+GenToken --> BuildCookie["Build Cookie Payload<br/>{ adminId, token, ip, userAgent, expiresAt }"]
 BuildCookie --> SetCookie["Set Secure Cookie<br/>httpOnly + secure + sameSite + expiry"]
 SetCookie --> ReturnToken["Return Token to caller"]
-VerifyStart(["Session Verification"]) --> ReadCookie["Read Cookie Value"]
+VerifyStart(["Enhanced Session Verification"]) --> ReadCookie["Read Cookie Value"]
 ReadCookie --> ParseJSON["Parse JSON Payload"]
 ParseJSON --> CheckExpiry{"Expired?"}
 CheckExpiry --> |Yes| Destroy["Destroy Session Cookie"]
 Destroy --> NullReturn["Return null"]
-CheckExpiry --> |No| ReturnAdmin["Return adminId"]
+CheckExpiry --> |No| ExtractHeaders["Extract IP and User-Agent from Headers"]
+ExtractHeaders --> ValidateIP{"IP Match?<br/>session.ip === currentIp"}
+ValidateIP --> |No| LogWarning["Log Security Warning"]
+LogWarning --> Destroy2["Destroy Session Cookie"]
+Destroy2 --> NullReturn
+ValidateIP --> |Yes| ValidateUA{"User-Agent Match?<br/>session.userAgent === currentUserAgent"}
+ValidateUA --> |No| LogWarning2["Log Security Warning"]
+LogWarning2 --> Destroy3["Destroy Session Cookie"]
+Destroy3 --> NullReturn
+ValidateUA --> |Yes| ReturnAdmin["Return adminId"]
 ```
 
 **Diagram sources**
 - [auth.ts:21-23](file://src/lib/auth.ts#L21-L23)
-- [auth.ts:34-44](file://src/lib/auth.ts#L34-L44)
-- [auth.ts:50-71](file://src/lib/auth.ts#L50-L71)
-- [auth.ts:74-77](file://src/lib/auth.ts#L74-L77)
+- [auth.ts:26-50](file://src/lib/auth.ts#L26-L50)
+- [auth.ts:52-89](file://src/lib/auth.ts#L52-L89)
+- [auth.ts:92-95](file://src/lib/auth.ts#L92-L95)
 
 **Section sources**
 - [auth.ts:21-23](file://src/lib/auth.ts#L21-L23)
-- [auth.ts:34-44](file://src/lib/auth.ts#L34-L44)
-- [auth.ts:50-71](file://src/lib/auth.ts#L50-L71)
-- [auth.ts:74-77](file://src/lib/auth.ts#L74-L77)
+- [auth.ts:26-50](file://src/lib/auth.ts#L26-L50)
+- [auth.ts:52-89](file://src/lib/auth.ts#L52-L89)
+- [auth.ts:92-95](file://src/lib/auth.ts#L92-L95)
 - [logout/route.ts:1-13](file://src/app/api/auth/logout/route.ts#L1-L13)
 
 ### User Registration Flow
@@ -234,7 +260,7 @@ CheckExpiry --> |No| ReturnAdmin["Return adminId"]
 Implementation highlights:
 - Setup check: [setup/route.ts:4-21](file://src/app/api/auth/setup/route.ts#L4-L21)
 - Setup creation: [setup/route.ts:23-62](file://src/app/api/auth/setup/route.ts#L23-L62)
-- Admin creation utility: [auth.ts:122-134](file://src/lib/auth.ts#L122-L134)
+- Admin creation utility: [auth.ts:143-155](file://src/lib/auth.ts#L143-L155)
 
 ```mermaid
 sequenceDiagram
@@ -261,28 +287,32 @@ Setup-->>Client : JSON { success, admin }
 **Diagram sources**
 - [setup/route.ts:4-21](file://src/app/api/auth/setup/route.ts#L4-L21)
 - [setup/route.ts:23-62](file://src/app/api/auth/setup/route.ts#L23-L62)
-- [auth.ts:122-134](file://src/lib/auth.ts#L122-L134)
+- [auth.ts:143-155](file://src/lib/auth.ts#L143-L155)
 
 **Section sources**
 - [setup/route.ts:4-21](file://src/app/api/auth/setup/route.ts#L4-L21)
 - [setup/route.ts:23-62](file://src/app/api/auth/setup/route.ts#L23-L62)
-- [auth.ts:122-134](file://src/lib/auth.ts#L122-L134)
+- [auth.ts:143-155](file://src/lib/auth.ts#L143-L155)
 
 ### Login Endpoint
 - Validates presence and format of email
 - Implements memory-based rate limiting (max 5 attempts per IP, 15-minute lockout)
-- On successful authentication, creates a session and returns admin info
+- Extracts client IP from HTTP headers with fallback mechanisms (x-real-ip, x-forwarded-for)
+- On successful authentication, creates a session with IP and user agent validation and returns admin info
 - On failure, increments attempts and adds a small randomized delay to mitigate timing attacks
+
+**Updated** Enhanced with comprehensive IP address extraction and validation for session security
 
 Implementation highlights:
 - Rate limiting structure: [login/route.ts:4-7](file://src/app/api/auth/login/route.ts#L4-L7)
+- IP extraction from headers: [login/route.ts:11-14](file://src/app/api/auth/login/route.ts#L11-L14)
 - Attempt tracking and lockout: [login/route.ts:16-33](file://src/app/api/auth/login/route.ts#L16-L33)
 - Credential validation and delay: [login/route.ts:52-74](file://src/app/api/auth/login/route.ts#L52-L74)
-- Session creation: [login/route.ts:80](file://src/app/api/auth/login/route.ts#L80)
+- Session creation with IP parameter: [login/route.ts:80](file://src/app/api/auth/login/route.ts#L80)
 
 ```mermaid
 flowchart TD
-Enter(["POST /api/auth/login"]) --> GetIP["Extract Client IP"]
+Enter(["POST /api/auth/login"]) --> GetIP["Extract Client IP<br/>x-real-ip or x-forwarded-for"]
 GetIP --> CheckRate["Check Attempts Map"]
 CheckRate --> Locked{"Max Attempts Reached<br/>and Within Lockout?"}
 Locked --> |Yes| RespondLocked["429 Too Many Requests"]
@@ -292,17 +322,20 @@ ValidateEmail --> |No| RespondBadReq["400 Bad Request"]
 ValidateEmail --> |Yes| Authenticate["authenticateAdmin(email, password)"]
 Authenticate --> Found{"Admin Found?"}
 Found --> |No| Increment["Increment Attempts Map"] --> Delay["Randomized Delay"] --> RespondUnauthorized["401 Unauthorized"]
-Found --> |Yes| ClearAttempts["Clear Attempts Map"] --> CreateSession["createSession(adminId)"] --> RespondSuccess["200 OK with admin info"]
+Found --> |Yes| ClearAttempts["Clear Attempts Map"] --> CreateSession["createSession(adminId, ip)"]
+CreateSession --> RespondSuccess["200 OK with admin info"]
 ```
 
 **Diagram sources**
 - [login/route.ts:4-7](file://src/app/api/auth/login/route.ts#L4-L7)
+- [login/route.ts:11-14](file://src/app/api/auth/login/route.ts#L11-L14)
 - [login/route.ts:16-33](file://src/app/api/auth/login/route.ts#L16-L33)
 - [login/route.ts:52-74](file://src/app/api/auth/login/route.ts#L52-L74)
 - [login/route.ts:80](file://src/app/api/auth/login/route.ts#L80)
 
 **Section sources**
 - [login/route.ts:4-7](file://src/app/api/auth/login/route.ts#L4-L7)
+- [login/route.ts:11-14](file://src/app/api/auth/login/route.ts#L11-L14)
 - [login/route.ts:16-33](file://src/app/api/auth/login/route.ts#L16-L33)
 - [login/route.ts:52-74](file://src/app/api/auth/login/route.ts#L52-L74)
 - [login/route.ts:80](file://src/app/api/auth/login/route.ts#L80)
@@ -313,23 +346,25 @@ Found --> |Yes| ClearAttempts["Clear Attempts Map"] --> CreateSession["createSes
 
 Implementation highlights:
 - Logout handler: [logout/route.ts:1-13](file://src/app/api/auth/logout/route.ts#L1-L13)
-- Session destruction: [auth.ts:74-77](file://src/lib/auth.ts#L74-L77)
+- Session destruction: [auth.ts:92-95](file://src/lib/auth.ts#L92-L95)
 
 **Section sources**
 - [logout/route.ts:1-13](file://src/app/api/auth/logout/route.ts#L1-L13)
-- [auth.ts:74-77](file://src/lib/auth.ts#L74-L77)
+- [auth.ts:92-95](file://src/lib/auth.ts#L92-L95)
 
 ### Authentication State Check
 - Retrieves current admin by parsing session cookie and querying the database
-- Returns authenticated status and admin info if session valid
+- Returns authenticated status and admin info if session valid with enhanced security validation
+
+**Updated** Enhanced with comprehensive IP and user agent validation during session verification
 
 Implementation highlights:
 - Check handler: [check/route.ts:1-21](file://src/app/api/auth/check/route.ts#L1-L21)
-- Current admin retrieval: [auth.ts:156-169](file://src/lib/auth.ts#L156-L169)
+- Current admin retrieval: [auth.ts:167-174](file://src/lib/auth.ts#L167-L174)
 
 **Section sources**
 - [check/route.ts:1-21](file://src/app/api/auth/check/route.ts#L1-L21)
-- [auth.ts:156-169](file://src/lib/auth.ts#L156-L169)
+- [auth.ts:167-174](file://src/lib/auth.ts#L167-L174)
 
 ### Password Reset Functionality
 - Initiation:
@@ -403,11 +438,11 @@ Reset-->>Client : JSON { success }
 
 Implementation highlights:
 - Deletion handler: [delete-account/route.ts:1-43](file://src/app/api/auth/delete-account/route.ts#L1-L43)
-- Admin count and deletion: [auth.ts:86-119](file://src/lib/auth.ts#L86-L119)
+- Admin count and deletion: [auth.ts:124-140](file://src/lib/auth.ts#L124-L140)
 
 **Section sources**
 - [delete-account/route.ts:1-43](file://src/app/api/auth/delete-account/route.ts#L1-L43)
-- [auth.ts:86-119](file://src/lib/auth.ts#L86-L119)
+- [auth.ts:124-140](file://src/lib/auth.ts#L124-L140)
 
 ### Database Models and Schema
 - Admin model: unique email, password hash, role, status, timestamps
@@ -462,14 +497,18 @@ DB --> LibSQL
 - Rate limiting uses an in-memory Map; consider Redis for distributed environments
 - Session cookie size is minimal; avoid storing large payloads
 - Database queries are lightweight; ensure proper indexing on unique fields (email, token)
+- Enhanced IP and user agent validation adds minimal overhead but provides significant security benefits
 
 ## Security Measures
 - Brute force protection:
   - Max 5 attempts per IP with 15-minute lockout
   - Randomized delay on invalid credentials
-- Session security:
+- Enhanced session security:
   - httpOnly, secure, sameSite strict, 7-day expiry
   - Automatic expiry validation and cleanup
+  - IP address validation against session creation IP
+  - User agent validation to detect browser changes
+  - Real-time security warnings for suspicious activity
 - Password handling:
   - bcrypt with 12 rounds
   - Tokens stored as hashes; plain tokens only used in emails
@@ -479,34 +518,46 @@ DB --> LibSQL
 - Input validation:
   - Email format validation
   - Password length validation
+- IP address extraction:
+  - Fallback mechanisms: x-real-ip, x-forwarded-for, unknown
+  - Vercel infrastructure injection for reliable IP detection
+
+**Updated** Enhanced with comprehensive IP and user agent validation for session security monitoring
 
 Evidence in code:
 - Rate limiting and delays: [login/route.ts:4-7](file://src/app/api/auth/login/route.ts#L4-L7), [login/route.ts:67-68](file://src/app/api/auth/login/route.ts#L67-L68)
-- Cookie attributes: [auth.ts:39-44](file://src/lib/auth.ts#L39-L44)
-- Expiry handling: [auth.ts:28](file://src/lib/auth.ts#L28), [auth.ts:62-65](file://src/lib/auth.ts#L62-L65)
+- Enhanced cookie attributes: [auth.ts:41-47](file://src/lib/auth.ts#L41-L47)
+- Expiry handling: [auth.ts:28](file://src/lib/auth.ts#L28), [auth.ts:63-66](file://src/lib/auth.ts#L63-L66)
+- Enhanced session validation: [auth.ts:73-83](file://src/lib/auth.ts#L73-L83)
 - bcrypt rounds: [auth.ts:12](file://src/lib/auth.ts#L12), [reset-password/route.ts:242](file://src/app/api/auth/reset-password/route.ts#L242)
 - Token hashing: [reset-password/route.ts:157](file://src/app/api/auth/reset-password/route.ts#L157)
 - Security headers: [middleware.ts:8-41](file://src/middleware.ts#L8-L41)
+- IP extraction: [login/route.ts:11-14](file://src/app/api/auth/login/route.ts#L11-L14)
 
 **Section sources**
 - [login/route.ts:4-7](file://src/app/api/auth/login/route.ts#L4-L7)
 - [login/route.ts:67-68](file://src/app/api/auth/login/route.ts#L67-L68)
-- [auth.ts:39-44](file://src/lib/auth.ts#L39-L44)
+- [auth.ts:41-47](file://src/lib/auth.ts#L41-L47)
 - [auth.ts:28](file://src/lib/auth.ts#L28)
-- [auth.ts:62-65](file://src/lib/auth.ts#L62-L65)
+- [auth.ts:63-66](file://src/lib/auth.ts#L63-L66)
+- [auth.ts:73-83](file://src/lib/auth.ts#L73-L83)
 - [auth.ts:12](file://src/lib/auth.ts#L12)
 - [reset-password/route.ts:242](file://src/app/api/auth/reset-password/route.ts#L242)
 - [reset-password/route.ts:157](file://src/app/api/auth/reset-password/route.ts#L157)
 - [middleware.ts:8-41](file://src/middleware.ts#L8-L41)
+- [login/route.ts:11-14](file://src/app/api/auth/login/route.ts#L11-L14)
 
 ## Troubleshooting Guide
 - Login failures:
   - Verify email format and presence
   - Check rate limit lockout messages
   - Confirm bcrypt rounds and password correctness
-- Session issues:
+  - Verify IP extraction from headers (x-real-ip, x-forwarded-for)
+- Enhanced session issues:
   - Ensure secure cookie attributes match environment (secure flag in production)
   - Validate cookie expiry and automatic cleanup
+  - Check IP address validation logs for security warnings
+  - Monitor user agent changes that may trigger session invalidation
 - Password reset problems:
   - Confirm Resend API key and sender configuration
   - Check token validity and expiry
@@ -515,9 +566,11 @@ Evidence in code:
   - Confirm MAX_ADMIN_ACCOUNTS environment variable
   - Ensure admin count reflects actual records
 
+**Updated** Enhanced troubleshooting guidance for IP and user agent validation issues
+
 Common references:
 - Login error handling: [login/route.ts:38-50](file://src/app/api/auth/login/route.ts#L38-L50), [login/route.ts:67-74](file://src/app/api/auth/login/route.ts#L67-L74)
-- Session verification errors: [auth.ts:54-71](file://src/lib/auth.ts#L54-L71)
+- Enhanced session verification errors: [auth.ts:73-83](file://src/lib/auth.ts#L73-L83)
 - Reset endpoint errors: [reset-password/route.ts:110-118](file://src/app/api/auth/reset-password/route.ts#L110-L118), [reset-password/route.ts:193-206](file://src/app/api/auth/reset-password/route.ts#L193-L206)
 - Setup limits: [setup/route.ts:29-33](file://src/app/api/auth/setup/route.ts#L29-L33)
 - Database client: [db.ts:14-21](file://src/lib/db.ts#L14-L21)
@@ -525,11 +578,11 @@ Common references:
 **Section sources**
 - [login/route.ts:38-50](file://src/app/api/auth/login/route.ts#L38-L50)
 - [login/route.ts:67-74](file://src/app/api/auth/login/route.ts#L67-L74)
-- [auth.ts:54-71](file://src/lib/auth.ts#L54-L71)
+- [auth.ts:73-83](file://src/lib/auth.ts#L73-L83)
 - [reset-password/route.ts:110-118](file://src/app/api/auth/reset-password/route.ts#L110-L118)
 - [reset-password/route.ts:193-206](file://src/app/api/auth/reset-password/route.ts#L193-L206)
 - [setup/route.ts:29-33](file://src/app/api/auth/setup/route.ts#L29-L33)
 - [db.ts:14-21](file://src/lib/db.ts#L14-L21)
 
 ## Conclusion
-GreenAxis implements a robust authentication system featuring bcrypt password hashing with 12 rounds, secure session management with hardened cookie attributes, comprehensive rate limiting, and a complete password reset workflow with token hashing and expiry. The modular design separates concerns across utilities, API routes, and database models, while middleware ensures transport and content security. The frontend pages integrate seamlessly with the backend to deliver a secure and user-friendly authentication experience.
+GreenAxis implements a robust authentication system featuring bcrypt password hashing with 12 rounds, secure session management with hardened cookie attributes, comprehensive rate limiting, and a complete password reset workflow with token hashing and expiry. The system has been significantly enhanced with IP address verification and user agent validation for session management, providing strong protection against session hijacking and unauthorized access attempts. The modular design separates concerns across utilities, API routes, and database models, while middleware ensures transport and content security. The frontend pages integrate seamlessly with the backend to deliver a secure and user-friendly authentication experience with enhanced security monitoring capabilities.

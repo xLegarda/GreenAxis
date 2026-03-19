@@ -186,7 +186,8 @@ export function MediaPicker({
           loading: false
         }))
       } else {
-        console.error('Failed to fetch media items')
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
+        console.error('Failed to fetch media items:', response.status, errorData)
         setState(prev => ({ ...prev, loading: false }))
       }
     } catch (error) {

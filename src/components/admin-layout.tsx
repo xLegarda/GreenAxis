@@ -142,6 +142,7 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
                   height={40}
                   className="h-10 w-auto object-contain"
                   priority
+                  unoptimized
                 />
               </div>
               <div>
@@ -226,6 +227,7 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
                 width={80}
                 height={32}
                 className="h-8 w-auto object-contain"
+                unoptimized
               />
             </div>
             <span className="font-bold">Admin</span>

@@ -5,6 +5,7 @@ import path from 'path'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { v2 as cloudinary } from 'cloudinary'
+import DOMPurify from 'isomorphic-dompurify'
 
 // Configurar Cloudinary
 // Intenta usar CLOUDINARY_URL primero, si no, usa variables individuales
@@ -83,12 +84,36 @@ function validateFile(buffer: Buffer, declaredType: string): boolean {
     return false
   }
   
-  // SVG se valida como texto XML
+  // SVG se valida como texto XML y se sanitiza con DOMPurify
   if (declaredType === 'image/svg+xml') {
     const content = buffer.toString('utf-8').trim().toLowerCase()
-    return content.startsWith('<svg') || 
-           content.startsWith('<?xml') ||
-           content.startsWith('<!doctype svg')
+    // Check if it starts with valid SVG/XML
+    if (!(content.startsWith('<svg') || 
+          content.startsWith('<?xml') ||
+          content.startsWith('<!doctype svg'))) {
+      return false
+    }
+    
+    // Additional check: sanitize the SVG content
+    // DOMPurify will remove any malicious scripts
+    const originalContent = buffer.toString('utf-8')
+    const sanitized = DOMPurify.sanitize(originalContent, {
+      USE_PROFILES: { svg: true, svgFilters: true },
+      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onactivate']
+    })
+    
+    // If sanitized content is significantly different, it contained malicious code
+    // Allow some tolerance for whitespace differences
+    const originalLength = originalContent.replace(/\s+/g, '').length
+    const sanitizedLength = sanitized.replace(/\s+/g, '').length
+    
+    // If more than 10% was removed, reject the file
+    if (sanitizedLength < originalLength * 0.9) {
+      return false
+    }
+    
+    return true
   }
   
   // Para videos y audios, validación más flexible

@@ -1,176 +1,135 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider     = "sqlite"
+  url          = env("DATABASE_URL")
   relationMode = "prisma"
 }
 
-// Configuración general de la plataforma
 model PlatformConfig {
-  id String @id @default(cuid())
-  
-  // Información básica
-  siteName        String  @default("Green Axis S.A.S.")
-  siteUrl         String?  // URL pública del sitio (para compartir en redes sociales)
-  siteSlogan      String?
-  siteDescription String?  // Descripción para SEO
-  logoUrl         String?
-  faviconUrl      String?
-  
-  // Información de contacto
-  companyName     String?
-  companyAddress  String?
-  companyPhone    String?
-  companyEmail    String?
-  
-  // Email de notificaciones (dónde recibir mensajes de contacto)
-  notificationEmail String?
-  
-  // Redes sociales (solo mostrar si tienen URL)
-  facebookUrl   String?
-  instagramUrl  String?
-  twitterUrl    String?
-  linkedinUrl   String?
-  tiktokUrl     String?
-  youtubeUrl    String?
-  
-  // Textos del footer
-  footerText      String?
-  socialText      String?  @default("Síguenos en nuestras redes")
-  
-  // WhatsApp - Siempre visible, configuración del modal
-  whatsappNumber      String?
-  whatsappMessage     String?  @default("¡Hola! Me gustaría obtener información sobre sus servicios ambientales.")
-  whatsappShowBubble  Boolean  @default(true)
-  
-  // Sección "Quiénes Somos" (About) - Completamente editable
-  aboutImageUrl       String?
-  aboutTitle          String?  @default("Comprometidos con el futuro del planeta")
-  aboutDescription    String?
-  aboutYearsExperience String?  @default("15")  // Cambiado a String para permitir "15+", "Más de 15 años", etc.
-  aboutYearsText      String?  @default("Años protegiendo el medio ambiente")
-  aboutStats          String?  // JSON: [{"value": "500", "label": "Clientes", "bullet": "+"}, ...]
-  aboutFeatures       String?  // JSON: ["Feature 1", "Feature 2", ...]
-  aboutSectionEnabled  Boolean  @default(true)  // Mostrar/ocultar sección completa
-  aboutBadge          String?  @default("Sobre Nosotros")  // Texto del badge
-  aboutBadgeColor    String?  @default("#6BBE45")  // Color del badge
-  
-  // Sección Mapa - Mostrar/ocultar
-  showMapSection      Boolean  @default(true)
-  
-  // SEO y Analytics
-  metaKeywords    String?
-  googleAnalytics String?
-  googleMapsEmbed String?  // iframe embed de Google Maps
-  
-  // Colores del tema
-  primaryColor    String?  @default("#6BBE45")
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  siteName             String   @default("Green Axis S.A.S.")
+  siteUrl              String?
+  siteSlogan           String?
+  siteDescription      String?
+  logoUrl              String?
+  faviconUrl           String?
+  companyName          String?
+  companyAddress       String?
+  companyPhone         String?
+  companyEmail         String?
+  notificationEmail    String?
+  facebookUrl          String?
+  instagramUrl         String?
+  twitterUrl           String?
+  linkedinUrl          String?
+  tiktokUrl            String?
+  youtubeUrl           String?
+  footerText           String?
+  socialText           String?  @default("Síguenos en nuestras redes")
+  whatsappNumber       String?
+  whatsappMessage      String?  @default("¡Hola! Me gustaría obtener información sobre sus servicios ambientales.")
+  whatsappShowBubble   Boolean  @default(true)
+  aboutImageUrl        String?
+  aboutTitle           String?  @default("Comprometidos con el futuro del planeta")
+  aboutDescription     String?
+  aboutYearsExperience String?  @default("15")
+  aboutYearsText       String?  @default("Años protegiendo el medio ambiente")
+  aboutStats           String?
+  aboutFeatures        String?
+  aboutSectionEnabled  Boolean  @default(true)
+  aboutBadge           String?  @default("Sobre Nosotros")
+  aboutBadgeColor      String?  @default("#6BBE45")
+  showMapSection       Boolean  @default(true)
+  metaKeywords         String?
+  googleAnalytics      String?
+  googleMapsEmbed      String?
+  primaryColor         String?  @default("#6BBE45")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
-// Servicios que ofrece la empresa
 model Service {
   id          String   @id @default(cuid())
   title       String
-  slug        String?  @unique  // URL amigable (ej: gestion-de-residuos)
-  description String?  // Descripción corta (para tarjetas/listados)
-  shortBlocks String?  // Descripción corta en Editor.js (vista pública)
-  content     String?  // Contenido completo en markdown (fallback)
-  blocks      String?  // Contenido completo en formato Editor.js (página detalle)
-  icon        String?  // Nombre del icono de Lucide
+  slug        String?  @unique
+  description String?
+  shortBlocks String?
+  content     String?
+  blocks      String?
+  icon        String?
   imageUrl    String?
   order       Int      @default(0)
   active      Boolean  @default(true)
   featured    Boolean  @default(false)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  showSummary Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-// Noticias / Blog
 model News {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  excerpt     String?  // Resumen corto
-  content     String   // Contenido en markdown
-  imageUrl    String?
-  author      String?
-  published   Boolean  @default(false)
-  featured    Boolean  @default(false)
-  publishedAt DateTime?
-  
-  // Editor de bloques (EditorJS)
-  blocks             String?  // JSON con los bloques del editor
-  showCoverInContent Boolean  @default(true)
+  id                 String    @id @default(cuid())
+  title              String
+  slug               String    @unique
+  excerpt            String?
+  content            String
+  imageUrl           String?
+  author             String?
+  published          Boolean   @default(false)
+  featured           Boolean   @default(false)
+  publishedAt        DateTime?
+  blocks             String?
+  showCoverInContent Boolean   @default(true)
   imageCaption       String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
-// Imágenes del sitio (sistema con reemplazo automático)
 model SiteImage {
   id          String   @id @default(cuid())
-  key         String?  @unique  // Identificador único (hero-1, about-us, etc.) - ahora opcional
-  label       String            // Nombre descriptivo
-  description String?           // Descripción opcional
-  url         String            // URL de la imagen
-  alt         String?           // Texto alternativo
-  category    String?           // Categoría: hero, services, news, gallery, general, config, carousel
-  
-  // Hash para detección de duplicados
-  hash        String?           // Hash SHA-256 del contenido del archivo
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// Slides del carrusel principal
-model CarouselSlide {
-  id          String   @id @default(cuid())
-  title       String?
-  subtitle    String?
+  key         String?  @unique
+  label       String
   description String?
-  imageUrl    String
-  buttonText  String?
-  buttonUrl   String?  // Link del botón
-  linkUrl     String?  // Link de toda la imagen/título
-  
-  // Opciones de personalización por slide
-  gradientEnabled   Boolean  @default(true)   // Mostrar degradado
-  animationEnabled  Boolean  @default(true)   // Animación de zoom
-  gradientColor     String?  // Color del degradado (hex sin #)
-  
-  order       Int      @default(0)
-  active      Boolean  @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// Páginas legales (Términos, Privacidad)
-model LegalPage {
-  id          String   @id @default(cuid())
-  slug        String   @unique  // terminos, privacidad, etc.
-  title       String
-  content     String   // Contenido en markdown (fallback)
-  blocks      String?  // Contenido en formato Editor.js JSON
-  manualDate  String?  // Fecha manual de última actualización
-  updatedAt   DateTime @updatedAt
+  url         String
+  alt         String?
+  category    String?
+  hash        String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-// Mensajes del formulario de contacto
+model CarouselSlide {
+  id               String   @id @default(cuid())
+  title            String?
+  subtitle         String?
+  description      String?
+  imageUrl         String
+  buttonText       String?
+  buttonUrl        String?
+  linkUrl          String?
+  gradientEnabled  Boolean  @default(true)
+  animationEnabled Boolean  @default(true)
+  gradientColor    String?
+  order            Int      @default(0)
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model LegalPage {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  title      String
+  content    String
+  blocks     String?
+  manualDate String?
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}
+
 model ContactMessage {
   id        String   @id @default(cuid())
   name      String
@@ -181,97 +140,68 @@ model ContactMessage {
   message   String
   consent   Boolean  @default(false)
   read      Boolean  @default(false)
-  
   createdAt DateTime @default(now())
 }
 
-// Configuración de feeds de redes sociales
 model SocialFeedConfig {
-  id            String   @id @default(cuid())
-  platform      String   // facebook, instagram
-  embedCode     String?
-  accessToken   String?
-  pageId        String?
-  active        Boolean  @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  platform    String
+  embedCode   String?
+  accessToken String?
+  pageId      String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-// Administrador / Usuarios del sistema
 model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String   // Hash de la contraseña
+  password  String
   name      String?
-  role      String   @default("admin")  // "developer", "superadmin", "admin"
-  status    String   @default("pendiente")  // "pendiente", "aprobado", "inactivo"
-  
+  role      String   @default("admin")
+  status    String   @default("pendiente")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Tokens de recuperación de contraseña
 model PasswordResetToken {
   id        String   @id @default(cuid())
-  email     String   // Email del usuario
-  token     String   @unique  // Token único
-  expiresAt DateTime // Fecha de expiración (1 hora)
+  email     String
+  token     String   @unique
+  expiresAt DateTime
   used      Boolean  @default(false)
-  
   createdAt DateTime @default(now())
 }
 
-// Página "Quiénes Somos" - Contenido completo y editable
 model AboutPage {
-  id String @id @default(cuid())
-  
-  // Hero Section
-  heroTitle       String?  @default("Quiénes Somos")
-  heroSubtitle    String?  @default("Comprometidos con el medio ambiente")
-  heroImageUrl    String?
-  
-  // Historia / Nuestra Historia
-  historyTitle    String?  @default("Nuestra Historia")
-  historyContent  String?  // Contenido largo en markdown
-  historyImageUrl String?
-  
-  // Misión y Visión
-  missionTitle    String?  @default("Nuestra Misión")
-  missionContent  String?
-  visionTitle     String?  @default("Nuestra Visión")
-  visionContent   String?
-  
-  // Valores
-  valuesTitle     String?  @default("Nuestros Valores")
-  valuesContent   String?  // JSON: [{"title": "Integridad", "description": "...", "icon": "Shield"}]
-  
-  // Equipo (opcional)
-  teamTitle       String?  @default("Nuestro Equipo")
-  teamEnabled     Boolean  @default(false)
-  teamMembers     String?  // JSON: [{"name": "Juan", "role": "CEO", "image": "...", "bio": "..."}]
-  
-  // Por qué elegirnos
-  whyChooseTitle    String?  @default("¿Por Qué Elegirnos?")
-  whyChooseContent  String?  // JSON: [{"title": "Experiencia", "description": "...", "icon": "Award"}]
-  
-  // CTA final
-  ctaTitle       String?  @default("¿Listo para trabajar con nosotros?")
-  ctaSubtitle    String?  @default("Contáctanos y descubre cómo podemos ayudarte")
-  ctaButtonText  String?  @default("Contáctanos")
-  ctaButtonUrl   String?  @default("/contacto")
-  
-  // Estadísticas
-  statsEnabled   Boolean  @default(true)
-  statsContent   String?  // JSON: [{"value": "500+", "label": "Clientes", "icon": "Users"}]
-  
-  // Certificaciones / Reconocimientos (opcional)
-  certificationsEnabled  Boolean  @default(false)
-  certificationsContent String?  // JSON: [{"name": "ISO 14001", "image": "..."}]
-  
-  // Ubicación (opcional)
-  showLocationSection  Boolean  @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  heroTitle             String?  @default("Quiénes Somos")
+  heroSubtitle          String?  @default("Comprometidos con el medio ambiente")
+  heroImageUrl          String?
+  historyTitle          String?  @default("Nuestra Historia")
+  historyContent        String?
+  historyImageUrl       String?
+  missionTitle          String?  @default("Nuestra Misión")
+  missionContent        String?
+  visionTitle           String?  @default("Nuestra Visión")
+  visionContent         String?
+  valuesTitle           String?  @default("Nuestros Valores")
+  valuesContent         String?
+  teamTitle             String?  @default("Nuestro Equipo")
+  teamEnabled           Boolean  @default(false)
+  teamMembers           String?
+  whyChooseTitle        String?  @default("¿Por Qué Elegirnos?")
+  whyChooseContent      String?
+  ctaTitle              String?  @default("¿Listo para trabajar con nosotros?")
+  ctaSubtitle           String?  @default("Contáctanos y descubre cómo podemos ayudarte")
+  ctaButtonText         String?  @default("Contáctanos")
+  ctaButtonUrl          String?  @default("/contacto")
+  statsEnabled          Boolean  @default(true)
+  statsContent          String?
+  certificationsEnabled Boolean  @default(false)
+  certificationsContent String?
+  showLocationSection   Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }

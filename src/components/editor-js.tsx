@@ -5,6 +5,20 @@ import type EditorJS from '@editorjs/editorjs'
 import { createRoot } from 'react-dom/client'
 import MediaPickerCompact from './media-picker-compact'
 import { MARKER_COLORS, TEXT_COLORS, DARK_MODE_STYLES } from './editor-colors'
+import DOMPurify from 'isomorphic-dompurify'
+
+/**
+ * Sanitize HTML content to prevent XSS attacks
+ */
+function sanitizeHtml(html: string | null | undefined): string {
+  if (!html) return ''
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 's', 'a', 'span', 'code'],
+    ALLOWED_ATTR: ['href', 'title', 'target', 'rel', 'class'],
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
+  })
+}
 
 interface EditorProps {
   data?: any
@@ -619,7 +633,7 @@ export function renderEditorBlocks(blocks: any[]) {
             key={index} 
             className="text-lg leading-relaxed text-muted-foreground mb-6"
             style={{ textAlign: 'justify', textWrap: 'pretty' }}
-            dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
           />
         )
       case 'header':
@@ -629,7 +643,7 @@ export function renderEditorBlocks(blocks: any[]) {
             <h1 
               key={index} 
               className="text-4xl font-bold mt-10 mb-4 text-foreground"
-              dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
             />
           )
         }
@@ -638,7 +652,7 @@ export function renderEditorBlocks(blocks: any[]) {
             <h2 
               key={index} 
               className="text-3xl font-bold mt-8 mb-3 text-foreground"
-              dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
             />
           )
         }
@@ -647,7 +661,7 @@ export function renderEditorBlocks(blocks: any[]) {
             <h3 
               key={index} 
               className="text-2xl font-semibold mt-6 mb-2 text-foreground"
-              dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
             />
           )
         }
@@ -656,7 +670,7 @@ export function renderEditorBlocks(blocks: any[]) {
             <h4 
               key={index} 
               className="text-xl font-semibold mt-4 mb-2 text-foreground"
-              dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
             />
           )
         }
@@ -665,7 +679,7 @@ export function renderEditorBlocks(blocks: any[]) {
             <h5 
               key={index} 
               className="text-lg font-semibold mt-4 mb-2 text-foreground"
-              dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
             />
           )
         }
@@ -673,7 +687,7 @@ export function renderEditorBlocks(blocks: any[]) {
           <h6 
             key={index} 
             className="text-base font-semibold mt-4 mb-2 text-foreground"
-            dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
           />
         )
       case 'titulo1':
@@ -681,7 +695,7 @@ export function renderEditorBlocks(blocks: any[]) {
           <h1 
             key={index} 
             className="text-4xl font-bold mt-10 mb-4 text-foreground"
-            dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
           />
         )
       case 'titulo2':
@@ -689,7 +703,7 @@ export function renderEditorBlocks(blocks: any[]) {
           <h2 
             key={index} 
             className="text-3xl font-bold mt-8 mb-3 text-foreground"
-            dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
           />
         )
       case 'titulo3':
@@ -697,7 +711,7 @@ export function renderEditorBlocks(blocks: any[]) {
           <h3 
             key={index} 
             className="text-2xl font-semibold mt-6 mb-2 text-foreground"
-            dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
           />
         )
       case 'titulo4':
@@ -705,7 +719,7 @@ export function renderEditorBlocks(blocks: any[]) {
           <h4 
             key={index} 
             className="text-xl font-semibold mt-4 mb-2 text-foreground"
-            dangerouslySetInnerHTML={{ __html: block.data.text || '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }}
           />
         )
       case 'list':
@@ -714,7 +728,7 @@ export function renderEditorBlocks(blocks: any[]) {
           return (
             <ol key={index} className="my-6 space-y-2 list-decimal list-inside">
               {items.map((item: string, i: number) => (
-                <li key={i} className="text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: item }} />
+                <li key={i} className="text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: sanitizeHtml(item) }} />
               ))}
             </ol>
           )
@@ -722,7 +736,7 @@ export function renderEditorBlocks(blocks: any[]) {
         return (
           <ul key={index} className="my-6 space-y-2 list-disc list-inside">
             {items.map((item: string, i: number) => (
-              <li key={i} className="text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: item }} />
+              <li key={i} className="text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: sanitizeHtml(item) }} />
             ))}
           </ul>
         )
@@ -746,7 +760,7 @@ export function renderEditorBlocks(blocks: any[]) {
       case 'quote':
         return (
           <blockquote key={index} className="my-8 pl-6 border-l-4 border-primary bg-muted/30 py-4 pr-4 rounded-r-lg">
-            <p className="text-xl italic text-foreground" dangerouslySetInnerHTML={{ __html: block.data.text || '' }} />
+            <p className="text-xl italic text-foreground" dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.data.text || '') }} />
             {block.data.caption && (
               <cite className="block mt-2 text-sm text-muted-foreground not-italic">
                 — {block.data.caption}
@@ -772,6 +786,8 @@ export function renderEditorBlocks(blocks: any[]) {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   loading="lazy"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  referrerPolicy="no-referrer"
                 />
               </div>
               {embedData.caption && (

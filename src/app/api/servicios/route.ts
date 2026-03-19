@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
         order: body.order || 0,
         active: body.active ?? true,
         featured: body.featured ?? false,
+        showSummary: body.showSummary ?? true,
       }
     })
     
@@ -114,6 +115,7 @@ export async function PUT(request: NextRequest) {
         order: body.order,
         active: body.active,
         featured: body.featured,
+        showSummary: body.showSummary ?? true,
       }
     })
     
