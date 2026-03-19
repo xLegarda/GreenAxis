@@ -128,9 +128,9 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
   }
   
   return (
-    <div className="min-h-screen bg-accent/30 flex">
+    <div className="min-h-screen bg-accent/30 flex overflow-x-hidden">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 bg-card border-r">
+      <aside className="hidden lg:flex flex-col w-64 bg-card border-r shrink-0">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
@@ -337,7 +337,7 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
       </div>
       
       {/* Main Content */}
-      <main className="flex-1 lg:pt-0 pt-16">
+      <main className="flex-1 lg:pt-0 pt-16 min-w-0 overflow-x-hidden">
         {children}
       </main>
       

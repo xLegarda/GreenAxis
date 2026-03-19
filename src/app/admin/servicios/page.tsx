@@ -320,21 +320,18 @@ export default function ServiciosAdminPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Servicios
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Servicios</h1>
+          <p className="text-sm text-muted-foreground">
             Gestiona los servicios que ofrece Green Axis S.A.S.
           </p>
         </div>
         <Button 
           onClick={() => { resetForm(); setEditingService(null); setDialogOpen(true); }} 
-          className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white shadow-lg shadow-green-500/20 w-full sm:w-auto"
+          className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white w-full sm:w-auto shrink-0"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Servicio
@@ -342,28 +339,28 @@ export default function ServiciosAdminPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-0">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-[#6BBE45]">{services.length}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-0 min-w-0">
+          <CardContent className="p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-[#6BBE45]">{services.length}</p>
             <p className="text-xs text-muted-foreground">Total</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-0">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-[#005A7A]">{services.filter(s => s.active).length}</p>
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-0 min-w-0">
+          <CardContent className="p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-[#005A7A]">{services.filter(s => s.active).length}</p>
             <p className="text-xs text-muted-foreground">Activos</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-0">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-amber-600">{services.filter(s => s.featured).length}</p>
+        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-0 min-w-0">
+          <CardContent className="p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-amber-600">{services.filter(s => s.featured).length}</p>
             <p className="text-xs text-muted-foreground">Destacados</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/20 dark:to-gray-700/20 border-0">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-gray-500">{services.filter(s => !s.active).length}</p>
+        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/20 dark:to-gray-700/20 border-0 min-w-0">
+          <CardContent className="p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-gray-500">{services.filter(s => !s.active).length}</p>
             <p className="text-xs text-muted-foreground">Inactivos</p>
           </CardContent>
         </Card>
