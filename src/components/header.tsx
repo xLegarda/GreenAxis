@@ -85,6 +85,7 @@ export function Header({ config }: HeaderProps) {
                 height={48}
                 className="h-10 md:h-12 w-auto object-contain dark:brightness-0 dark:invert"
                 priority
+                unoptimized
               />
             </div>
           </Link>

@@ -74,6 +74,7 @@ export function Footer({ config, services }: FooterProps) {
                   height={56}
                   className="h-14 w-auto object-contain brightness-0 invert"
                   priority
+                  unoptimized
                 />
               </div>
             </Link>

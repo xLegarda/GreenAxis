@@ -1,3 +1,5 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { Leaf, Recycle, TreePine, Droplets, Wind, Building2, ArrowRight, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Sparkles, Phone, Mail } from 'lucide-react'
@@ -121,12 +123,25 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#005A7A] via-[#004A66] to-[#003D52] dark:from-[#051215] dark:via-[#0a1a1f] dark:to-[#0f2028]" />
-        <div className="absolute inset-0 pattern-leaves opacity-10" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#005A7A] via-[#004A66] to-[#003D52] dark:from-[#051215] dark:via-[#0a1a1f] dark:to-[#0f2028]">
+        {/* Grid pattern background */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(107, 190, 69, 0.3) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(107, 190, 69, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }} />
+        </div>
         
-        <div className="relative container mx-auto px-4 py-20 md:py-28 text-center text-white">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+        {/* Floating shapes */}
+        <div className="absolute top-20 left-20 w-32 h-32 border-4 border-[#6BBE45]/20 rounded-lg rotate-12 animate-pulse" />
+        <div className="absolute bottom-32 right-32 w-40 h-40 border-4 border-[#8BC34A]/20 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-20 w-24 h-24 bg-[#6BBE45]/10 rounded-lg -rotate-12" />
+        
+        <div className="relative container mx-auto px-4 py-20 md:py-28 text-center text-white z-10">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6 border border-white/20">
             <Sparkles className="h-4 w-4 text-[#8BC34A]" />
             <span className="text-sm font-medium">Soluciones Profesionales</span>
           </div>
@@ -139,17 +154,24 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
           </p>
           
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button asChild size="lg" className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium px-8 shadow-xl shadow-green-900/20">
-              <Link href="/contacto">
-                Solicitar Cotización
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
-              <a href="#servicios">
-                Ver Servicios
-              </a>
-            </Button>
+            <button
+              onClick={() => window.location.href = '/contacto'}
+              className="inline-flex items-center justify-center gap-2 bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium px-8 py-3 rounded-lg shadow-xl shadow-green-900/20 transition-all text-base"
+            >
+              Solicitar Cotización
+              <ArrowRight className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => {
+                const element = document.getElementById('servicios')
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 border-2 border-white text-white hover:bg-white hover:text-[#005A7A] bg-white/10 backdrop-blur-sm px-8 py-3 rounded-lg transition-all text-base font-medium"
+            >
+              Ver Servicios
+            </button>
           </div>
         </div>
         

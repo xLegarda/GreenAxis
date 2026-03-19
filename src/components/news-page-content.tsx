@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Calendar, User, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -42,8 +44,12 @@ export function NewsPageContent({ news, currentPage, totalPages, total, config }
   return (
     <>
       {/* Hero Section */}
-      <section className="gradient-nature py-20">
-        <div className="container mx-auto px-4 text-center text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#005A7A] via-[#004A66] to-[#003D52] dark:from-[#051215] dark:via-[#0a1a1f] dark:to-[#0f2028] py-20">
+        {/* Decorative elements */}
+        <div className="absolute top-10 right-10 w-64 h-64 bg-[#6BBE45]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#8BC34A]/10 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto px-4 text-center text-white relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             Noticias y Blog
           </h1>
