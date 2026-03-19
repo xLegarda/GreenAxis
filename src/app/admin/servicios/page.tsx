@@ -298,7 +298,7 @@ export default function ServiciosAdminPage() {
       imageUrl: service.imageUrl || '',
       active: service.active,
       featured: service.featured,
-      showSummary: service.showSummary,
+      showSummary: service.showSummary ?? true
     })
     setSlugEdited(false)
     editorDataRef.current = blocksData

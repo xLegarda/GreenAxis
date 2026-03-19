@@ -23,6 +23,7 @@ interface Service {
   blocks: string | null
   icon: string | null
   imageUrl: string | null
+  showSummary?: boolean
 }
 
 interface PlatformConfig {
@@ -121,8 +122,8 @@ export function ServiceDetailContent({ service, config }: ServiceDetailContentPr
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-10 items-start">
             <div className="min-w-0">
               <div className="mx-auto" style={{ maxWidth: '760px', width: '100%' }}>
-                {/* Summary */}
-                {summaryText ? (
+                {/* Summary - only show if showSummary is not explicitly false */}
+                {summaryText && service.showSummary !== false ? (
                   <div className="mb-10 rounded-2xl border bg-gradient-to-br from-[#6BBE45]/10 via-white to-white dark:from-[#8BC34A]/10 dark:via-[#0f252d] dark:to-[#0a1a1f] p-6 shadow-sm">
                     <p className="text-sm font-semibold text-[#005A7A] dark:text-white mb-2">
                       Resumen
