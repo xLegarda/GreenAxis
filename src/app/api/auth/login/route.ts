@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateAdmin, createSession } from '@/lib/auth'
-import { loginAttempts, MAX_IP_ATTEMPTS, MAX_USER_ATTEMPTS, checkRateLimit } from '@/lib/rate-limit'
+
+// Rate limiting dual: IP + Usuario
+const loginAttempts = new Map<string, { count: number; lastAttempt: number }>()
+
+const MAX_IP_ATTEMPTS = 15
+const MAX_USER_ATTEMPTS = 5
+const LOCKOUT_TIME = 15 * 60 * 1000 // 15 minutos
+
+function checkRateLimit(key: string, maxAttempts: number) {
+  const attempts = loginAttempts.get(key)
+  if (!attempts) return { blocked: false }
+
+  const elapsed = Date.now() - attempts.lastAttempt
+  if (elapsed >= LOCKOUT_TIME) {
+    loginAttempts.delete(key)
+    return { blocked: false }
+  }
+
+  if (attempts.count >= maxAttempts) {
+    const remaining = Math.ceil((LOCKOUT_TIME - elapsed) / 60000)
+    return { blocked: true, remaining }
+  }
+
+  return { blocked: false }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +37,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return NextResponse.json({
@@ -21,7 +44,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Obtener IP del cliente
     const ip = request.headers.get('x-real-ip') ??
            request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
            'unknown'
@@ -68,7 +90,6 @@ export async function POST(request: NextRequest) {
         ? `Credenciales inválidas. ${remaining} intento(s) restante(s).`
         : 'Credenciales inválidas. Cuenta bloqueada temporalmente.'
 
-      // Delay para prevenir timing attacks
       await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500))
 
       return NextResponse.json({
@@ -81,7 +102,6 @@ export async function POST(request: NextRequest) {
     loginAttempts.delete(ipKey)
     loginAttempts.delete(userKey)
 
-    // Crear sesión
     await createSession(admin.id, ip)
 
     return NextResponse.json({
@@ -92,4 +112,3 @@ export async function POST(request: NextRequest) {
     console.error('Error during login:', error)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
-}
