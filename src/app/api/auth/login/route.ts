@@ -112,3 +112,4 @@ export async function POST(request: NextRequest) {
     console.error('Error during login:', error)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
+}  
