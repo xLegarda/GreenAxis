@@ -2,12 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Shield, Lock, Eye, EyeOff, CheckCircle, XCircle, ArrowLeft } from 'lucide-react'
+import { Shield, Lock, Eye, EyeOff, CheckCircle, XCircle, ArrowLeft, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { validatePassword } from '@/lib/password-validator'
 
 function RestablecerContent() {
   const router = useRouter()
@@ -61,8 +62,9 @@ function RestablecerContent() {
       return
     }
 
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres')
+    const validation = validatePassword(password)
+    if (!validation.valid) {
+      setError(validation.errors.join(', '))
       return
     }
 
@@ -212,6 +214,22 @@ function RestablecerContent() {
               </div>
             </div>
             
+            <div className="space-y-1.5 rounded-lg border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Requisitos de contraseña</p>
+              {validatePassword(password).rules.map((rule, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  {rule.passed ? (
+                    <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                  )}
+                  <span className={rule.passed ? 'text-green-700' : 'text-muted-foreground'}>
+                    {rule.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
               <div className="relative">
@@ -231,7 +249,7 @@ function RestablecerContent() {
             <Button 
               type="submit" 
               className="w-full gradient-nature text-white"
-              disabled={loading}
+              disabled={loading || !validatePassword(password).valid}
             >
               {loading ? 'Guardando...' : 'Guardar nueva contraseña'}
             </Button>

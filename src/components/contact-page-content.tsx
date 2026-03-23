@@ -303,7 +303,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                           </button>
                           {countryDropdownOpen && (
                             <div className="absolute z-50 w-[180px] max-h-[200px] overflow-auto mt-1 bg-popover border rounded-md shadow-lg">
-                              {COUNTRIES.map((country) => (
+                                {COUNTRIES.map((country) => (
                                 <button
                                   key={country.code}
                                   type="button"

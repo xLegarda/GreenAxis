@@ -8,12 +8,11 @@ export interface CountryValidation {
   minDigits: number
   maxDigits: number
   hint?: string
+  validFirstDigits?: number[]
 }
 
 export const COUNTRIES: CountryValidation[] = [
-  { code: '+1', name: 'EE.UU. / Canadá', minDigits: 10, maxDigits: 10, hint: '(787) 123 4567' },
-  { code: '+1', name: 'Puerto Rico', minDigits: 10, maxDigits: 10, hint: '(787) 123 4567' },
-  { code: '+1', name: 'Rep. Dominicana', minDigits: 10, maxDigits: 10, hint: '(809) 123 4567' },
+  { code: '+1', name: 'Norteamérica y Caribe', minDigits: 10, maxDigits: 10, hint: '(XXX) 123 4567' },
   { code: '+501', name: 'Belice', minDigits: 7, maxDigits: 7, hint: '222 1234' },
   { code: '+502', name: 'Guatemala', minDigits: 8, maxDigits: 8, hint: '5555 1234' },
   { code: '+503', name: 'El Salvador', minDigits: 8, maxDigits: 8, hint: '7000 1234' },
@@ -24,16 +23,16 @@ export const COUNTRIES: CountryValidation[] = [
   { code: '+34', name: 'España', minDigits: 9, maxDigits: 9, hint: '612 345 678' },
   { code: '+51', name: 'Perú', minDigits: 9, maxDigits: 9, hint: '912 345 678' },
   { code: '+52', name: 'México', minDigits: 10, maxDigits: 10, hint: '55 1234 5678' },
-  { code: '+53', name: 'Cuba', minDigits: 8, maxDigits: 8, hint: '05 1234 5678' },
+  { code: '+53', name: 'Cuba', minDigits: 8, maxDigits: 8, hint: '5 1234 5678' },
   { code: '+54', name: 'Argentina', minDigits: 10, maxDigits: 10, hint: '11 5555 4444' },
   { code: '+55', name: 'Brasil', minDigits: 10, maxDigits: 11, hint: '(11) 98765-4321' },
   { code: '+56', name: 'Chile', minDigits: 9, maxDigits: 9, hint: '9 8765 4321' },
-  { code: '+57', name: 'Colombia', minDigits: 10, maxDigits: 10, hint: '300 123 4567' },
+  { code: '+57', name: 'Colombia', minDigits: 10, maxDigits: 10, hint: '300 123 4567 (cel) / 601 123 4567 (fijo)', validFirstDigits: [2, 3, 5, 6] },
   { code: '+58', name: 'Venezuela', minDigits: 10, maxDigits: 10, hint: '412 123 4567' },
   { code: '+593', name: 'Ecuador', minDigits: 9, maxDigits: 9, hint: '98 765 4321' },
   { code: '+595', name: 'Paraguay', minDigits: 9, maxDigits: 9, hint: '981 234 567' },
-  { code: '+597', name: 'Surinam', minDigits: 9, maxDigits: 9, hint: '741 2345' },
-  { code: '+598', name: 'Uruguay', minDigits: 9, maxDigits: 9, hint: '94 123 456' },
+  { code: '+597', name: 'Surinam', minDigits: 7, maxDigits: 7, hint: '741 2345' },
+  { code: '+598', name: 'Uruguay', minDigits: 9, maxDigits: 9, hint: '991 234 567 (cel) / 2XXX XXXX (fijo)', validFirstDigits: [2, 4, 9] },
   { code: '+44', name: 'Reino Unido', minDigits: 10, maxDigits: 10, hint: '7700 900123' },
   { code: '+33', name: 'Francia', minDigits: 9, maxDigits: 9, hint: '6 12 34 56 78' },
   { code: '+49', name: 'Alemania', minDigits: 10, maxDigits: 11, hint: '1512 3456789' },
@@ -61,6 +60,16 @@ export function validatePhone(phone: string, countryCode: string): { valid: bool
     return { 
       valid: false, 
       error: `El número debe tener entre ${country.minDigits} y ${country.maxDigits} dígitos para ${country.name}` 
+    }
+  }
+
+  if (country.validFirstDigits && country.validFirstDigits.length > 0) {
+    const firstDigit = parseInt(digitsOnly[0], 10)
+    if (!country.validFirstDigits.includes(firstDigit)) {
+      return {
+        valid: false,
+        error: `Número inválido para ${country.name}. Debe iniciar con: ${country.validFirstDigits.join(', ')}`
+      }
     }
   }
   
@@ -105,6 +114,17 @@ export function validateFullPhone(phone: string): { valid: boolean; error?: stri
     return { 
       valid: false, 
       error: `El número debe tener entre ${country.minDigits} y ${country.maxDigits} dígitos después del código de país` 
+    }
+  }
+
+  if (country.validFirstDigits && country.validFirstDigits.length > 0) {
+    const nationalNumber = digitsOnly.substring(countryCodeDigits.length)
+    const firstDigit = parseInt(nationalNumber[0], 10)
+    if (!country.validFirstDigits.includes(firstDigit)) {
+      return {
+        valid: false,
+        error: `Número inválido para ${country.name}. Debe iniciar con: ${country.validFirstDigits.join(', ')}`
+      }
     }
   }
   

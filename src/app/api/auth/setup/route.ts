@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminExists, createAdmin, canCreateAdmin, countAdmins, getMaxAccounts } from '@/lib/auth'
+import { validatePassword } from '@/lib/password-validator'
 
 export async function GET() {
   try {
@@ -42,9 +43,10 @@ export async function POST(request: NextRequest) {
     }
     
     // Validar contraseña segura
-    if (password.length < 8) {
+    const validation = validatePassword(password)
+    if (!validation.valid) {
       return NextResponse.json({ 
-        error: 'La contraseña debe tener al menos 8 caracteres' 
+        error: validation.errors.join(', ') 
       }, { status: 400 })
     }
     

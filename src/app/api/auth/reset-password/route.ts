@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
+import { validatePassword } from '@/lib/password-validator'
 
 // Configuración de Resend
 const RESEND_API_KEY = process.env.RESEND_API_KEY
@@ -223,8 +224,9 @@ export async function PUT(request: NextRequest) {
     }
     
     // Validar fortaleza de contraseña
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 })
+    const validation = validatePassword(password)
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.errors.join(', ') }, { status: 400 })
     }
     
     // Hashear el token recibido de la petición para buscarlo en la BD
