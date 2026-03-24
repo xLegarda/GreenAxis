@@ -4,7 +4,8 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import type EditorJS from '@editorjs/editorjs'
 import { createRoot } from 'react-dom/client'
 import MediaPickerCompact from './media-picker-compact'
-import { MARKER_COLORS, TEXT_COLORS, DARK_MODE_STYLES } from './editor-colors'
+import { MediaPickerInlineDialog } from './media-picker-inline-dialog'
+import { MARKER_COLORS, TEXT_COLORS } from './editor-colors'
 
 /**
  * Passthrough - content from the editor is trusted
@@ -175,18 +176,6 @@ const i18nConfig = {
 }
 
 /**
- * Helper function to apply dark mode styles to an element
- */
-function applyThemeStyles(element: HTMLElement, lightStyles: Record<string, string>, darkStyles: Record<string, string>) {
-  const isDark = document.documentElement.classList.contains('dark')
-  const styles = isDark ? darkStyles : lightStyles
-  
-  Object.entries(styles).forEach(([property, value]) => {
-    element.style.setProperty(property, value)
-  })
-}
-
-/**
  * Create uploader config for media types (image, video, audio)
  * Reduces code duplication across different media uploaders
  */
@@ -235,115 +224,33 @@ const createMediaUploader = (
 })
 
 /**
- * Helper function to open MediaPicker modal and return selected URL
- * This is used by EditorJS tools to select media from library
+ * Open media picker modal using Radix Dialog (fixes click-outside bug with tab switching)
  */
 function openMediaPickerModal(accept: 'image' | 'video' | 'audio'): Promise<string | null> {
   return new Promise((resolve) => {
-    // Create modal container
-    const modalContainer = document.createElement('div')
-    modalContainer.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      padding: 20px;
-    `
+    const container = document.createElement('div')
+    document.body.appendChild(container)
 
-    // Create modal content
-    const modalContent = document.createElement('div')
-    modalContent.style.cssText = `
-      background: #ffffff;
-      color: #000000;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      max-width: 900px;
-      width: 100%;
-      max-height: 90vh;
-      overflow: auto;
-      padding: 24px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    `
-    
-    // Apply theme
-    const applyTheme = () => {
-      const isDark = document.documentElement.classList.contains('dark')
-      const styles = isDark ? DARK_MODE_STYLES.modal : DARK_MODE_STYLES.light.modal
-      modalContent.style.background = styles.background
-      modalContent.style.color = styles.color
-      modalContent.style.borderColor = styles.borderColor
+    const root = createRoot(container)
+    let resolved = false
+
+    const cleanup = (url: string | null) => {
+      if (resolved) return
+      resolved = true
+      root.unmount()
+      container.remove()
+      resolve(url)
     }
-    
-    // Observer for theme changes
-    const observer = new MutationObserver(applyTheme)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    applyTheme()
 
-    // Create header
-    const header = document.createElement('div')
-    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;'
-    
-    const title = document.createElement('h2')
-    title.textContent = `Seleccionar ${accept === 'image' ? 'Imagen' : accept === 'video' ? 'Video' : 'Audio'}`
-    title.style.cssText = 'font-size: 20px; font-weight: 600; margin: 0;'
-    
-    const closeButton = document.createElement('button')
-    closeButton.textContent = '×'
-    closeButton.style.cssText = `
-      background: none; border: none; font-size: 32px; cursor: pointer; padding: 0;
-      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-      line-height: 1; transition: opacity 0.2s;
-    `
-    
-    const closeModal = () => {
-      if (modalContainer.parentNode) {
-        modalContainer.parentNode.removeChild(modalContainer)
-      }
-      resolve(null)
-    }
-    
-    closeButton.addEventListener('click', closeModal)
+    const handleSelect = (url: string) => cleanup(url)
+    const handleCancel = () => cleanup(null)
 
-    header.appendChild(title)
-    header.appendChild(closeButton)
-    modalContent.appendChild(header)
-
-    // Create picker container
-    const pickerContainer = document.createElement('div')
-    modalContent.appendChild(pickerContainer)
-
-    modalContainer.appendChild(modalContent)
-    document.body.appendChild(modalContainer)
-
-    // Close on backdrop click
-    modalContainer.addEventListener('click', (e) => {
-      if (e.target === modalContainer) {
-        closeModal()
-      }
-    })
-
-    // Render MediaPicker using React
-    const root = createRoot(pickerContainer)
     root.render(
-      <MediaPickerCompact
-        value=""
-        onChange={(url) => {
-          if (modalContainer.parentNode) {
-            modalContainer.parentNode.removeChild(modalContainer)
-          }
-          resolve(url)
-        }}
+      <MediaPickerInlineDialog
+        open={true}
+        onSelect={handleSelect}
+        onCancel={handleCancel}
         accept={accept}
-        category={accept === 'image' ? 'news' : accept === 'video' ? 'videos' : 'audio'}
-        keyPrefix={accept}
-        showUpload={true}
-        showLibrary={true}
       />
     )
   })
