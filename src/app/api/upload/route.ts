@@ -5,7 +5,6 @@ import path from 'path'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { v2 as cloudinary } from 'cloudinary'
-import DOMPurify from 'isomorphic-dompurify'
 
 // Configurar Cloudinary
 // Intenta usar CLOUDINARY_URL primero, si no, usa variables individuales
@@ -36,8 +35,7 @@ const ALLOWED_IMAGE_TYPES = [
   'image/jpeg',
   'image/png', 
   'image/webp',
-  'image/gif',
-  'image/svg+xml'
+  'image/gif'
 ]
 
 // Tipos MIME permitidos para videos
@@ -67,7 +65,6 @@ const FILE_SIGNATURES: Record<string, Buffer | null> = {
   'image/png': Buffer.from([0x89, 0x50, 0x4E, 0x47]),
   'image/gif': Buffer.from([0x47, 0x49, 0x46, 0x38]),
   'image/webp': Buffer.from([0x52, 0x49, 0x46, 0x46]),
-  'image/svg+xml': null,
   // Videos
   'video/mp4': Buffer.from([0x00, 0x00, 0x00, 0x18]), // MP4 tiene variaciones
   'video/webm': Buffer.from([0x1A, 0x45, 0xDF, 0xA3]),
@@ -82,38 +79,6 @@ const FILE_SIGNATURES: Record<string, Buffer | null> = {
 function validateFile(buffer: Buffer, declaredType: string): boolean {
   if (!ALLOWED_MIME_TYPES.includes(declaredType)) {
     return false
-  }
-  
-  // SVG se valida como texto XML y se sanitiza con DOMPurify
-  if (declaredType === 'image/svg+xml') {
-    const content = buffer.toString('utf-8').trim().toLowerCase()
-    // Check if it starts with valid SVG/XML
-    if (!(content.startsWith('<svg') || 
-          content.startsWith('<?xml') ||
-          content.startsWith('<!doctype svg'))) {
-      return false
-    }
-    
-    // Additional check: sanitize the SVG content
-    // DOMPurify will remove any malicious scripts
-    const originalContent = buffer.toString('utf-8')
-    const sanitized = DOMPurify.sanitize(originalContent, {
-      USE_PROFILES: { svg: true, svgFilters: true },
-      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onactivate']
-    })
-    
-    // If sanitized content is significantly different, it contained malicious code
-    // Allow some tolerance for whitespace differences
-    const originalLength = originalContent.replace(/\s+/g, '').length
-    const sanitizedLength = sanitized.replace(/\s+/g, '').length
-    
-    // If more than 10% was removed, reject the file
-    if (sanitizedLength < originalLength * 0.9) {
-      return false
-    }
-    
-    return true
   }
   
   // Para videos y audios, validación más flexible

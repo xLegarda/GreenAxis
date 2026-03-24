@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { validateFullPhone } from '@/lib/phone-validation'
-import DOMPurify from 'isomorphic-dompurify'
 
 // Configuración de Resend
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
@@ -25,19 +24,6 @@ function sanitizeInput(input: string, maxLength: number): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
   return encoded.substring(0, maxLength)
-}
-
-// Sanitización para mensaje - permite HTML seguro con DOMPurify
-function sanitizeMessage(input: string, maxLength: number): string {
-  if (!input) return ''
-  // Use DOMPurify to sanitize HTML, allowing only safe tags
-  const sanitized = DOMPurify.sanitize(input.replace(/\n/g, '<br>'), {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u'],
-    ALLOWED_ATTR: [],
-    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
-  })
-  return sanitized.substring(0, maxLength)
 }
 
 // Enviar email de notificación al admin
@@ -216,7 +202,7 @@ export async function POST(request: NextRequest) {
       phone: phone ? sanitizeInput(phone, 20) : null,
       company: company ? sanitizeInput(company, 100) : null,
       subject: subject ? sanitizeInput(subject, 200) : null,
-      message: sanitizeMessage(message, 2000),
+      message: sanitizeInput(message, 2000),
     }
     
     // Crear mensaje en la base de datos

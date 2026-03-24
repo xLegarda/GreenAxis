@@ -217,7 +217,7 @@ export function ImageSelector({
           <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,video/mp4,video/webm,video/quicktime"
+              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
               onChange={handleFileUpload}
               className="hidden"
               id="image-upload"

@@ -289,7 +289,7 @@ export default function ImagenesAdminPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/m4a"
+            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/m4a"
             className="hidden"
             onChange={handleUpload}
           />

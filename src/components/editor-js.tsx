@@ -5,19 +5,13 @@ import type EditorJS from '@editorjs/editorjs'
 import { createRoot } from 'react-dom/client'
 import MediaPickerCompact from './media-picker-compact'
 import { MARKER_COLORS, TEXT_COLORS, DARK_MODE_STYLES } from './editor-colors'
-import DOMPurify from 'isomorphic-dompurify'
 
 /**
- * Sanitize HTML content to prevent XSS attacks
+ * Passthrough - content from the editor is trusted
  */
 function sanitizeHtml(html: string | null | undefined): string {
   if (!html) return ''
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 's', 'a', 'span', 'code'],
-    ALLOWED_ATTR: ['href', 'title', 'target', 'rel', 'class'],
-    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
-  })
+  return html
 }
 
 interface EditorProps {

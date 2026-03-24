@@ -454,7 +454,7 @@ export function MediaPicker({
   const getAcceptAttribute = () => {
     switch (accept) {
       case 'image':
-        return 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
+        return 'image/jpeg,image/png,image/webp,image/gif'
       case 'video':
         return 'video/mp4,video/webm,video/quicktime,video/x-msvideo'
       case 'audio':
@@ -519,7 +519,6 @@ export function MediaPicker({
       <Tabs 
         value={state.activeTab} 
         onValueChange={(tab) => setState(prev => ({ ...prev, activeTab: tab as 'library' | 'upload' }))}
-        defaultValue={defaultTab}
       >
         <TabsList className="grid w-full grid-cols-2">
           {showLibrary && (
@@ -665,7 +664,7 @@ export function MediaPicker({
                         : 'Arrastra un archivo o haz clic para seleccionar'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF, SVG (máx. 5MB)'}
+                    {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF (máx. 5MB)'}
                     {accept === 'video' && 'Videos: MP4, WebM, MOV (máx. 25MB en producción)'}
                     {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A (máx. 15MB en producción)'}
                     {accept === 'all' && 'Imágenes (5MB), videos (25MB) y audio (15MB) en producción'}

@@ -7,7 +7,6 @@
 /public/logo.svg
 DOCUMENTACION-PROYECTO.md
 *.tar
-__tests__
 /.md
 
 # dependencies

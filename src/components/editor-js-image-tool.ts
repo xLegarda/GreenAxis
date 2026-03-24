@@ -181,7 +181,7 @@ export default class ImageTool {
 
     const input = document.createElement('input') as HTMLInputElement
     input.type = 'file'
-    input.accept = 'image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml'
+    input.accept = 'image/png,image/jpeg,image/jpg,image/gif,image/webp'
     input.style.display = 'none'
 
     container.appendChild(input)

@@ -395,7 +395,7 @@ function MediaPickerCompact({
   const getAcceptAttribute = () => {
     switch (accept) {
       case 'image':
-        return 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
+        return 'image/jpeg,image/png,image/webp,image/gif'
       case 'video':
         return 'video/mp4,video/webm,video/quicktime,video/x-msvideo'
       case 'audio':
@@ -453,7 +453,6 @@ function MediaPickerCompact({
       <Tabs 
         value={state.activeTab} 
         onValueChange={(tab) => setState(prev => ({ ...prev, activeTab: tab as 'library' | 'upload' }))}
-        defaultValue={defaultTab}
       >
         <TabsList className="grid w-full grid-cols-2 h-8">
           {showLibrary && (
