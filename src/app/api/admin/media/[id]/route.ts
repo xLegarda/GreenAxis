@@ -28,23 +28,35 @@ function extractCloudinaryPublicId(url: string): string | null {
 }
 
 async function deleteFromCloudinary(url: string): Promise<{ success: boolean; details: string }> {
-  const cloudinary = configureCloudinary()
+  const config = getCloudinaryConfig()
   const publicId = extractCloudinaryPublicId(url)
   if (!publicId) return { success: false, details: 'Could not extract public_id' }
 
-  const logs: string[] = []
+  const isVideo = url.includes('/video/upload/')
 
-  for (const resourceType of ['image', 'video', 'raw'] as const) {
-    try {
-      const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-      logs.push(`${resourceType}: ${JSON.stringify(result)}`)
-      if (result.result === 'ok') return { success: true, details: logs.join(' | ') }
-    } catch (err) {
-      logs.push(`${resourceType}: ${(err as Error).message}`)
+  // Use Admin API to delete (more reliable than SDK destroy)
+  const resourceType = isVideo ? 'video' : 'image'
+  const apiUrl = `https://api.cloudinary.com/v1_1/${config.cloud_name}/resources/${resourceType}`
+
+  try {
+    const auth = Buffer.from(`${config.api_key}:${config.api_secret}`).toString('base64')
+    const res = await fetch(apiUrl, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ public_ids: [publicId] }),
+    })
+
+    const data = await res.json()
+    return {
+      success: res.ok && data.deleted?.[publicId] === 'deleted',
+      details: JSON.stringify(data)
     }
+  } catch (err) {
+    return { success: false, details: (err as Error).message }
   }
-
-  return { success: false, details: logs.join(' | ') }
 }
 
 /**
