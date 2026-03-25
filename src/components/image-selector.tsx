@@ -90,13 +90,9 @@ export function ImageSelector({
     const label = file.name.replace(/\.[^/.]+$/, '')
 
     try {
-      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
-      const url = await openCloudinaryUpload({ folder: 'green-axis', resourceType: 'auto' })
-
-      if (!url) {
-        setUploading(false)
-        return
-      }
+      const { uploadToCloudinaryDirect } = await import('@/lib/cloudinary-direct')
+      const result = await uploadToCloudinaryDirect(file, { folder: 'green-axis', resourceType: 'auto' })
+      const url = result.secure_url
 
       await fetch('/api/upload/callback', {
         method: 'POST',
