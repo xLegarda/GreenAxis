@@ -86,37 +86,28 @@ export function ImageSelector({
     if (!file) return
 
     setUploading(true)
-    const formData = new FormData()
-    formData.append('file', file)
-    // Si hay fixedKey, usarlo para sobrescribir; sino generar key única
     const imageKey = fixedKey || `${keyPrefix}-${Date.now()}`
-    formData.append('key', imageKey)
-    formData.append('label', file.name.replace(/\.[^/.]+$/, ''))
-    formData.append('category', category)
+    const label = file.name.replace(/\.[^/.]+$/, '')
 
     try {
-      const response = await fetch('/api/upload', {
+      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
+      const url = await openCloudinaryUpload({ folder: 'green-axis', resourceType: 'auto' })
+
+      if (!url) {
+        setUploading(false)
+        return
+      }
+
+      await fetch('/api/upload/callback', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: imageKey, url, label, category }),
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        onChange(data.url)
-        toast({ title: 'Archivo subido correctamente' })
-      } else {
-        const error = await response.json()
-        toast({ 
-          title: 'Error al subir archivo', 
-          description: error.error,
-          variant: 'destructive' 
-        })
-      }
+      onChange(url)
+      toast({ title: 'Archivo subido correctamente' })
     } catch (error) {
-      toast({ 
-        title: 'Error al subir archivo', 
-        variant: 'destructive' 
-      })
+      toast({ title: 'Error al subir archivo', variant: 'destructive' })
     } finally {
       setUploading(false)
     }

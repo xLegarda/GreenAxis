@@ -84,72 +84,32 @@ export default function ImagenesAdminPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    // Validate file size (50MB max)
-    const maxSizeBytes = 50 * 1024 * 1024
-    if (file.size > maxSizeBytes) {
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      toast({ 
-        title: 'Archivo demasiado grande', 
-        description: (
-          <div className="space-y-2">
-            <p>El archivo ({fileSizeMB} MB) es demasiado grande para el plan actual.</p>
-            <p className="text-xs">💡 Alternativa: Sube el archivo directamente a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline font-medium">Cloudinary</a> y copia la URL para usarla aquí.</p>
-          </div>
-        ),
-        variant: 'destructive' 
-      })
-      return
-    }
     await processFile(file)
   }
 
   const processFile = async (file: File) => {
-    const isVideo = file.type.startsWith('video/')
-    const isAudio = file.type.startsWith('audio/')
-    
-    // Check file size
-    const maxSize = (isVideo || isAudio) ? 50 * 1024 * 1024 : 5 * 1024 * 1024 // 50MB for videos/audio, 5MB for images
-    if (file.size > maxSize) {
-      toast({ 
-        title: 'Error', 
-        description: `El archivo es muy grande. Máximo ${(isVideo || isAudio) ? '50MB' : '5MB'}.`,
-        variant: 'destructive' 
-      })
-      return
-    }
-
     setUploading(true)
-    const uploadData = new FormData()
-    uploadData.append('file', file)
-    // Solo enviamos el archivo - todo lo demás se genera automáticamente
 
     try {
-      const response = await fetch('/api/upload', {
+      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
+      const url = await openCloudinaryUpload({ folder: 'green-axis', resourceType: 'auto' })
+
+      if (!url) {
+        setUploading(false)
+        return
+      }
+
+      const mediaKey = `media-${Date.now()}`
+      const label = file.name.replace(/\.[^/.]+$/, '')
+
+      await fetch('/api/upload/callback', {
         method: 'POST',
-        body: uploadData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: mediaKey, url, label, category: 'general' }),
       })
 
-      if (response.ok) {
-        toast({ title: isVideo ? 'Video subido correctamente' : isAudio ? 'Audio subido correctamente' : 'Imagen subida correctamente' })
-        fetchImages()
-      } else if (response.status === 413) {
-        // Payload Too Large
-        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-        toast({ 
-          title: 'Archivo demasiado grande', 
-          description: (
-            <div className="space-y-2">
-              <p>El archivo ({fileSizeMB} MB) es demasiado grande para el plan actual.</p>
-              <p className="text-xs">💡 Alternativa: Sube el archivo directamente a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline font-medium">Cloudinary</a> y copia la URL para usarla aquí.</p>
-            </div>
-          ),
-          variant: 'destructive' 
-        })
-      } else {
-        const error = await response.json()
-        toast({ title: 'Error al subir archivo', description: error.error, variant: 'destructive' })
-      }
+      toast({ title: 'Archivo subido correctamente' })
+      fetchImages()
     } catch (error) {
       toast({ title: 'Error al subir archivo', variant: 'destructive' })
     } finally {

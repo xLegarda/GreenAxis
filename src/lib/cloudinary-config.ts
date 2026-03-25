@@ -51,8 +51,8 @@ export function generateCloudinarySignature(
     .map(key => `${key}=${params[key]}`)
     .join('&')
   return crypto
-    .createHash('sha1')
-    .update(sortedParams + apiSecret)
+    .createHmac('sha1', apiSecret)
+    .update(sortedParams)
     .digest('hex')
 }
 

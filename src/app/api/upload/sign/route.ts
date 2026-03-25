@@ -12,23 +12,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const config = getCloudinaryConfig()
 
-    // Cloudinary Upload Widget sends paramsToSign directly
-    if (body.paramsToSign && typeof body.paramsToSign === 'object') {
-      const paramsToSign = body.paramsToSign as Record<string, any>
+    // If body has paramsToSign (Cloudinary widget format), sign those
+    if (body.paramsToSign) {
+      const signature = generateCloudinarySignature(body.paramsToSign, config.api_secret)
+      return NextResponse.json({ signature })
+    }
 
-      // Convert all values to strings for signing
+    // If body IS a flat object of params (widget sends params directly)
+    // Filter out known non-param fields and sign whatever remains
+    const nonParamKeys = ['key', 'label', 'category']
+    const hasParamKeys = Object.keys(body).some(k => !nonParamKeys.includes(k) && k !== 'paramsToSign')
+
+    if (hasParamKeys && body.timestamp) {
       const params: Record<string, string> = {}
-      for (const [key, value] of Object.entries(paramsToSign)) {
-        if (value !== undefined && value !== null && value !== '') {
-          params[key] = String(value)
+      for (const [k, v] of Object.entries(body)) {
+        if (!nonParamKeys.includes(k) && k !== 'paramsToSign' && v !== undefined && v !== null) {
+          params[k] = String(v)
         }
       }
-
       const signature = generateCloudinarySignature(params, config.api_secret)
       return NextResponse.json({ signature })
     }
 
-    // Direct call with key/label/category
+    // Direct call with key/label/category - generate full upload config
     const { key, label, category } = body
 
     if (!key) {
