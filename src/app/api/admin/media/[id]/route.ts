@@ -27,15 +27,16 @@ function extractCloudinaryPublicId(url: string): string | null {
   }
 }
 
-async function deleteFromCloudinary(url: string): Promise<void> {
+async function deleteFromCloudinary(url: string, key?: string): Promise<void> {
   const cloudinary = configureCloudinary()
-  const publicId = extractCloudinaryPublicId(url)
-  if (!publicId) throw new Error(`Could not extract public_id from: ${url}`)
-
   const config = getCloudinaryConfig()
   if (!config.api_key || !config.api_secret) {
     throw new Error('Cloudinary credentials not configured')
   }
+
+  // Use key directly as public_id if it looks like a Cloudinary path
+  const publicId = (key && key.includes('/')) ? key : extractCloudinaryPublicId(url)
+  if (!publicId) throw new Error(`Could not determine public_id for: ${url}`)
 
   for (const resourceType of ['image', 'video', 'raw'] as const) {
     const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
@@ -213,7 +214,7 @@ export async function DELETE(
 
     // Delete from Cloudinary
     if (isProduction && media.url.includes('cloudinary.com')) {
-      await deleteFromCloudinary(media.url)
+      await deleteFromCloudinary(media.url, media.key || undefined)
     }
 
     // Delete SiteImage record from database
