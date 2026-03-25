@@ -217,12 +217,14 @@ export default class ImageTool {
             this.wrapper.innerHTML = ''
             this.createImageElement(result.file.url, '')
           } else {
-            container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error al subir la imagen</p>'
+            container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error al subir la imagen. Archivo muy grande o no permitido.</p>'
           }
         } catch (error) {
           console.error('Image upload error:', error)
-          container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error al subir la imagen</p>'
+          container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error de conexión al subir</p>'
         }
+      } else {
+        container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error: uploader no disponible</p>'
       }
     })
 
