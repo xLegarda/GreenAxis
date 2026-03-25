@@ -2,30 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { findMediaReferences, updateMediaReferences } from '@/lib/media-references'
-import { v2 as cloudinary } from 'cloudinary'
+import { configureCloudinary } from '@/lib/cloudinary-config'
 import { unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 
-// Configure Cloudinary
-if (process.env.CLOUDINARY_URL) {
-  const url = new URL(process.env.CLOUDINARY_URL)
-  cloudinary.config({
-    cloud_name: url.hostname,
-    api_key: url.username,
-    api_secret: url.password,
-    secure: true
-  })
-} else {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
-  })
-}
+const cloudinary = configureCloudinary()
 
-// Detect if we're in production (Vercel)
 const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
 
 /**
