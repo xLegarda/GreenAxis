@@ -27,12 +27,12 @@ export function proxy(request: NextRequest) {
   // Content-Security-Policy: Define qué recursos pueden cargarse
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://upload-widget.cloudinary.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' https://www.google-analytics.com https://api.cloudinary.com blob:",
-    "frame-src 'self' https://www.google.com https://maps.google.com",
+    "connect-src 'self' https://www.google-analytics.com https://api.cloudinary.com https://upload-widget.cloudinary.com blob:",
+    "frame-src 'self' https://www.google.com https://maps.google.com https://upload-widget.cloudinary.com",
     "media-src 'self' https://res.cloudinary.com blob: data: https:",
     "frame-ancestors 'none'",
   ].join('; ')

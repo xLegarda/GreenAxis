@@ -177,7 +177,7 @@ const i18nConfig = {
 
 /**
  * Create uploader config for media types (image, video, audio)
- * Reduces code duplication across different media uploaders
+ * Uses Cloudinary Upload Widget for direct browser upload
  */
 const createMediaUploader = (
   type: 'image' | 'video' | 'audio',
@@ -185,59 +185,27 @@ const createMediaUploader = (
 ) => ({
   async uploadByFile(file: File) {
     const mediaKey = `${type}-${Date.now()}`
+    const label = file.name.replace(/\.[^/.]+$/, '')
 
     try {
-      // Step 1: Get signed upload params
-      const signRes = await fetch('/api/upload/sign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: mediaKey, label: file.name, category }),
+      // Upload via Cloudinary Widget
+      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
+
+      const url = await openCloudinaryUpload({
+        folder: 'green-axis',
+        resourceType: type === 'image' ? 'image' : type === 'video' ? 'video' : 'auto',
       })
 
-      if (!signRes.ok) return { success: 0 }
+      if (!url) return { success: 0 }
 
-      const signData = await signRes.json()
-
-      // Step 2: Upload directly to Cloudinary
-      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloud_name}/auto/upload`
-
-      const uploadFormData = new FormData()
-      uploadFormData.append('file', file)
-      uploadFormData.append('signature', signData.signature)
-      uploadFormData.append('timestamp', signData.timestamp)
-      uploadFormData.append('api_key', signData.api_key)
-      uploadFormData.append('public_id', signData.public_id)
-      uploadFormData.append('folder', signData.folder)
-
-      const uploadResult = await new Promise<{ secure_url: string } | null>((resolve) => {
-        const xhr = new XMLHttpRequest()
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText))
-          } else {
-            resolve(null)
-          }
-        })
-        xhr.addEventListener('error', () => resolve(null))
-        xhr.open('POST', cloudinaryUrl)
-        xhr.send(uploadFormData)
-      })
-
-      if (!uploadResult) return { success: 0 }
-
-      // Step 3: Save to DB
+      // Save to DB
       await fetch('/api/upload/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: mediaKey,
-          url: uploadResult.secure_url,
-          label: file.name,
-          category,
-        }),
+        body: JSON.stringify({ key: mediaKey, url, label, category }),
       })
 
-      return { success: 1, file: { url: uploadResult.secure_url } }
+      return { success: 1, file: { url } }
     } catch (e) {
       console.error(`${type} upload error:`, e)
       return { success: 0 }
