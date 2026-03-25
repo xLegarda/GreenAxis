@@ -171,121 +171,136 @@ function MediaPickerCompact({
   }
 
   /**
-   * Handle file upload with progress tracking and duplicate detection
+   * Handle file upload with direct Cloudinary upload (bypasses Vercel 4.5MB limit)
    */
   const handleFileUpload = async (file: File, skipDuplicateCheck = false) => {
-    // Validate file size before uploading
-    const maxSizeBytes = maxSizeMB * 1024 * 1024
-    if (file.size > maxSizeBytes) {
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      setState(prev => ({ 
-        ...prev, 
-        error: `El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual. 
-
-💡 Alternativa: Si no puedes comprimir más el archivo, súbelo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`
-      }))
-      return
-    }
-
     // Reset error state
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
 
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    // Use fixedKey if provided, otherwise generate unique key
-    const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
-    formData.append('key', mediaKey)
-    formData.append('label', file.name.replace(/\.[^/.]+$/, ''))
-    formData.append('category', category)
-    
-    if (skipDuplicateCheck) {
-      formData.append('skipDuplicateCheck', 'true')
-    }
-
     try {
-      // Create XMLHttpRequest for progress tracking
-      const xhr = new XMLHttpRequest()
-      
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = Math.round((e.loaded / e.total) * 100)
-          setState(prev => ({ ...prev, uploadProgress: percentComplete }))
+      const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
+
+      // Step 1: Try server upload for duplicate check (small files)
+      if (!skipDuplicateCheck) {
+        const checkFormData = new FormData()
+        checkFormData.append('file', file)
+        checkFormData.append('key', mediaKey)
+        checkFormData.append('label', file.name.replace(/\.[^/.]+$/, ''))
+        checkFormData.append('category', category)
+
+        const checkRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: checkFormData,
+        })
+
+        if (checkRes.status === 413) {
+          // File too large for server, proceed to direct upload
+        } else {
+          const checkData = await checkRes.json().catch(() => null)
+          if (checkData && !checkData.success && checkData.duplicate?.exists) {
+            setState(prev => ({
+              ...prev,
+              uploading: false,
+              uploadProgress: 0,
+              duplicateWarning: { file, suggestions: checkData.duplicate.suggestions },
+            }))
+            return
+          }
+          if (checkData?.success) {
+            onChange(checkData.url)
+            setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
+            if (state.activeTab === 'library') fetchMediaItems()
+            return
+          }
         }
+      }
+
+      // Step 2: Get signed upload params
+      const signRes = await fetch('/api/upload/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: mediaKey,
+          label: file.name.replace(/\.[^/.]+$/, ''),
+          category,
+        }),
       })
 
-      // Handle response
-      const uploadPromise = new Promise<any>((resolve, reject) => {
+      if (!signRes.ok) {
+        const err = await signRes.json().catch(() => ({ error: 'Error al generar firma' }))
+        throw new Error(err.error || 'Error al generar firma de upload')
+      }
+
+      const signData = await signRes.json()
+
+      // Step 3: Upload directly to Cloudinary
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloud_name}/auto/upload`
+
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('signature', signData.signature)
+      uploadFormData.append('timestamp', signData.timestamp)
+      uploadFormData.append('api_key', signData.api_key)
+      uploadFormData.append('public_id', signData.public_id)
+      uploadFormData.append('folder', signData.folder)
+
+      const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100)
+            setState(prev => ({ ...prev, uploadProgress: percent }))
+          }
+        })
+
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText))
-          } else if (xhr.status === 413) {
-            // Payload Too Large
-            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.
-
-💡 Alternativa: Sube el archivo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`))
           } else {
             try {
-              const errorData = JSON.parse(xhr.responseText)
-              const errorMsg = errorData.error || xhr.responseText || 'Error desconocido'
-              const details = errorData.details ? `\n\nDetalles: ${errorData.details}` : ''
-              reject(new Error(errorMsg + details))
+              const errData = JSON.parse(xhr.responseText)
+              reject(new Error(errData.error?.message || 'Error al subir a Cloudinary'))
             } catch {
-              reject(new Error(`Error ${xhr.status}: ${xhr.responseText || 'Error al subir archivo'}`))
+              reject(new Error('Error al subir archivo a Cloudinary'))
             }
           }
         })
+
         xhr.addEventListener('error', () => reject(new Error('Error de red al subir archivo')))
         xhr.addEventListener('abort', () => reject(new Error('Subida cancelada')))
+
+        xhr.open('POST', cloudinaryUrl)
+        xhr.send(uploadFormData)
       })
 
-      xhr.open('POST', '/api/upload')
-      xhr.send(formData)
+      // Step 4: Save URL to database
+      await fetch('/api/upload/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: mediaKey,
+          url: uploadResult.secure_url,
+          label: file.name.replace(/\.[^/.]+$/, ''),
+          category,
+        }),
+      })
 
-      const data = await uploadPromise
+      onChange(uploadResult.secure_url)
+      setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
 
-      // Check for duplicate warning
-      if (!data.success && data.duplicate?.exists) {
-        setState(prev => ({ 
-          ...prev, 
-          uploading: false,
-          uploadProgress: 0,
-          duplicateWarning: {
-            file,
-            suggestions: data.duplicate.suggestions
-          }
-        }))
-        return
-      }
-
-      // Success - update with new URL
-      if (data.success) {
-        onChange(data.url)
-        setState(prev => ({ 
-          ...prev, 
-          uploading: false,
-          uploadProgress: 100,
-          error: null
-        }))
-        
-        // Refresh library if on library tab
-        if (state.activeTab === 'library') {
-          fetchMediaItems()
-        }
-      }
+      if (state.activeTab === 'library') fetchMediaItems()
     } catch (error) {
       console.error('Upload error:', error)
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'Error al subir archivo. Por favor, intenta de nuevo.'
-      
-      setState(prev => ({ 
-        ...prev, 
+
+      setState(prev => ({
+        ...prev,
         uploading: false,
         uploadProgress: 0,
-        error: errorMessage
+        error: errorMessage,
       }))
     }
   }

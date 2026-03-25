@@ -197,121 +197,146 @@ export function MediaPicker({
   }
 
   /**
-   * Handle file upload with progress tracking and duplicate detection
+   * Handle file upload with direct Cloudinary upload (bypasses Vercel 4.5MB limit)
    */
   const handleFileUpload = async (file: File, skipDuplicateCheck = false) => {
-    // Validate file size before uploading
-    const maxSizeBytes = maxSizeMB * 1024 * 1024
-    if (file.size > maxSizeBytes) {
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      setState(prev => ({ 
-        ...prev, 
-        error: `El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual. 
-
-💡 Alternativa: Si no puedes comprimir más el archivo, súbelo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`
-      }))
-      return
-    }
-
     // Reset error state
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
 
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    // Use fixedKey if provided, otherwise generate unique key
-    const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
-    formData.append('key', mediaKey)
-    formData.append('label', file.name.replace(/\.[^/.]+$/, ''))
-    formData.append('category', category)
-    
-    if (skipDuplicateCheck) {
-      formData.append('skipDuplicateCheck', 'true')
-    }
-
     try {
-      // Create XMLHttpRequest for progress tracking
-      const xhr = new XMLHttpRequest()
-      
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = Math.round((e.loaded / e.total) * 100)
-          setState(prev => ({ ...prev, uploadProgress: percentComplete }))
+      // Step 1: Check for duplicates (unless skipped)
+      if (!skipDuplicateCheck) {
+        const checkRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: (() => {
+            const fd = new FormData()
+            fd.append('file', file)
+            const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
+            fd.append('key', mediaKey)
+            fd.append('label', file.name.replace(/\.[^/.]+$/, ''))
+            fd.append('category', category)
+            fd.append('skipDuplicateCheck', 'false')
+            return fd
+          })(),
+        })
+
+        if (checkRes.status === 413) {
+          // File too large for server, skip duplicate check and go direct
+        } else {
+          const checkData = await checkRes.json().catch(() => null)
+          if (checkData && !checkData.success && checkData.duplicate?.exists) {
+            setState(prev => ({
+              ...prev,
+              uploading: false,
+              uploadProgress: 0,
+              duplicateWarning: {
+                file,
+                suggestions: checkData.duplicate.suggestions,
+              },
+            }))
+            return
+          }
+          // If upload succeeded through server (small file), we're done
+          if (checkData?.success) {
+            onChange(checkData.url)
+            setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
+            if (state.activeTab === 'library') fetchMediaItems()
+            return
+          }
         }
+      }
+
+      // Step 2: Get signed upload params from backend
+      const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
+      const signRes = await fetch('/api/upload/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: mediaKey,
+          label: file.name.replace(/\.[^/.]+$/, ''),
+          category,
+        }),
       })
 
-      // Handle response
-      const uploadPromise = new Promise<any>((resolve, reject) => {
+      if (!signRes.ok) {
+        const err = await signRes.json().catch(() => ({ error: 'Error al generar firma' }))
+        throw new Error(err.error || 'Error al generar firma de upload')
+      }
+
+      const signData = await signRes.json()
+
+      // Step 3: Upload directly to Cloudinary
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloud_name}/auto/upload`
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('signature', signData.signature)
+      formData.append('timestamp', signData.timestamp)
+      formData.append('api_key', signData.api_key)
+      formData.append('public_id', signData.public_id)
+      formData.append('folder', signData.folder)
+
+      const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100)
+            setState(prev => ({ ...prev, uploadProgress: percent }))
+          }
+        })
+
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText))
-          } else if (xhr.status === 413) {
-            // Payload Too Large
-            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.
-
-💡 Alternativa: Sube el archivo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`))
           } else {
             try {
-              const errorData = JSON.parse(xhr.responseText)
-              const errorMsg = errorData.error || xhr.responseText || 'Error desconocido'
-              const details = errorData.details ? `\n\nDetalles: ${errorData.details}` : ''
-              reject(new Error(errorMsg + details))
+              const errData = JSON.parse(xhr.responseText)
+              reject(new Error(errData.error?.message || 'Error al subir a Cloudinary'))
             } catch {
-              reject(new Error(`Error ${xhr.status}: ${xhr.responseText || 'Error al subir archivo'}`))
+              reject(new Error('Error al subir archivo a Cloudinary'))
             }
           }
         })
+
         xhr.addEventListener('error', () => reject(new Error('Error de red al subir archivo')))
         xhr.addEventListener('abort', () => reject(new Error('Subida cancelada')))
+
+        xhr.open('POST', cloudinaryUrl)
+        xhr.send(formData)
       })
 
-      xhr.open('POST', '/api/upload')
-      xhr.send(formData)
+      // Step 4: Save URL to database
+      const saveRes = await fetch('/api/upload/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: mediaKey,
+          url: uploadResult.secure_url,
+          label: file.name.replace(/\.[^/.]+$/, ''),
+          category,
+        }),
+      })
 
-      const data = await uploadPromise
-
-      // Check for duplicate warning
-      if (!data.success && data.duplicate?.exists) {
-        setState(prev => ({ 
-          ...prev, 
-          uploading: false,
-          uploadProgress: 0,
-          duplicateWarning: {
-            file,
-            suggestions: data.duplicate.suggestions
-          }
-        }))
-        return
+      if (!saveRes.ok) {
+        console.warn('Upload succeeded but failed to save to DB')
       }
 
-      // Success - update with new URL
-      if (data.success) {
-        onChange(data.url)
-        setState(prev => ({ 
-          ...prev, 
-          uploading: false,
-          uploadProgress: 100,
-          error: null
-        }))
-        
-        // Refresh library if on library tab
-        if (state.activeTab === 'library') {
-          fetchMediaItems()
-        }
-      }
+      onChange(uploadResult.secure_url)
+      setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
+
+      if (state.activeTab === 'library') fetchMediaItems()
     } catch (error) {
       console.error('Upload error:', error)
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'Error al subir archivo. Por favor, intenta de nuevo.'
-      
-      setState(prev => ({ 
-        ...prev, 
+
+      setState(prev => ({
+        ...prev,
         uploading: false,
         uploadProgress: 0,
-        error: errorMessage
+        error: errorMessage,
       }))
     }
   }
@@ -593,17 +618,6 @@ export function MediaPicker({
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription className="space-y-2">
                     <p>{state.error}</p>
-                    {state.error.includes('Cloudinary') && (
-                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
-                        <p className="font-medium text-blue-700 dark:text-blue-300">💡 Alternativa para archivos grandes:</p>
-                        <ol className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-1">
-                          <li>1. Ve a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline">Cloudinary Console</a></li>
-                          <li>2. Sube tu archivo en "Media Library"</li>
-                          <li>3. Copia la URL del archivo</li>
-                          <li>4. Úsala directamente en tu contenido</li>
-                        </ol>
-                      </div>
-                    )}
                   </AlertDescription>
                   <Button
                     variant="ghost"
@@ -664,10 +678,10 @@ export function MediaPicker({
                         : 'Arrastra un archivo o haz clic para seleccionar'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF (máx. 5MB)'}
-                    {accept === 'video' && 'Videos: MP4, WebM, MOV (máx. 25MB en producción)'}
-                    {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A (máx. 15MB en producción)'}
-                    {accept === 'all' && 'Imágenes (5MB), videos (25MB) y audio (15MB) en producción'}
+                    {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF'}
+                    {accept === 'video' && 'Videos: MP4, WebM, MOV'}
+                    {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A'}
+                    {accept === 'all' && 'Imágenes, videos y audio'}
                   </p>
                 </label>
               </div>

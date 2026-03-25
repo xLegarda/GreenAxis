@@ -181,39 +181,83 @@ const i18nConfig = {
  */
 const createMediaUploader = (
   type: 'image' | 'video' | 'audio',
-  maxSizeMB: number,
   category: string
 ) => ({
   async uploadByFile(file: File) {
-    // Validate file size
-    const maxSizeBytes = maxSizeMB * 1024 * 1024
-    if (file.size > maxSizeBytes) {
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
-      return { success: 0 }
-    }
+    const mediaKey = `${type}-${Date.now()}`
 
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('key', `${type}-${Date.now()}`)
-    formData.append('label', file.name)
-    formData.append('category', category)
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
-      if (response.ok) {
-        const data = await response.json()
-        return { success: 1, file: { url: data.url } }
-      } else if (response.status === 413) {
-        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-        alert(`El archivo (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+      // Step 1: Try server upload for small files
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('key', mediaKey)
+      formData.append('label', file.name)
+      formData.append('category', category)
+
+      const serverRes = await fetch('/api/upload', { method: 'POST', body: formData })
+
+      if (serverRes.status === 413 || !serverRes.ok) {
+        // File too large or error - use direct upload
+      } else {
+        const data = await serverRes.json()
+        if (data?.success) return { success: 1, file: { url: data.url } }
       }
+
+      // Step 2: Get signed upload params
+      const signRes = await fetch('/api/upload/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: mediaKey, label: file.name, category }),
+      })
+
+      if (!signRes.ok) return { success: 0 }
+
+      const signData = await signRes.json()
+
+      // Step 3: Upload directly to Cloudinary
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloud_name}/auto/upload`
+
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('signature', signData.signature)
+      uploadFormData.append('timestamp', signData.timestamp)
+      uploadFormData.append('api_key', signData.api_key)
+      uploadFormData.append('public_id', signData.public_id)
+      uploadFormData.append('folder', signData.folder)
+
+      const uploadResult = await new Promise<{ secure_url: string } | null>((resolve) => {
+        const xhr = new XMLHttpRequest()
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText))
+          } else {
+            resolve(null)
+          }
+        })
+        xhr.addEventListener('error', () => resolve(null))
+        xhr.open('POST', cloudinaryUrl)
+        xhr.send(uploadFormData)
+      })
+
+      if (!uploadResult) return { success: 0 }
+
+      // Step 4: Save to DB
+      await fetch('/api/upload/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: mediaKey,
+          url: uploadResult.secure_url,
+          label: file.name,
+          category,
+        }),
+      })
+
+      return { success: 1, file: { url: uploadResult.secure_url } }
     } catch (e) {
       console.error(`${type} upload error:`, e)
+      return { success: 0 }
     }
-    return { success: 0 }
   },
   libraryPicker: {
     enabled: true,
@@ -353,7 +397,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             image: {
               class: ImageTool as any,
               config: {
-                uploader: createMediaUploader('image', 10, 'news'),
+                uploader: createMediaUploader('image', 'news'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {
@@ -388,7 +432,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             videoLocal: {
               class: VideoTool as any,
               config: {
-                uploader: createMediaUploader('video', 100, 'videos'),
+                uploader: createMediaUploader('video', 'videos'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {
@@ -400,7 +444,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             audioLocal: {
               class: AudioTool as any,
               config: {
-                uploader: createMediaUploader('audio', 20, 'audio'),
+                uploader: createMediaUploader('audio', 'audio'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {

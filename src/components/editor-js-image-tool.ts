@@ -194,7 +194,7 @@ export default class ImageTool {
     container.appendChild(buttonContainer)
 
     const hint = document.createElement('p')
-    hint.textContent = 'PNG, JPG, GIF, WebP, SVG (máx. 10MB)'
+    hint.textContent = 'PNG, JPG, GIF, WebP, SVG'
     hint.style.cssText = 'margin: 12px 0 0; color: #9ca3af; font-size: 12px;'
     
     // Apply dark mode styles
@@ -206,11 +206,6 @@ export default class ImageTool {
     input.addEventListener('change', async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return
-
-      if (file.size > 10 * 1024 * 1024) {
-        alert('La imagen es demasiado grande. El tamaño máximo es 10MB.')
-        return
-      }
 
       container.innerHTML = '<p style="color: #666; padding: 40px 20px;">Subiendo imagen...</p>'
 
@@ -252,11 +247,6 @@ export default class ImageTool {
       const file = e.dataTransfer?.files?.[0]
       if (!file || !file.type.startsWith('image/')) {
         alert('Por favor selecciona un archivo de imagen válido.')
-        return
-      }
-
-      if (file.size > 10 * 1024 * 1024) {
-        alert('La imagen es demasiado grande. El tamaño máximo es 10MB.')
         return
       }
 

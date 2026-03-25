@@ -4,28 +4,9 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
-import { v2 as cloudinary } from 'cloudinary'
+import { configureCloudinary, emptyToNull } from '@/lib/cloudinary-config'
 
-// Configurar Cloudinary
-// Intenta usar CLOUDINARY_URL primero, si no, usa variables individuales
-if (process.env.CLOUDINARY_URL) {
-  // Parsear CLOUDINARY_URL manualmente
-  // Formato: cloudinary://api_key:api_secret@cloud_name
-  const url = new URL(process.env.CLOUDINARY_URL)
-  cloudinary.config({
-    cloud_name: url.hostname,
-    api_key: url.username,
-    api_secret: url.password,
-    secure: true
-  })
-} else {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
-  })
-}
+const cloudinary = configureCloudinary()
 
 // Detectar si estamos en producción (Vercel)
 const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
@@ -98,12 +79,6 @@ function validateFile(buffer: Buffer, declaredType: string): boolean {
     }
   }
   return true
-}
-
-// Helper para convertir string vacío a null
-function emptyToNull(value: string | null | undefined): string | null {
-  if (value === '' || value === undefined) return null
-  return value ?? null
 }
 
 // Determinar categoría del archivo
