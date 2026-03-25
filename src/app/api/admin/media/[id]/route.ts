@@ -53,45 +53,37 @@ function extractCloudinaryPublicId(url: string): string | null {
  * Handles missing file errors gracefully
  */
 async function deleteFileFromStorage(url: string): Promise<void> {
+  console.log('[DELETE] Attempting to delete:', url)
+  console.log('[DELETE] isProduction:', isProduction)
+  console.log('[DELETE] VERCEL env:', process.env.VERCEL)
+  
   try {
     if (isProduction && url.includes('cloudinary.com')) {
-      // Production: Delete from Cloudinary
       const publicId = extractCloudinaryPublicId(url)
+      console.log('[DELETE] Extracted public_id:', publicId)
       
       if (publicId) {
-        try {
-          await cloudinary.uploader.destroy(publicId)
-        } catch (cloudinaryError) {
-          // Try as video if image deletion fails
+        // Try all resource types
+        for (const resourceType of ['image', 'video', 'raw'] as const) {
           try {
-            await cloudinary.uploader.destroy(publicId, { resource_type: 'video' })
-          } catch (videoError) {
-            // Try as raw if video deletion fails
-            try {
-              await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' })
-            } catch (rawError) {
-              console.warn('Cloudinary deletion failed for all resource types:', publicId)
-              // Continue anyway - file might already be deleted
+            const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+            console.log(`[DELETE] Destroy result (${resourceType}):`, result)
+            if (result.result === 'ok' || result.result === 'not found') {
+              return // Success or file already gone
             }
+          } catch (err) {
+            console.log(`[DELETE] Failed (${resourceType}):`, (err as Error).message)
           }
         }
+        console.warn('[DELETE] All resource type attempts failed for:', publicId)
+      } else {
+        console.warn('[DELETE] Could not extract public_id from:', url)
       }
-    } else if (!isProduction && url.startsWith('/uploads/')) {
-      // Development: Delete from local filesystem
-      const filePath = path.join(process.cwd(), 'public', url)
-      
-      if (existsSync(filePath)) {
-        try {
-          await unlink(filePath)
-        } catch (fsError) {
-          console.warn('Filesystem deletion failed:', filePath, fsError)
-          // Continue anyway - file might already be deleted
-        }
-      }
+    } else {
+      console.log('[DELETE] Skipping Cloudinary - not production or not cloudinary URL')
     }
   } catch (error) {
-    console.warn('Error deleting file from storage (continuing):', error)
-    // Don't throw - we want to continue with DB deletion
+    console.error('[DELETE] Error:', error)
   }
 }
 
