@@ -31,7 +31,7 @@ export function proxy(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' https://www.google-analytics.com blob:",
+    "connect-src 'self' https://www.google-analytics.com https://api.cloudinary.com blob:",
     "frame-src 'self' https://www.google.com https://maps.google.com",
     "media-src 'self' https://res.cloudinary.com blob: data: https:",
     "frame-ancestors 'none'",
