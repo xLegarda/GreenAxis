@@ -188,15 +188,15 @@ const createMediaUploader = (
     const label = file.name.replace(/\.[^/.]+$/, '')
 
     try {
-      // Upload directly to Cloudinary (no widget popup)
-      const { uploadToCloudinaryDirect } = await import('@/lib/cloudinary-direct')
+      // Upload via Cloudinary Widget
+      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
 
-      const result = await uploadToCloudinaryDirect(file, {
+      const url = await openCloudinaryUpload({
         folder: 'green-axis',
         resourceType: type === 'image' ? 'image' : type === 'video' ? 'video' : 'auto',
       })
 
-      const url = result.secure_url
+      if (!url) return { success: 0 }
 
       // Save to DB
       await fetch('/api/upload/callback', {

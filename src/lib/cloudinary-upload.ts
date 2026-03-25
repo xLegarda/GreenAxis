@@ -63,6 +63,34 @@ export async function openCloudinaryUpload(options: UploadOptions = {}): Promise
         multiple: false,
         showCompletedButton: false,
         showUploadMoreButton: false,
+        showAdvancedOptions: false,
+        showInsecureUploadPlaceholder: false,
+        cropping: false,
+        showSkipCropButton: false,
+        styles: {
+          palette: {
+            window: '#1e293b',
+            windowBorder: '#475569',
+            tabIcon: '#22c55e',
+            menuIcons: '#cbd5e1',
+            textDark: '#f8fafc',
+            textLight: '#f8fafc',
+            link: '#22c55e',
+            action: '#22c55e',
+            inactiveTabIcon: '#94a3b8',
+            error: '#ef4444',
+            inProgress: '#22c55e',
+            complete: '#22c55e',
+            sourceBg: '#0f172a',
+          },
+          fonts: {
+            default: null,
+            "'Inter', sans-serif": {
+              url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap',
+              active: true,
+            },
+          },
+        },
       },
       (error: any, result: any) => {
         if (error) {

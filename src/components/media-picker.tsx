@@ -229,16 +229,18 @@ export function MediaPicker({
         } catch {}
       }
 
-      // Step 2: Upload directly to Cloudinary (no widget popup)
-      const { uploadToCloudinaryDirect } = await import('@/lib/cloudinary-direct')
+      // Step 2: Upload via Cloudinary Widget
+      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
 
-      const uploadResult = await uploadToCloudinaryDirect(file, {
+      const url = await openCloudinaryUpload({
         folder: 'green-axis',
         resourceType: 'auto',
-        onProgress: (percent) => setState(prev => ({ ...prev, uploadProgress: percent })),
       })
 
-      const url = uploadResult.secure_url
+      if (!url) {
+        setState(prev => ({ ...prev, uploading: false, uploadProgress: 0 }))
+        return
+      }
 
       // Step 3: Save URL to database
       await fetch('/api/upload/callback', {
