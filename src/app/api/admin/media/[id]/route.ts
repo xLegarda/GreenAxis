@@ -2,89 +2,46 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { findMediaReferences, updateMediaReferences } from '@/lib/media-references'
-import { configureCloudinary } from '@/lib/cloudinary-config'
-import { unlink } from 'fs/promises'
-import { existsSync } from 'fs'
-import path from 'path'
-
-const cloudinary = configureCloudinary()
+import { configureCloudinary, getCloudinaryConfig } from '@/lib/cloudinary-config'
 
 const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
 
-/**
- * Extract Cloudinary public_id from URL
- * Example: https://res.cloudinary.com/cloud/image/upload/v123/folder/file.jpg
- * Returns: folder/file
- */
 function extractCloudinaryPublicId(url: string): string | null {
-  if (!url.includes('cloudinary.com')) {
-    return null
-  }
-  
+  if (!url.includes('cloudinary.com')) return null
   try {
-    // Split by '/' and find the parts after 'upload'
     const parts = url.split('/')
     const uploadIndex = parts.findIndex(part => part === 'upload')
-    
-    if (uploadIndex === -1 || uploadIndex >= parts.length - 1) {
-      return null
-    }
-    
-    // Skip version if present (starts with 'v')
+    if (uploadIndex === -1 || uploadIndex >= parts.length - 1) return null
+
     let startIndex = uploadIndex + 1
-    if (parts[startIndex].startsWith('v') && !isNaN(Number(parts[startIndex].substring(1)))) {
+    if (parts[startIndex]?.startsWith('v') && !isNaN(Number(parts[startIndex].substring(1)))) {
       startIndex++
     }
-    
-    // Get remaining parts and remove extension from last part
+
     const publicIdParts = parts.slice(startIndex)
     const lastPart = publicIdParts[publicIdParts.length - 1]
     publicIdParts[publicIdParts.length - 1] = lastPart.split('.')[0]
-    
     return publicIdParts.join('/')
-  } catch (error) {
-    console.error('Error extracting Cloudinary public_id:', error)
+  } catch {
     return null
   }
 }
 
-/**
- * Delete file from storage (Cloudinary or filesystem)
- * Handles missing file errors gracefully
- */
-async function deleteFileFromStorage(url: string): Promise<void> {
-  console.log('[DELETE] Attempting to delete:', url)
-  console.log('[DELETE] isProduction:', isProduction)
-  console.log('[DELETE] VERCEL env:', process.env.VERCEL)
-  
-  try {
-    if (isProduction && url.includes('cloudinary.com')) {
-      const publicId = extractCloudinaryPublicId(url)
-      console.log('[DELETE] Extracted public_id:', publicId)
-      
-      if (publicId) {
-        // Try all resource types
-        for (const resourceType of ['image', 'video', 'raw'] as const) {
-          try {
-            const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-            console.log(`[DELETE] Destroy result (${resourceType}):`, result)
-            if (result.result === 'ok' || result.result === 'not found') {
-              return // Success or file already gone
-            }
-          } catch (err) {
-            console.log(`[DELETE] Failed (${resourceType}):`, (err as Error).message)
-          }
-        }
-        console.warn('[DELETE] All resource type attempts failed for:', publicId)
-      } else {
-        console.warn('[DELETE] Could not extract public_id from:', url)
-      }
-    } else {
-      console.log('[DELETE] Skipping Cloudinary - not production or not cloudinary URL')
-    }
-  } catch (error) {
-    console.error('[DELETE] Error:', error)
+async function deleteFromCloudinary(url: string): Promise<void> {
+  const cloudinary = configureCloudinary()
+  const publicId = extractCloudinaryPublicId(url)
+  if (!publicId) throw new Error(`Could not extract public_id from: ${url}`)
+
+  const config = getCloudinaryConfig()
+  if (!config.api_key || !config.api_secret) {
+    throw new Error('Cloudinary credentials not configured')
   }
+
+  for (const resourceType of ['image', 'video', 'raw'] as const) {
+    const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+    if (result.result === 'ok' || result.result === 'not found') return
+  }
+  throw new Error(`Failed to delete ${publicId} from Cloudinary`)
 }
 
 /**
@@ -254,9 +211,10 @@ export async function DELETE(
       }
     }
 
-    // Delete from storage (Cloudinary or filesystem)
-    // This handles missing file errors gracefully
-    await deleteFileFromStorage(media.url)
+    // Delete from Cloudinary
+    if (isProduction && media.url.includes('cloudinary.com')) {
+      await deleteFromCloudinary(media.url)
+    }
 
     // Delete SiteImage record from database
     await db.siteImage.delete({
