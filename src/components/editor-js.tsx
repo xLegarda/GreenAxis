@@ -177,47 +177,43 @@ const i18nConfig = {
 
 /**
  * Create uploader config for media types (image, video, audio)
- * Uses server-side upload with 4.5MB limit
+ * Reduces code duplication across different media uploaders
  */
 const createMediaUploader = (
   type: 'image' | 'video' | 'audio',
+  maxSizeMB: number,
   category: string
 ) => ({
   async uploadByFile(file: File) {
-    // Validate file size (4.5MB limit)
-    const maxSizeBytes = 4.5 * 1024 * 1024
+    // Validate file size
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
     if (file.size > maxSizeBytes) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      console.error(`File too large (${fileSizeMB} MB). Upload from library instead.`)
+      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
       return { success: 0 }
     }
 
-    const mediaKey = `${type}-${Date.now()}`
-    const label = file.name.replace(/\.[^/.]+$/, '')
-
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('key', mediaKey)
-    formData.append('label', label)
+    formData.append('key', `${type}-${Date.now()}`)
+    formData.append('label', file.name)
     formData.append('category', category)
-
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       })
-
       if (response.ok) {
         const data = await response.json()
-        if (data.success) {
-          return { success: 1, file: { url: data.url } }
-        }
+        return { success: 1, file: { url: data.url } }
+      } else if (response.status === 413) {
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+        alert(`El archivo (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
       }
-      return { success: 0 }
     } catch (e) {
       console.error(`${type} upload error:`, e)
-      return { success: 0 }
     }
+    return { success: 0 }
   },
   libraryPicker: {
     enabled: true,
@@ -357,7 +353,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             image: {
               class: ImageTool as any,
               config: {
-                uploader: createMediaUploader('image', 'news'),
+                uploader: createMediaUploader('image', 10, 'news'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {
@@ -392,7 +388,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             videoLocal: {
               class: VideoTool as any,
               config: {
-                uploader: createMediaUploader('video', 'videos'),
+                uploader: createMediaUploader('video', 100, 'videos'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {
@@ -404,7 +400,7 @@ export function EditorJSComponent({ data, onChange, placeholder }: EditorProps) 
             audioLocal: {
               class: AudioTool as any,
               config: {
-                uploader: createMediaUploader('audio', 'audio'),
+                uploader: createMediaUploader('audio', 20, 'audio'),
                 libraryPicker: {
                   enabled: true,
                   onSelect: async () => {

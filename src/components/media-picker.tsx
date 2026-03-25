@@ -197,30 +197,34 @@ export function MediaPicker({
   }
 
   /**
-   * Handle file upload using server-side upload with progress tracking
+   * Handle file upload with progress tracking and duplicate detection
    */
   const handleFileUpload = async (file: File, skipDuplicateCheck = false) => {
-    // Validate file size (4.5MB limit)
-    const maxSizeBytes = 4.5 * 1024 * 1024
+    // Validate file size before uploading
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
     if (file.size > maxSizeBytes) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
       setState(prev => ({ 
         ...prev, 
-        error: `El archivo es demasiado grande (${fileSizeMB} MB). Súbelo desde la biblioteca para evitar errores.`
+        error: `El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual. 
+
+💡 Alternativa: Si no puedes comprimir más el archivo, súbelo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`
       }))
       return
     }
 
+    // Reset error state
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
-
-    const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
-    const label = file.name.replace(/\.[^/.]+$/, '')
 
     const formData = new FormData()
     formData.append('file', file)
+    
+    // Use fixedKey if provided, otherwise generate unique key
+    const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
     formData.append('key', mediaKey)
-    formData.append('label', label)
+    formData.append('label', file.name.replace(/\.[^/.]+$/, ''))
     formData.append('category', category)
+    
     if (skipDuplicateCheck) {
       formData.append('skipDuplicateCheck', 'true')
     }
@@ -229,6 +233,7 @@ export function MediaPicker({
       // Create XMLHttpRequest for progress tracking
       const xhr = new XMLHttpRequest()
       
+      // Track upload progress
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
           const percentComplete = Math.round((e.loaded / e.total) * 100)
@@ -236,18 +241,25 @@ export function MediaPicker({
         }
       })
 
-      const result = await new Promise<any>((resolve, reject) => {
+      // Handle response
+      const uploadPromise = new Promise<any>((resolve, reject) => {
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText))
           } else if (xhr.status === 413) {
-            reject(new Error(`El archivo es demasiado grande. Súbelo desde la biblioteca para evitar errores.`))
+            // Payload Too Large
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.
+
+💡 Alternativa: Sube el archivo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`))
           } else {
             try {
               const errorData = JSON.parse(xhr.responseText)
-              reject(new Error(errorData.error || 'Error al subir archivo'))
+              const errorMsg = errorData.error || xhr.responseText || 'Error desconocido'
+              const details = errorData.details ? `\n\nDetalles: ${errorData.details}` : ''
+              reject(new Error(errorMsg + details))
             } catch {
-              reject(new Error(`Error ${xhr.status}: Error al subir archivo`))
+              reject(new Error(`Error ${xhr.status}: ${xhr.responseText || 'Error al subir archivo'}`))
             }
           }
         })
@@ -255,30 +267,51 @@ export function MediaPicker({
         xhr.addEventListener('abort', () => reject(new Error('Subida cancelada')))
       })
 
+      xhr.open('POST', '/api/upload')
+      xhr.send(formData)
+
+      const data = await uploadPromise
+
       // Check for duplicate warning
-      if (!result.success && result.duplicate?.exists) {
+      if (!data.success && data.duplicate?.exists) {
         setState(prev => ({ 
           ...prev, 
           uploading: false,
           uploadProgress: 0,
-          duplicateWarning: { file, suggestions: result.duplicate.suggestions }
+          duplicateWarning: {
+            file,
+            suggestions: data.duplicate.suggestions
+          }
         }))
         return
       }
 
-      // Success
-      if (result.success) {
-        onChange(result.url)
-        setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
-        if (state.activeTab === 'library') fetchMediaItems()
+      // Success - update with new URL
+      if (data.success) {
+        onChange(data.url)
+        setState(prev => ({ 
+          ...prev, 
+          uploading: false,
+          uploadProgress: 100,
+          error: null
+        }))
+        
+        // Refresh library if on library tab
+        if (state.activeTab === 'library') {
+          fetchMediaItems()
+        }
       }
     } catch (error) {
       console.error('Upload error:', error)
-      setState(prev => ({
-        ...prev,
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Error al subir archivo. Por favor, intenta de nuevo.'
+      
+      setState(prev => ({ 
+        ...prev, 
         uploading: false,
         uploadProgress: 0,
-        error: error instanceof Error ? error.message : 'Error al subir archivo',
+        error: errorMessage
       }))
     }
   }
@@ -560,6 +593,17 @@ export function MediaPicker({
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription className="space-y-2">
                     <p>{state.error}</p>
+                    {state.error.includes('Cloudinary') && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
+                        <p className="font-medium text-blue-700 dark:text-blue-300">💡 Alternativa para archivos grandes:</p>
+                        <ol className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-1">
+                          <li>1. Ve a <a href="https://console.cloudinary.com" target="_blank" rel="noopener" className="underline">Cloudinary Console</a></li>
+                          <li>2. Sube tu archivo en "Media Library"</li>
+                          <li>3. Copia la URL del archivo</li>
+                          <li>4. Úsala directamente en tu contenido</li>
+                        </ol>
+                      </div>
+                    )}
                   </AlertDescription>
                   <Button
                     variant="ghost"
@@ -620,10 +664,10 @@ export function MediaPicker({
                         : 'Arrastra un archivo o haz clic para seleccionar'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF'}
-                    {accept === 'video' && 'Videos: MP4, WebM, MOV'}
-                    {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A'}
-                    {accept === 'all' && 'Imágenes, videos y audio'}
+                    {accept === 'image' && 'Imágenes: JPG, PNG, WebP, GIF (máx. 5MB)'}
+                    {accept === 'video' && 'Videos: MP4, WebM, MOV (máx. 25MB en producción)'}
+                    {accept === 'audio' && 'Audio: MP3, WAV, OGG, M4A (máx. 15MB en producción)'}
+                    {accept === 'all' && 'Imágenes (5MB), videos (25MB) y audio (15MB) en producción'}
                   </p>
                 </label>
               </div>

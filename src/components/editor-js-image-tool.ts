@@ -194,7 +194,7 @@ export default class ImageTool {
     container.appendChild(buttonContainer)
 
     const hint = document.createElement('p')
-    hint.textContent = 'PNG, JPG, GIF, WebP, SVG'
+    hint.textContent = 'PNG, JPG, GIF, WebP, SVG (máx. 10MB)'
     hint.style.cssText = 'margin: 12px 0 0; color: #9ca3af; font-size: 12px;'
     
     // Apply dark mode styles
@@ -207,6 +207,11 @@ export default class ImageTool {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return
 
+      if (file.size > 10 * 1024 * 1024) {
+        alert('La imagen es demasiado grande. El tamaño máximo es 10MB.')
+        return
+      }
+
       container.innerHTML = '<p style="color: #666; padding: 40px 20px;">Subiendo imagen...</p>'
 
       if (this.uploader) {
@@ -217,14 +222,12 @@ export default class ImageTool {
             this.wrapper.innerHTML = ''
             this.createImageElement(result.file.url, '')
           } else {
-            container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error al subir la imagen. Archivo muy grande o no permitido.</p>'
+            container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error al subir la imagen</p>'
           }
         } catch (error) {
           console.error('Image upload error:', error)
-          container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error de conexión al subir</p>'
+          container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error al subir la imagen</p>'
         }
-      } else {
-        container.innerHTML = '<p style="color: #d32f2f; padding: 40px 20px;">Error: uploader no disponible</p>'
       }
     })
 
@@ -249,6 +252,11 @@ export default class ImageTool {
       const file = e.dataTransfer?.files?.[0]
       if (!file || !file.type.startsWith('image/')) {
         alert('Por favor selecciona un archivo de imagen válido.')
+        return
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert('La imagen es demasiado grande. El tamaño máximo es 10MB.')
         return
       }
 
