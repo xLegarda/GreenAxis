@@ -177,35 +177,43 @@ const i18nConfig = {
 
 /**
  * Create uploader config for media types (image, video, audio)
- * Uses Cloudinary Upload Widget for direct browser upload
+ * Uses server-side upload with 4.5MB limit
  */
 const createMediaUploader = (
   type: 'image' | 'video' | 'audio',
   category: string
 ) => ({
   async uploadByFile(file: File) {
+    // Validate file size (4.5MB limit)
+    const maxSizeBytes = 4.5 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      console.error(`File too large (${fileSizeMB} MB). Upload from library instead.`)
+      return { success: 0 }
+    }
+
     const mediaKey = `${type}-${Date.now()}`
     const label = file.name.replace(/\.[^/.]+$/, '')
 
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('key', mediaKey)
+    formData.append('label', label)
+    formData.append('category', category)
+
     try {
-      // Upload via Cloudinary Widget
-      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
-
-      const url = await openCloudinaryUpload({
-        folder: 'green-axis',
-        resourceType: type === 'image' ? 'image' : type === 'video' ? 'video' : 'auto',
-      })
-
-      if (!url) return { success: 0 }
-
-      // Save to DB
-      await fetch('/api/upload/callback', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: mediaKey, url, label, category }),
+        body: formData
       })
 
-      return { success: 1, file: { url } }
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          return { success: 1, file: { url: data.url } }
+        }
+      }
+      return { success: 0 }
     } catch (e) {
       console.error(`${type} upload error:`, e)
       return { success: 0 }

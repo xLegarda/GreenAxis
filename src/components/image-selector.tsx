@@ -85,27 +85,49 @@ export function ImageSelector({
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate file size (4.5MB limit)
+    const maxSizeBytes = 4.5 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      toast({ 
+        title: 'Archivo demasiado grande', 
+        description: `El archivo (${fileSizeMB} MB) es demasiado grande. Súbelo desde la biblioteca para evitar errores.`,
+        variant: 'destructive' 
+      })
+      return
+    }
+
     setUploading(true)
     const imageKey = fixedKey || `${keyPrefix}-${Date.now()}`
     const label = file.name.replace(/\.[^/.]+$/, '')
 
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('key', imageKey)
+    formData.append('label', label)
+    formData.append('category', category)
+
     try {
-      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
-      const url = await openCloudinaryUpload({ folder: 'green-axis', resourceType: 'auto' })
-
-      if (!url) {
-        setUploading(false)
-        return
-      }
-
-      await fetch('/api/upload/callback', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: imageKey, url, label, category }),
+        body: formData
       })
 
-      onChange(url)
-      toast({ title: 'Archivo subido correctamente' })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          onChange(data.url)
+          toast({ title: 'Archivo subido correctamente' })
+        }
+      } else if (response.status === 413) {
+        toast({ 
+          title: 'Archivo demasiado grande', 
+          description: 'Súbelo desde la biblioteca para evitar errores.',
+          variant: 'destructive' 
+        })
+      } else {
+        toast({ title: 'Error al subir archivo', variant: 'destructive' })
+      }
     } catch (error) {
       toast({ title: 'Error al subir archivo', variant: 'destructive' })
     } finally {

@@ -197,61 +197,81 @@ export function MediaPicker({
   }
 
   /**
-   * Handle file upload using Cloudinary Upload Widget (direct browser upload)
+   * Handle file upload using server-side upload with progress tracking
    */
   const handleFileUpload = async (file: File, skipDuplicateCheck = false) => {
+    // Validate file size (4.5MB limit)
+    const maxSizeBytes = 4.5 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      setState(prev => ({ 
+        ...prev, 
+        error: `El archivo es demasiado grande (${fileSizeMB} MB). Súbelo desde la biblioteca para evitar errores.`
+      }))
+      return
+    }
+
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
 
     const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
     const label = file.name.replace(/\.[^/.]+$/, '')
 
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('key', mediaKey)
+    formData.append('label', label)
+    formData.append('category', category)
+    if (skipDuplicateCheck) {
+      formData.append('skipDuplicateCheck', 'true')
+    }
+
     try {
-      // Step 1: Check for duplicates by filename
-      if (!skipDuplicateCheck) {
-        try {
-          const checkRes = await fetch('/api/upload/check', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ label, key: mediaKey }),
-          })
-          if (checkRes.ok) {
-            const checkData = await checkRes.json()
-            if (checkData.duplicate?.exists) {
-              setState(prev => ({
-                ...prev,
-                uploading: false,
-                uploadProgress: 0,
-                duplicateWarning: { file, suggestions: checkData.duplicate.suggestions },
-              }))
-              return
-            }
-          }
-        } catch {}
-      }
-
-      // Step 2: Upload via Cloudinary Widget
-      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
-
-      const url = await openCloudinaryUpload({
-        folder: 'green-axis',
-        resourceType: 'auto',
+      // Create XMLHttpRequest for progress tracking
+      const xhr = new XMLHttpRequest()
+      
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100)
+          setState(prev => ({ ...prev, uploadProgress: percentComplete }))
+        }
       })
 
-      if (!url) {
-        setState(prev => ({ ...prev, uploading: false, uploadProgress: 0 }))
+      const result = await new Promise<any>((resolve, reject) => {
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText))
+          } else if (xhr.status === 413) {
+            reject(new Error(`El archivo es demasiado grande. Súbelo desde la biblioteca para evitar errores.`))
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText)
+              reject(new Error(errorData.error || 'Error al subir archivo'))
+            } catch {
+              reject(new Error(`Error ${xhr.status}: Error al subir archivo`))
+            }
+          }
+        })
+        xhr.addEventListener('error', () => reject(new Error('Error de red al subir archivo')))
+        xhr.addEventListener('abort', () => reject(new Error('Subida cancelada')))
+      })
+
+      // Check for duplicate warning
+      if (!result.success && result.duplicate?.exists) {
+        setState(prev => ({ 
+          ...prev, 
+          uploading: false,
+          uploadProgress: 0,
+          duplicateWarning: { file, suggestions: result.duplicate.suggestions }
+        }))
         return
       }
 
-      // Step 3: Save URL to database
-      await fetch('/api/upload/callback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: mediaKey, url, label, category }),
-      })
-
-      onChange(url)
-      setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
-      if (state.activeTab === 'library') fetchMediaItems()
+      // Success
+      if (result.success) {
+        onChange(result.url)
+        setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
+        if (state.activeTab === 'library') fetchMediaItems()
+      }
     } catch (error) {
       console.error('Upload error:', error)
       setState(prev => ({
