@@ -37,19 +37,31 @@ async function deleteFromCloudinary(url: string): Promise<void> {
   const publicId = extractCloudinaryPublicId(url)
   if (!publicId) throw new Error(`Could not extract public_id from: ${url}`)
 
-  const results: string[] = []
-  for (const resourceType of ['image', 'video', 'raw'] as const) {
+  const isVideo = url.includes('/video/upload/') || /\.(mp4|webm|mov|avi)$/i.test(url)
+  const isAudio = url.includes('/video/upload/') && /\.(mp3|wav|ogg|m4a)$/i.test(url)
+
+  // Try the most likely resource type first based on URL
+  const resourceTypes: ('image' | 'video' | 'raw')[] = isVideo || isAudio
+    ? ['video', 'image', 'raw']
+    : ['image', 'video', 'raw']
+
+  for (const resourceType of resourceTypes) {
     try {
       const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-      results.push(`${resourceType}: ${result.result}`)
       if (result.result === 'ok') return
       if (result.result === 'not found') continue
+      // Unexpected result - throw
+      throw new Error(`Cloudinary returned: ${result.result}`)
     } catch (err) {
-      results.push(`${resourceType}: error - ${(err as Error).message}`)
+      // Only rethrow if it's our own error
+      if ((err as Error).message.includes('Cloudinary returned')) throw err
+      // API error - try next resource type
+      continue
     }
   }
-  // File not found in any resource type - treat as already deleted
-  console.log('[DELETE] Results:', results.join(', '))
+
+  // None succeeded - throw error so DB record is not deleted
+  throw new Error(`Could not delete ${publicId} from Cloudinary (tried: ${resourceTypes.join(', ')})`)
 }
 
 /**
