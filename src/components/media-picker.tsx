@@ -203,59 +203,44 @@ export function MediaPicker({
     // Reset error state
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
 
-    try {
-      // Step 1: Check for duplicates (unless skipped)
-      if (!skipDuplicateCheck) {
-        const checkRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: (() => {
-            const fd = new FormData()
-            fd.append('file', file)
-            const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
-            fd.append('key', mediaKey)
-            fd.append('label', file.name.replace(/\.[^/.]+$/, ''))
-            fd.append('category', category)
-            fd.append('skipDuplicateCheck', 'false')
-            return fd
-          })(),
-        })
+    const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
+    const label = file.name.replace(/\.[^/.]+$/, '')
 
-        if (checkRes.status === 413) {
-          // File too large for server, skip duplicate check and go direct
-        } else {
-          const checkData = await checkRes.json().catch(() => null)
-          if (checkData && !checkData.success && checkData.duplicate?.exists) {
-            setState(prev => ({
-              ...prev,
-              uploading: false,
-              uploadProgress: 0,
-              duplicateWarning: {
-                file,
-                suggestions: checkData.duplicate.suggestions,
-              },
-            }))
-            return
+    try {
+      // Step 1: Check for duplicates by filename (no file upload, just metadata)
+      if (!skipDuplicateCheck) {
+        try {
+          const checkRes = await fetch('/api/upload/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label, key: mediaKey }),
+          })
+
+          if (checkRes.ok) {
+            const checkData = await checkRes.json()
+            if (checkData.duplicate?.exists) {
+              setState(prev => ({
+                ...prev,
+                uploading: false,
+                uploadProgress: 0,
+                duplicateWarning: {
+                  file,
+                  suggestions: checkData.duplicate.suggestions,
+                },
+              }))
+              return
+            }
           }
-          // If upload succeeded through server (small file), we're done
-          if (checkData?.success) {
-            onChange(checkData.url)
-            setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
-            if (state.activeTab === 'library') fetchMediaItems()
-            return
-          }
+        } catch {
+          // If check fails, proceed with upload anyway
         }
       }
 
       // Step 2: Get signed upload params from backend
-      const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
       const signRes = await fetch('/api/upload/sign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: mediaKey,
-          label: file.name.replace(/\.[^/.]+$/, ''),
-          category,
-        }),
+        body: JSON.stringify({ key: mediaKey, label, category }),
       })
 
       if (!signRes.ok) {
@@ -307,20 +292,11 @@ export function MediaPicker({
       })
 
       // Step 4: Save URL to database
-      const saveRes = await fetch('/api/upload/callback', {
+      await fetch('/api/upload/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: mediaKey,
-          url: uploadResult.secure_url,
-          label: file.name.replace(/\.[^/.]+$/, ''),
-          category,
-        }),
+        body: JSON.stringify({ key: mediaKey, url: uploadResult.secure_url, label, category }),
       })
-
-      if (!saveRes.ok) {
-        console.warn('Upload succeeded but failed to save to DB')
-      }
 
       onChange(uploadResult.secure_url)
       setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))

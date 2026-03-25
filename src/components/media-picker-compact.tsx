@@ -177,41 +177,33 @@ function MediaPickerCompact({
     // Reset error state
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
 
+    const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
+    const label = file.name.replace(/\.[^/.]+$/, '')
+
     try {
-      const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
-
-      // Step 1: Try server upload for duplicate check (small files)
+      // Step 1: Check for duplicates by filename (no file upload, just metadata)
       if (!skipDuplicateCheck) {
-        const checkFormData = new FormData()
-        checkFormData.append('file', file)
-        checkFormData.append('key', mediaKey)
-        checkFormData.append('label', file.name.replace(/\.[^/.]+$/, ''))
-        checkFormData.append('category', category)
+        try {
+          const checkRes = await fetch('/api/upload/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label, key: mediaKey }),
+          })
 
-        const checkRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: checkFormData,
-        })
-
-        if (checkRes.status === 413) {
-          // File too large for server, proceed to direct upload
-        } else {
-          const checkData = await checkRes.json().catch(() => null)
-          if (checkData && !checkData.success && checkData.duplicate?.exists) {
-            setState(prev => ({
-              ...prev,
-              uploading: false,
-              uploadProgress: 0,
-              duplicateWarning: { file, suggestions: checkData.duplicate.suggestions },
-            }))
-            return
+          if (checkRes.ok) {
+            const checkData = await checkRes.json()
+            if (checkData.duplicate?.exists) {
+              setState(prev => ({
+                ...prev,
+                uploading: false,
+                uploadProgress: 0,
+                duplicateWarning: { file, suggestions: checkData.duplicate.suggestions },
+              }))
+              return
+            }
           }
-          if (checkData?.success) {
-            onChange(checkData.url)
-            setState(prev => ({ ...prev, uploading: false, uploadProgress: 100, error: null }))
-            if (state.activeTab === 'library') fetchMediaItems()
-            return
-          }
+        } catch {
+          // If check fails, proceed with upload anyway
         }
       }
 
@@ -219,11 +211,7 @@ function MediaPickerCompact({
       const signRes = await fetch('/api/upload/sign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: mediaKey,
-          label: file.name.replace(/\.[^/.]+$/, ''),
-          category,
-        }),
+        body: JSON.stringify({ key: mediaKey, label, category }),
       })
 
       if (!signRes.ok) {
@@ -278,12 +266,7 @@ function MediaPickerCompact({
       await fetch('/api/upload/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: mediaKey,
-          url: uploadResult.secure_url,
-          label: file.name.replace(/\.[^/.]+$/, ''),
-          category,
-        }),
+        body: JSON.stringify({ key: mediaKey, url: uploadResult.secure_url, label, category }),
       })
 
       onChange(uploadResult.secure_url)

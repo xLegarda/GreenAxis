@@ -187,23 +187,7 @@ const createMediaUploader = (
     const mediaKey = `${type}-${Date.now()}`
 
     try {
-      // Step 1: Try server upload for small files
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('key', mediaKey)
-      formData.append('label', file.name)
-      formData.append('category', category)
-
-      const serverRes = await fetch('/api/upload', { method: 'POST', body: formData })
-
-      if (serverRes.status === 413 || !serverRes.ok) {
-        // File too large or error - use direct upload
-      } else {
-        const data = await serverRes.json()
-        if (data?.success) return { success: 1, file: { url: data.url } }
-      }
-
-      // Step 2: Get signed upload params
+      // Step 1: Get signed upload params
       const signRes = await fetch('/api/upload/sign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,7 +198,7 @@ const createMediaUploader = (
 
       const signData = await signRes.json()
 
-      // Step 3: Upload directly to Cloudinary
+      // Step 2: Upload directly to Cloudinary
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloud_name}/auto/upload`
 
       const uploadFormData = new FormData()
@@ -241,7 +225,7 @@ const createMediaUploader = (
 
       if (!uploadResult) return { success: 0 }
 
-      // Step 4: Save to DB
+      // Step 3: Save to DB
       await fetch('/api/upload/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
