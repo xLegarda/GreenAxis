@@ -7,6 +7,7 @@ interface UploadOptions {
 
 let scriptLoaded = false
 let scriptPromise: Promise<void> | null = null
+let currentWidget: any = null
 
 function loadWidgetScript(): Promise<void> {
   if (scriptLoaded) return Promise.resolve()
@@ -23,7 +24,11 @@ function loadWidgetScript(): Promise<void> {
     script.src = 'https://upload-widget.cloudinary.com/global/all.js'
     script.async = true
     script.onload = () => { scriptLoaded = true; resolve() }
-    script.onerror = () => reject(new Error('Error cargando Cloudinary widget'))
+    script.onerror = () => {
+      scriptLoaded = false
+      scriptPromise = null
+      reject(new Error('Error cargando Cloudinary widget'))
+    }
     document.head.appendChild(script)
   })
 
@@ -33,14 +38,33 @@ function loadWidgetScript(): Promise<void> {
 export async function openCloudinaryUpload(options: UploadOptions = {}): Promise<string | null> {
   const { folder = 'green-axis', resourceType = 'auto' } = options
 
-  await loadWidgetScript()
+  try {
+    await loadWidgetScript()
+  } catch {
+    console.error('No se pudo cargar el widget de Cloudinary')
+    return null
+  }
 
-  const configRes = await fetch('/api/upload/widget-config')
-  if (!configRes.ok) return null
-  const { cloudName, apiKey } = await configRes.json()
+  try {
+    const configRes = await fetch('/api/upload/widget-config')
+    if (!configRes.ok) return null
+    const { cloudName, apiKey } = await configRes.json()
+  } catch {
+    console.error('Error al obtener configuración del widget')
+    return null
+  }
+
+  const { cloudName, apiKey } = await (await fetch('/api/upload/widget-config')).json()
 
   return new Promise((resolve) => {
     const cloudinary = (window as any).cloudinary
+
+    if (currentWidget) {
+      try {
+        currentWidget.close()
+      } catch {}
+      currentWidget = null
+    }
 
     const widget = cloudinary.createUploadWidget(
       {
@@ -54,7 +78,7 @@ export async function openCloudinaryUpload(options: UploadOptions = {}): Promise
           })
             .then((r: Response) => r.json())
             .then((data: { signature: string }) => callback(data.signature))
-            .catch(() => resolve(null))
+            .catch(() => {})
         },
         uploadSignatureTimestamp: Math.round(Date.now() / 1000),
         resourceType,
@@ -102,11 +126,13 @@ export async function openCloudinaryUpload(options: UploadOptions = {}): Promise
           resolve(result.info.secure_url)
         }
         if (result?.event === 'close') {
+          currentWidget = null
           resolve(null)
         }
       }
     )
 
+    currentWidget = widget
     widget.open()
   })
 }
