@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { validateFullPhone } from '@/lib/phone-validation'
+import { Resend } from 'resend'
 
-// Configuración de Resend
-const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
+const resend = new Resend(process.env.RESEND_API_KEY || '')
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
 // Validación de email
@@ -41,96 +41,89 @@ async function sendContactNotification(
   const siteName = 'Green Axis S.A.S.'
   
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM_EMAIL,
-        to: toEmail,
-        reply_to: contactData.email,
-        subject: `📧 Nuevo mensaje de contacto: ${contactData.subject || 'Sin asunto'}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #005A7A, #6BBE45); padding: 25px; text-align: center; border-radius: 10px 10px 0 0; }
-              .header h1 { color: white; margin: 0; font-size: 24px; }
-              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-              .field { margin-bottom: 15px; }
-              .field-label { font-weight: bold; color: #005A7A; font-size: 14px; }
-              .field-value { background: white; padding: 10px 15px; border-radius: 5px; border-left: 4px solid #6BBE45; margin-top: 5px; }
-              .message-box { background: white; padding: 15px; border-radius: 5px; border: 1px solid #ddd; white-space: pre-wrap; }
-              .button { display: inline-block; background: #6BBE45; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
-              .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>🌱 Nuevo Mensaje de Contacto</h1>
-              </div>
-              <div class="content">
-                <p>Has recibido un nuevo mensaje a través del formulario de contacto:</p>
-                
-                <div class="field">
-                  <div class="field-label">👤 Nombre:</div>
-                  <div class="field-value">${contactData.name}</div>
-                </div>
-                
-                <div class="field">
-                  <div class="field-label">📧 Email:</div>
-                  <div class="field-value"><a href="mailto:${contactData.email}">${contactData.email}</a></div>
-                </div>
-                
-                ${contactData.phone ? `
-                <div class="field">
-                  <div class="field-label">📱 Teléfono:</div>
-                  <div class="field-value"><a href="tel:${contactData.phone}">${contactData.phone}</a></div>
-                </div>
-                ` : ''}
-                
-                ${contactData.company ? `
-                <div class="field">
-                  <div class="field-label">🏢 Empresa:</div>
-                  <div class="field-value">${contactData.company}</div>
-                </div>
-                ` : ''}
-                
-                ${contactData.subject ? `
-                <div class="field">
-                  <div class="field-label">📌 Asunto:</div>
-                  <div class="field-value">${contactData.subject}</div>
-                </div>
-                ` : ''}
-                
-                <div class="field">
-                  <div class="field-label">💬 Mensaje:</div>
-                  <div class="message-box">${contactData.message}</div>
-                </div>
-                
-                <p style="text-align: center; margin-top: 25px;">
-                  <a href="https://greenaxis.com.co/admin/mensajes" class="button">Ver en el Panel Admin</a>
-                </p>
-              </div>
-              <div class="footer">
-                <p>© ${new Date().getFullYear()} ${siteName}</p>
-                <p>Este es un correo automático del formulario de contacto.</p>
-              </div>
+    await resend.emails.send({
+      from: RESEND_FROM_EMAIL,
+      to: toEmail,
+      replyTo: contactData.email,
+      subject: `Nuevo mensaje de contacto: ${contactData.subject || 'Sin asunto'}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #005A7A, #6BBE45); padding: 25px; text-align: center; border-radius: 10px 10px 0 0; }
+            .header h1 { color: white; margin: 0; font-size: 24px; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .field { margin-bottom: 15px; }
+            .field-label { font-weight: bold; color: #005A7A; font-size: 14px; }
+            .field-value { background: white; padding: 10px 15px; border-radius: 5px; border-left: 4px solid #6BBE45; margin-top: 5px; }
+            .message-box { background: white; padding: 15px; border-radius: 5px; border: 1px solid #ddd; white-space: pre-wrap; }
+            .button { display: inline-block; background: #6BBE45; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Nuevo Mensaje de Contacto</h1>
             </div>
-          </body>
-          </html>
-        `,
-      }),
+            <div class="content">
+              <p>Has recibido un nuevo mensaje a través del formulario de contacto:</p>
+              
+              <div class="field">
+                <div class="field-label">Nombre:</div>
+                <div class="field-value">${contactData.name}</div>
+              </div>
+              
+              <div class="field">
+                <div class="field-label">Email:</div>
+                <div class="field-value"><a href="mailto:${contactData.email}">${contactData.email}</a></div>
+              </div>
+              
+              ${contactData.phone ? `
+              <div class="field">
+                <div class="field-label">Telefono:</div>
+                <div class="field-value"><a href="tel:${contactData.phone}">${contactData.phone}</a></div>
+              </div>
+              ` : ''}
+              
+              ${contactData.company ? `
+              <div class="field">
+                <div class="field-label">Empresa:</div>
+                <div class="field-value">${contactData.company}</div>
+              </div>
+              ` : ''}
+              
+              ${contactData.subject ? `
+              <div class="field">
+                <div class="field-label">Asunto:</div>
+                <div class="field-value">${contactData.subject}</div>
+              </div>
+              ` : ''}
+              
+              <div class="field">
+                <div class="field-label">Mensaje:</div>
+                <div class="message-box">${contactData.message}</div>
+              </div>
+              
+              <p style="text-align: center; margin-top: 25px;">
+                <a href="https://greenaxis.com.co/admin/mensajes" class="button">Ver en el Panel Admin</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>${new Date().getFullYear()} ${siteName}</p>
+              <p>Este es un correo automatico del formulario de contacto.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
     })
     
-    return response.ok
+    return true
   } catch (error) {
     console.error('Error sending notification email:', error)
     return false

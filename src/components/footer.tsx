@@ -66,13 +66,13 @@ export function Footer({ config, services }: FooterProps) {
           {/* Logo y descripción */}
           <div className="space-y-5">
             <Link href="/" className="inline-block">
-              <div className="relative h-14 w-auto">
+              <div className="relative" style={{ width: 160, height: 56 }}>
                 <Image
                   src={logoUrl}
                   alt={siteName}
-                  width={160}
-                  height={56}
-                  className="h-14 w-auto object-contain brightness-0 invert"
+                  fill
+                  className="object-contain brightness-0 invert"
+                  sizes="160px"
                   priority
                   unoptimized
                 />

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Home, ArrowLeft, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -26,11 +27,14 @@ export default function NotFound() {
       <div className="text-center max-w-md">
         {/* Logo */}
         <div className="mb-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
+          <Image 
             src={logoUrl} 
             alt={siteName} 
+            width={200}
+            height={64}
             className="h-16 mx-auto object-contain"
+            style={{ width: 'auto' }}
+            unoptimized
           />
         </div>
 

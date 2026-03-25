@@ -93,6 +93,7 @@ export function AboutSection({ config }: AboutSectionProps) {
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
+                  unoptimized={!isCloudinaryUrl(imageUrl)}
                 />
               {/* Overlay gradient para dar profundidad */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />

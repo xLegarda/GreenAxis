@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../prisma/generated/client'
 import { PrismaLibSql } from '@prisma/adapter-libsql'
 import fs from 'fs'
 

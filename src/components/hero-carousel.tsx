@@ -182,6 +182,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
                     transition: isActive ? 'none' : 'none'
                   }}
                   priority={index === 0}
+                  unoptimized={!isCloudinaryUrl(slide.imageUrl)}
                 />
               {/* Gradient Overlay */}
               {showGradient && (

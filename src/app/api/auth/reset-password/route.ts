@@ -3,9 +3,9 @@ import { db } from '@/lib/db'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { validatePassword } from '@/lib/password-validator'
+import { Resend } from 'resend'
 
-// Configuración de Resend
-const RESEND_API_KEY = process.env.RESEND_API_KEY
+const resend = new Resend(process.env.RESEND_API_KEY || '')
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
 // Generar token seguro
@@ -17,87 +17,65 @@ function generateResetToken(): string {
 async function sendResetEmail(email: string, token: string, baseUrl: string): Promise<boolean> {
   const resetUrl = `${baseUrl}/portal-interno/restablecer?token=${token}`
   
-  console.log('📧 Sending email to:', email)
-  console.log('📧 Reset URL:', resetUrl)
-  console.log('📧 API Key:', RESEND_API_KEY ? 'Configured' : 'MISSING!')
-  console.log('📧 From:', RESEND_FROM_EMAIL)
-  
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM_EMAIL,
-        to: email,
-        subject: 'Recuperación de Contraseña - Green Axis',
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #005A7A, #6BBE45); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-              .header h1 { color: white; margin: 0; }
-              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-              .button { display: inline-block; background: #6BBE45; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }
-              .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
-              .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>🌱 Green Axis S.A.S.</h1>
-              </div>
-              <div class="content">
-                <h2>Recuperación de Contraseña</h2>
-                <p>Hemos recibido una solicitud para restablecer tu contraseña.</p>
-                <p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>
-                <p style="text-align: center; margin: 30px 0;">
-                  <a href="${resetUrl}" class="button">Restablecer Contraseña</a>
-                </p>
-                <p>O copia y pega este enlace en tu navegador:</p>
-                <p style="word-break: break-all; background: #eee; padding: 10px; border-radius: 5px; font-size: 14px;">
-                  ${resetUrl}
-                </p>
-                <div class="warning">
-                  <strong>⚠️ Importante:</strong>
-                  <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>Este enlace expira en <strong>1 hora</strong></li>
-                    <li>Si no solicitaste este cambio, ignora este correo</li>
-                    <li>Nunca compartas este enlace con nadie</li>
-                  </ul>
-                </div>
-              </div>
-              <div class="footer">
-                <p>© ${new Date().getFullYear()} Green Axis S.A.S. - Servicios Ambientales</p>
-                <p>Este es un correo automático, por favor no respondas.</p>
+    await resend.emails.send({
+      from: RESEND_FROM_EMAIL,
+      to: email,
+      subject: 'Recuperacion de Contrasena - Green Axis',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #005A7A, #6BBE45); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .header h1 { color: white; margin: 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; background: #6BBE45; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+            .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+            .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Green Axis S.A.S.</h1>
+            </div>
+            <div class="content">
+              <h2>Recuperacion de Contrasena</h2>
+              <p>Hemos recibido una solicitud para restablecer tu contrasena.</p>
+              <p>Haz clic en el siguiente boton para crear una nueva contrasena:</p>
+              <p style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" class="button">Restablecer Contrasena</a>
+              </p>
+              <p>O copia y pega este enlace en tu navegador:</p>
+              <p style="word-break: break-all; background: #eee; padding: 10px; border-radius: 5px; font-size: 14px;">
+                ${resetUrl}
+              </p>
+              <div class="warning">
+                <strong>Importante:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                  <li>Este enlace expira en <strong>1 hora</strong></li>
+                  <li>Si no solicitaste este cambio, ignora este correo</li>
+                  <li>Nunca compartas este enlace con nadie</li>
+                </ul>
               </div>
             </div>
-          </body>
-          </html>
-        `,
-      }),
+            <div class="footer">
+              <p>${new Date().getFullYear()} Green Axis S.A.S. - Servicios Ambientales</p>
+              <p>Este es un correo automatico, por favor no respondas.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
     })
     
-    const responseText = await response.text()
-    console.log('📧 Resend response status:', response.status)
-    console.log('📧 Resend response:', responseText)
-    
-    if (response.ok) {
-      console.log('✅ Email sent successfully to:', email)
-      return true
-    } else {
-      console.error('❌ Failed to send email:', responseText)
-      return false
-    }
+    return true
   } catch (error) {
-    console.error('❌ Error sending email:', error)
+    console.error('Error sending email:', error)
     return false
   }
 }

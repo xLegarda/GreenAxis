@@ -77,13 +77,13 @@ export function Header({ config }: HeaderProps) {
         <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative h-10 md:h-12 w-auto transition-transform group-hover:scale-105">
+            <div className="relative" style={{ width: 140, height: 48 }}>
               <Image
                 src={logoUrl}
                 alt={siteName}
-                width={140}
-                height={48}
-                className="h-10 md:h-12 w-auto object-contain dark:brightness-0 dark:invert"
+                fill
+                className="object-contain dark:brightness-0 dark:invert"
+                sizes="140px"
                 priority
                 unoptimized
               />

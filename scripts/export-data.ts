@@ -1,23 +1,22 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../prisma/generated/client'
+import { PrismaLibSql } from '@prisma/adapter-libsql'
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import fs from 'fs'
 
-/**
- * Crea el cliente de Prisma usando la misma lógica que la app:
- * - Si TURSO_DATABASE_URL está definida → usa Turso (base de datos en línea)
- * - Si no → usa SQLite local (DATABASE_URL del .env)
- */
 async function createPrismaClient(): Promise<PrismaClient> {
   if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
-    console.log('🌐 Conectando a Turso (base de datos en línea)...')
-    const { PrismaLibSql } = await import('@prisma/adapter-libsql')
+    console.log('Conectando a Turso...')
     const adapter = new PrismaLibSql({
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN,
     })
-    return new PrismaClient({ adapter } as any)
+    return new PrismaClient({ adapter })
   } else {
-    console.log('💾 Conectando a SQLite local (DATABASE_URL del .env)...')
-    return new PrismaClient()
+    console.log('Conectando a SQLite local...')
+    const adapter = new PrismaBetterSqlite3({
+      url: process.env.DATABASE_URL || 'file:./db/custom.db',
+    })
+    return new PrismaClient({ adapter })
   }
 }
 

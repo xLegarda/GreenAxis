@@ -63,13 +63,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <AnalyticsLoader />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          <AnalyticsLoader />
           {children}
           <Toaster />
         </ThemeProvider>

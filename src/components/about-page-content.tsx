@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { isCloudinaryUrl } from '@/lib/cloudinary'
 import { 
   Users, Target, Award, CheckCircle, Shield, Clock, Settings, Heart, 
   Calendar, FolderCheck, ChevronRight, Mail, ExternalLink
@@ -143,6 +144,7 @@ export function AboutPageContent({ config, aboutPage }: AboutPageContentProps) {
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
+                  unoptimized={!aboutPage.historyImageUrl || !isCloudinaryUrl(aboutPage.historyImageUrl)}
                 />
               </div>
             </div>
@@ -290,6 +292,7 @@ export function AboutPageContent({ config, aboutPage }: AboutPageContentProps) {
                       fill
                       sizes="128px"
                       className="object-cover"
+                      unoptimized={!member.image || !isCloudinaryUrl(member.image)}
                     />
                   </div>
                   <h4 className="text-lg font-bold text-[#005A7A] dark:text-white">{member.name}</h4>

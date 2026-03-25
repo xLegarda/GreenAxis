@@ -10,6 +10,8 @@ interface HeaderConfig {
   placeholder?: string
 }
 
+const headerIcon = '<svg width="17" height="15" viewBox="0 0 336 276"><path fill="currentColor" d="M291 0V15H181V261H155V15H45V0H291Z"/></svg>'
+
 // Título 1 (H1)
 export class Titulo1 {
   private data: HeaderData
@@ -19,7 +21,7 @@ export class Titulo1 {
   static get toolbox() {
     return {
       title: 'Título 1',
-      icon: '<svg width="17" height="15" viewBox="0 0 336 276"><path d="M291 0V15H181V261H155V15H45V0H291Z"/></svg>'
+      icon: headerIcon
     }
   }
 
@@ -31,6 +33,13 @@ export class Titulo1 {
     return {
       text: true,
       level: false
+    }
+  }
+
+  static get conversionConfig() {
+    return {
+      export: (data: HeaderData) => data.text,
+      import: 'text'
     }
   }
 
@@ -69,7 +78,7 @@ export class Titulo2 {
   static get toolbox() {
     return {
       title: 'Título 2',
-      icon: '<svg width="17" height="15" viewBox="0 0 336 276"><path d="M291 0V15H181V261H155V15H45V0H291Z"/></svg>'
+      icon: headerIcon
     }
   }
 
@@ -81,6 +90,13 @@ export class Titulo2 {
     return {
       text: true,
       level: false
+    }
+  }
+
+  static get conversionConfig() {
+    return {
+      export: (data: HeaderData) => data.text,
+      import: 'text'
     }
   }
 
@@ -119,7 +135,7 @@ export class Titulo3 {
   static get toolbox() {
     return {
       title: 'Título 3',
-      icon: '<svg width="17" height="15" viewBox="0 0 336 276"><path d="M291 0V15H181V261H155V15H45V0H291Z"/></svg>'
+      icon: headerIcon
     }
   }
 
@@ -131,6 +147,13 @@ export class Titulo3 {
     return {
       text: true,
       level: false
+    }
+  }
+
+  static get conversionConfig() {
+    return {
+      export: (data: HeaderData) => data.text,
+      import: 'text'
     }
   }
 
@@ -169,7 +192,7 @@ export class Titulo4 {
   static get toolbox() {
     return {
       title: 'Título 4',
-      icon: '<svg width="17" height="15" viewBox="0 0 336 276"><path d="M291 0V15H181V261H155V15H45V0H291Z"/></svg>'
+      icon: headerIcon
     }
   }
 
@@ -181,6 +204,13 @@ export class Titulo4 {
     return {
       text: true,
       level: false
+    }
+  }
+
+  static get conversionConfig() {
+    return {
+      export: (data: HeaderData) => data.text,
+      import: 'text'
     }
   }
 

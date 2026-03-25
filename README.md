@@ -40,7 +40,7 @@ Configuración Global de Marca: Gestión de logotipos, colores principales del t
 .
 
 --------------------------------------------------------------------------------
-📁 Nueva Biblioteca de Medios (Funcionalidad v0.3.0)
+📁 Nueva Biblioteca de Medios (Funcionalidad v1.7)
 El sistema incluye una biblioteca de medios profesional que optimiza el almacenamiento y la gestión de archivos
 .
 Detección de Duplicados: El sistema utiliza tecnología de hash SHA-256 para identificar si un archivo ya ha sido subido anteriormente, evitando el uso innecesario de almacenamiento
@@ -79,7 +79,7 @@ Optimización SEO: Estructura preparada para motores de búsqueda, metadatos con
 
 **Backend**:
 - Next.js API Routes
-- Prisma ORM 6.19.2
+- Prisma ORM 7.0.0 (generador `prisma-client`)
 - Turso Database (LibSQL) con adaptador @prisma/adapter-libsql
 - bcryptjs (autenticación con 12 rounds)
 - Server Actions y Server Components
@@ -99,52 +99,57 @@ Optimización SEO: Estructura preparada para motores de búsqueda, metadatos con
 - Sonner 2.0.6 (notificaciones toast)
 - dnd-kit (drag & drop para reordenar)
 - Embla Carousel (carrusel de imágenes)
+- Recharts 2.15.4 (gráficos y visualización de datos)
+- react-resizable-panels 3.0.3 (paneles redimensionables)
+- input-otp 1.4.2 (inputs de código OTP)
 
 **Herramientas de Desarrollo**:
 - ESLint 9
 - Bun (runtime alternativo compatible)
 - Prisma CLI
 - tsx (ejecutar scripts TypeScript)
+- Vitest 4.1.0 (testing framework)
+- Testing Library (React + DOM + user-event)
 
 ### Diagrama de Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     APLICACIÓN NEXT.JS                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌──────────────┐         ┌──────────────────────────┐      │
-│  │   Sitio      │         │   Panel de               │      │
-│  │   Público    │         │   Administración         │      │
-│  │              │         │                          │      │
-│  │ - Home       │         │ - Dashboard              │      │
-│  │ - Servicios  │         │ - Configuración          │      │
-│  │ - Noticias   │         │ - Servicios              │      │
-│  │ - Quiénes    │         │ - Noticias               │      │
-│  │   Somos      │         │ - Carrusel               │      │
-│  │ - Contacto   │         │ - Imágenes               │      │
-│  └──────┬───────┘         └──────────┬───────────────┘      │
-│         │                            │                       │
-│         └────────────┬───────────────┘                       │
-│                      │                                       │
-│         ┌────────────▼────────────────────┐                 │
-│         │      API Routes + Actions       │                 │
-│         │                                  │                 │
-│         │ - /api/servicios                │                 │
-│         │ - /api/noticias                 │                 │
-│         │ - /api/contacto                 │                 │
-│         │ - /api/admin/*                  │                 │
-│         │ - /api/auth/*                   │                 │
-│         └────────────┬────────────────────┘                 │
-│                      │                                       │
-└──────────────────────┼───────────────────────────────────────┘
+┌────────────────────────────────────────────────────┐
+│                     APLICACIÓN NEXT.JS             │
+├────────────────────────────────────────────────────┤
+│                                                    │
+│  ┌──────────────┐         ┌─────────────────────┐  │
+│  │   Sitio      │         │   Panel de          │  │
+│  │   Público    │         │   Administración    │  │
+│  │              │         │                     │  │
+│  │ - Home       │         │ - Dashboard         │  │
+│  │ - Servicios  │         │ - Configuración     │  │
+│  │ - Noticias   │         │ - Servicios         │  │
+│  │ - Quiénes    │         │ - Noticias          │  │
+│  │   Somos      │         │ - Carrusel          │  │
+│  │ - Contacto   │         │ - Imágenes          │  │
+│  └──────┬───────┘         └──────────┬──────────┘  │
+│         │                            │             │
+│         └────────────┬───────────────┘             │
+│                      │                             │
+│         ┌────────────▼───────────────┐             │
+│         │      API Routes + Actions  │             │
+│         │                            │             │
+│         │ - /api/servicios           │             │
+│         │ - /api/noticias            │             │
+│         │ - /api/contacto            │             │
+│         │ - /api/admin/*             │             │
+│         │ - /api/auth/*              │             │
+│         └────────────┬───────────────┘             │
+│                      │                             │
+└──────────────────────┼─────────────────────────────┘
                        │
         ┌──────────────┼──────────────┐
         │              │              │
-   ┌────▼────┐   ┌────▼────┐   ┌────▼────┐
-   │  Turso  │   │Cloudinary│   │ Resend  │
-   │   DB    │   │   CDN    │   │  Email  │
-   └─────────┘   └──────────┘   └─────────┘
+   ┌────▼────┐    ┌────▼─────┐   ┌────▼────┐
+   │  Turso  │    │Cloudinary│   │ Resend  │
+   │   DB    │    │   CDN    │   │  Email  │
+   └─────────┘    └──────────┘   └─────────┘
 ```
 
 ---
@@ -173,12 +178,25 @@ Optimización SEO: Estructura preparada para motores de búsqueda, metadatos con
 │       ├── db.ts             # Cliente Prisma
 │       ├── actions.ts        # Server Actions
 │       ├── media-references.ts # Sistema de tracking de referencias de medios
+│       ├── password-validator.ts # Validación de contraseñas
+│       ├── rate-limit.ts     # Sistema de rate limiting
+│       ├── phone-validation.ts # Validación internacional de teléfonos
 │       └── utils.ts          # Utilidades generales
+├── __tests__/                 # Suite de tests (Vitest)
+│   ├── unit/                 # Tests unitarios
+│   ├── integration/          # Tests de integración
+│   ├── e2e/                  # Tests end-to-end
+│   └── lib/                  # Tests de librerías
 ├── prisma/
 │   └── schema.prisma         # Schema de base de datos
 ├── public/
 │   └── uploads/              # Archivos subidos (local)
 ├── scripts/                  # Scripts de utilidad
+├── src/
+│   └── proxy.ts              # Proxy/Security headers (Next.js 16)
+├── Caddyfile                 # Configuración reverse proxy (Caddy)
+├── vitest.config.ts          # Configuración de testing
+├── .dockerignore             # Configuración Docker
 ├── .kiro/                    # Configuración de Kiro
 │   ├── specs/               # Especificaciones técnicas
 │   └── security-audit-report.md
@@ -190,6 +208,7 @@ Optimización SEO: Estructura preparada para motores de búsqueda, metadatos con
 **Sitio Público**:
 - `/` - Página principal con hero carousel
 - `/servicios` - Listado de servicios
+- `/servicios/[slug]` - Detalle de servicio (con metadatos Open Graph)
 - `/noticias` - Blog de noticias
 - `/noticias/[slug]` - Detalle de noticia
 - `/quienes-somos` - Página "About"
@@ -213,6 +232,28 @@ Optimización SEO: Estructura preparada para motores de búsqueda, metadatos con
 - `/portal-interno` - Login de administradores
 - `/portal-interno/recuperar-clave` - Recuperación de contraseña
 - `/portal-interno/restablecer` - Restablecer contraseña
+
+---
+
+### Scripts Disponibles
+
+```bash
+# Desarrollo
+npm run dev              # Iniciar servidor de desarrollo (puerto 3000)
+npm run build            # Generar Prisma client + build de Next.js
+npm run start            # Iniciar en producción (con Bun)
+npm run lint             # Ejecutar ESLint
+
+# Base de datos
+npm run db:push          # Sincronizar schema con la base de datos
+npm run db:generate      # Generar cliente Prisma
+npm run db:migrate       # Crear/ ejecutar migraciones
+npm run db:reset         # Resetear base de datos
+npm run db:export        # Exportar datos (scripts/export-data.ts)
+npm run db:import        # Importar datos (scripts/import-data.ts)
+npm run db:turso         # Verificar conexión a Turso
+npm run db:local         # Verificar base de datos local
+```
 
 ---
 
@@ -240,12 +281,19 @@ Configuración general del sitio (singleton).
 Servicios que ofrece la empresa.
 
 **Campos**:
-- `title`, `description`, `content` - Información del servicio
+- `title`, `slug`, `description`, `content` - Información del servicio
+- `shortBlocks` - Resumen en formato Editor.js (JSON)
+- `blocks` - Contenido completo en formato Editor.js (JSON)
 - `icon` - Nombre del icono de Lucide
 - `imageUrl` - Imagen del servicio
 - `order` - Orden de visualización
 - `active` - Visible/oculto
 - `featured` - Destacado en home
+- `showSummary` - Mostrar resumen en detalle
+
+**Rutas**:
+- `/servicios` - Listado general
+- `/servicios/[slug]` - Detalle con metadatos Open Graph y Twitter Card
 
 #### 3. News
 Noticias/blog posts.
@@ -392,6 +440,8 @@ Usuarios administradores del sistema con límite configurable.
 
 **Nota**: Actualmente todos los roles tienen los mismos permisos. Sistema de permisos granulares es una mejora futura.
 
+**Configuración Prisma**: El schema usa `prisma-client` como provider (Prisma 7) con salida en `./generated`.
+
 #### 8. LegalPage
 Páginas legales (términos, privacidad).
 
@@ -527,10 +577,10 @@ canCreateAdmin(): Promise<boolean>
 Puntuación General: 8.5/10 (Producción Ready)
 El proyecto ha pasado por un audit de seguridad completo documentado en .kiro/security-audit-report.md. La aplicación cumple con los estándares de OWASP Top 10 2021 y está lista para producción.
 
-Middleware de Seguridad
-Archivo: src/middleware.ts
+Proxy de Seguridad (Next.js 16)
+Archivo: src/proxy.ts
 
-Funcionalidades Implementadas:
+Nota: En Next.js 16, el middleware fue reemplazado por el patrón proxy. El archivo src/proxy.ts aplica headers de seguridad a todas las respuestas.
 
 Headers de Seguridad (aplicados a todas las rutas):
 
@@ -554,25 +604,26 @@ Permite acceso público a rutas no protegidas
 Content Security Policy (CSP):
 
 default-src 'self'
-script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com
 style-src 'self' 'unsafe-inline'
 img-src 'self' data: https: blob:
 font-src 'self' data:
-connect-src 'self' https://www.google-analytics.com
-frame-src 'self' https://www.google.com https://www.youtube.com
-media-src 'self' blob: data:
+connect-src 'self' https://www.google-analytics.com blob:
+frame-src 'self' https://www.google.com https://maps.google.com
+media-src 'self' https://res.cloudinary.com blob: data: https:
+frame-ancestors 'none'
 Headers de Seguridad (Implementados)
-Archivo: src/middleware.ts
+Archivo: src/proxy.ts
 
 'X-Frame-Options': 'DENY'                    // Previene clickjacking
 'X-Content-Type-Options': 'nosniff'          // Previene MIME sniffing
 'X-XSS-Protection': '1; mode=block'          // Filtro XSS legacy
 'Referrer-Policy': 'strict-origin-when-cross-origin'
-'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
-'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+'Permissions-Policy': 'camera=(), microphone=(), geolocation()'
+'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
 'Content-Security-Policy': [políticas detalladas]
 Rate Limiting
-Implementado en: src/middleware.ts
+Implementado en: src/lib/rate-limit.ts + rutas API individuales
 
 Endpoints Protegidos:
 
@@ -609,6 +660,114 @@ if (request.nextUrl.pathname === '/api/contacto' && request.method === 'POST') {
     contactRateLimit.set(ip, { count: 1, resetTime: now + 60000 })
   }
 }
+
+---
+
+## 🔐 Validación de Contraseñas
+
+**Archivo**: `src/lib/password-validator.ts`
+
+El sistema valida contraseñas con 5 reglas obligatorias:
+
+| Regla | Descripción |
+|-------|-------------|
+| Longitud | Mínimo 8 caracteres |
+| Mayúscula | Al menos una letra (A-Z) |
+| Minúscula | Al menos una letra (a-z) |
+| Número | Al menos un dígito (0-9) |
+| Especial | Al menos un carácter especial (!@#$%...) |
+
+**Uso**:
+```typescript
+import { validatePassword } from '@/lib/password-validator'
+
+const result = validatePassword('MiClave123!')
+// result.valid = true/false
+// result.rules = [{ label, passed }, ...]
+// result.errors = ['Regla no cumplida', ...]
+```
+
+---
+
+## 📞 Validación Internacional de Teléfonos
+
+**Archivo**: `src/lib/phone-validation.ts`
+
+Sistema de validación para 28 países hispanohablantes, europeos y otros.
+
+**Países soportados**: Colombia, México, España, Argentina, Perú, Chile, Ecuador, Venezuela, Brasil, Guatemala, Honduras, Costa Rica, Panamá, Uruguay, Paraguay, Cuba, Alemania, Francia, Italia, Reino Unido, Países Bajos, Bélgica, Australia, Nueva Zelanda, Guinea Ecuatorial, Belice, El Salvador, Nicaragua, Surinam.
+
+**Características**:
+- Validación por código de país (+57, +34, etc.)
+- Verificación de longitud de dígitos por país
+- Validación de primer dígito (ej: Colombia acepta 2, 3, 5, 6)
+- Hints de formato por país (ej: "300 123 4567" para Colombia)
+
+**Funciones principales**:
+```typescript
+validatePhone(phone, countryCode)  // Validar con código de país separado
+validateFullPhone(fullPhone)       // Validar teléfono completo con código
+getCountryHint(countryCode)        // Obtener hint de formato
+```
+
+---
+
+## 🧪 Suite de Tests
+
+**Framework**: Vitest 4.1.0 + Testing Library
+
+**Estructura**:
+```
+__tests__/
+├── unit/                    # Tests unitarios
+│   ├── phone-validation.test.ts
+│   └── rate-limit.test.ts
+├── integration/             # Tests de integración
+│   ├── phone-backend.test.ts
+│   └── media/               # Tests de endpoints de media
+│       ├── test-media-endpoint.js
+│       ├── test-check-references.js
+│       ├── test-delete-endpoint.js
+│       ├── test-put-endpoint.js
+│       ├── test-upload-duplicate-detection.js
+│       └── test-upload-replacement.js
+├── e2e/                     # Tests end-to-end
+│   ├── media/
+│   │   └── test-media-picker-upload.js
+│   └── *.js
+└── lib/                     # Tests de librerías
+    ├── phone-validation.test.ts
+    └── password-validator.test.ts
+```
+
+**Configuración**: `vitest.config.ts` con entorno jsdom, globals habilitados y alias `@` para `src/`.
+
+---
+
+## 🚀 Despliegue
+
+### Caddy Reverse Proxy
+
+**Archivo**: `Caddyfile`
+
+Configuración para reverse proxy con Caddy en puerto 81:
+- Proxy dinámico vía query param `XTransformPort`
+- Fallback a localhost:3000
+- Headers de forwarding configurados (Host, X-Forwarded-For, X-Forwarded-Proto, X-Real-IP)
+
+### Docker
+
+**Soporte**: Archivo `.dockerignore` configurado para excluir `node_modules`, `.next`, `.git`, y archivos de lock.
+
+### Next.js Standalone
+
+El build genera output standalone optimizado:
+```bash
+npm run build    # Genera .next/standalone/
+npm run start    # Ejecuta con Bun: bun .next/standalone/server.js
+```
+
+---
 
 📱 Responsive Design
 Breakpoints (Tailwind CSS 4)
