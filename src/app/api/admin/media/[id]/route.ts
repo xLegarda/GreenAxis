@@ -37,13 +37,19 @@ async function deleteFromCloudinary(url: string): Promise<void> {
   const publicId = extractCloudinaryPublicId(url)
   if (!publicId) throw new Error(`Could not extract public_id from: ${url}`)
 
+  const results: string[] = []
   for (const resourceType of ['image', 'video', 'raw'] as const) {
-    const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-    if (result.result === 'ok') return
-    if (result.result === 'not found') continue
+    try {
+      const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+      results.push(`${resourceType}: ${result.result}`)
+      if (result.result === 'ok') return
+      if (result.result === 'not found') continue
+    } catch (err) {
+      results.push(`${resourceType}: error - ${(err as Error).message}`)
+    }
   }
   // File not found in any resource type - treat as already deleted
-  return
+  console.log('[DELETE] Results:', results.join(', '))
 }
 
 /**
