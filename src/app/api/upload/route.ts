@@ -11,6 +11,20 @@ const cloudinary = configureCloudinary()
 // Detectar si estamos en producción (Vercel)
 const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
 
+function getCloudinaryResourceType(url: string): string {
+  const match = url.match(/\/res\.cloudinary\.com\/[^/]+\/([^/]+)\//)
+  return match ? match[1] : 'image'
+}
+
+async function deleteFromCloudinary(publicId: string, resourceType: string): Promise<void> {
+  return new Promise((resolve) => {
+    cloudinary.uploader.destroy(publicId, { resource_type: resourceType }, (error: any) => {
+      if (error) console.warn('Failed to delete from Cloudinary:', error)
+      resolve()
+    })
+  })
+}
+
 // Tipos MIME permitidos para imágenes
 const ALLOWED_IMAGE_TYPES = [
   'image/jpeg',
@@ -257,7 +271,8 @@ export async function POST(request: NextRequest) {
       if (oldFileUrl && oldFileUrl.includes('cloudinary.com')) {
         try {
           const publicId = oldFileUrl.split('/').slice(-2).join('/').split('.')[0]
-          await cloudinary.uploader.destroy(publicId)
+          const resourceType = getCloudinaryResourceType(oldFileUrl)
+          await deleteFromCloudinary(publicId, resourceType)
         } catch (error) {
           // TASK 4.2: Handle missing file errors gracefully (log warning, continue)
           console.warn('Failed to delete old file from Cloudinary:', error)
@@ -381,7 +396,8 @@ export async function DELETE(request: NextRequest) {
         if (isProduction && image.url.includes('cloudinary.com')) {
           // Producción: Eliminar de Cloudinary
           const publicId = image.url.split('/').slice(-2).join('/').split('.')[0]
-          await cloudinary.uploader.destroy(publicId).catch(() => {})
+          const resourceType = getCloudinaryResourceType(image.url)
+          await deleteFromCloudinary(publicId, resourceType)
         } else if (!isProduction && image.url.startsWith('/uploads/')) {
           // Desarrollo: Eliminar del sistema de archivos local
           const filePath = path.join(process.cwd(), 'public', image.url)
@@ -399,7 +415,8 @@ export async function DELETE(request: NextRequest) {
       // Eliminar solo el archivo (sin registro en DB)
       if (isProduction && url.includes('cloudinary.com')) {
         const publicId = url.split('/').slice(-2).join('/').split('.')[0]
-        await cloudinary.uploader.destroy(publicId).catch(() => {})
+        const resourceType = getCloudinaryResourceType(url)
+        await deleteFromCloudinary(publicId, resourceType)
       } else if (!isProduction && url.startsWith('/uploads/')) {
         const filePath = path.join(process.cwd(), 'public', url)
         if (existsSync(filePath)) {
