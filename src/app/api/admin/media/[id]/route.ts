@@ -39,9 +39,11 @@ async function deleteFromCloudinary(url: string): Promise<void> {
 
   for (const resourceType of ['image', 'video', 'raw'] as const) {
     const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-    if (result.result === 'ok' || result.result === 'not found') return
+    if (result.result === 'ok') return
+    if (result.result === 'not found') continue
   }
-  throw new Error(`Failed to delete ${publicId} from Cloudinary`)
+  // File not found in any resource type - treat as already deleted
+  return
 }
 
 /**
