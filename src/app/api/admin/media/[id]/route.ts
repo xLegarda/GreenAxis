@@ -27,41 +27,24 @@ function extractCloudinaryPublicId(url: string): string | null {
   }
 }
 
-async function deleteFromCloudinary(url: string): Promise<void> {
+async function deleteFromCloudinary(url: string): Promise<{ success: boolean; details: string }> {
   const cloudinary = configureCloudinary()
-  const config = getCloudinaryConfig()
-  if (!config.api_key || !config.api_secret) {
-    throw new Error('Cloudinary credentials not configured')
-  }
-
   const publicId = extractCloudinaryPublicId(url)
-  if (!publicId) throw new Error(`Could not extract public_id from: ${url}`)
+  if (!publicId) return { success: false, details: 'Could not extract public_id' }
 
-  const isVideo = url.includes('/video/upload/') || /\.(mp4|webm|mov|avi)$/i.test(url)
-  const isAudio = url.includes('/video/upload/') && /\.(mp3|wav|ogg|m4a)$/i.test(url)
+  const logs: string[] = []
 
-  // Try the most likely resource type first based on URL
-  const resourceTypes: ('image' | 'video' | 'raw')[] = isVideo || isAudio
-    ? ['video', 'image', 'raw']
-    : ['image', 'video', 'raw']
-
-  for (const resourceType of resourceTypes) {
+  for (const resourceType of ['image', 'video', 'raw'] as const) {
     try {
       const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-      if (result.result === 'ok') return
-      if (result.result === 'not found') continue
-      // Unexpected result - throw
-      throw new Error(`Cloudinary returned: ${result.result}`)
+      logs.push(`${resourceType}: ${JSON.stringify(result)}`)
+      if (result.result === 'ok') return { success: true, details: logs.join(' | ') }
     } catch (err) {
-      // Only rethrow if it's our own error
-      if ((err as Error).message.includes('Cloudinary returned')) throw err
-      // API error - try next resource type
-      continue
+      logs.push(`${resourceType}: ${(err as Error).message}`)
     }
   }
 
-  // None succeeded - throw error so DB record is not deleted
-  throw new Error(`Could not delete ${publicId} from Cloudinary (tried: ${resourceTypes.join(', ')})`)
+  return { success: false, details: logs.join(' | ') }
 }
 
 /**
@@ -232,8 +215,9 @@ export async function DELETE(
     }
 
     // Delete from Cloudinary
+    let cloudinaryResult = { success: true, details: 'skipped' }
     if (isProduction && media.url.includes('cloudinary.com')) {
-      await deleteFromCloudinary(media.url)
+      cloudinaryResult = await deleteFromCloudinary(media.url)
     }
 
     // Delete SiteImage record from database
@@ -255,7 +239,8 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       deleted: true,
-      message: 'Archivo eliminado correctamente'
+      message: 'Archivo eliminado correctamente',
+      cloudinary: cloudinaryResult
     })
   } catch (error) {
     console.error('Error deleting media:', error)
