@@ -3,23 +3,6 @@ import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { emptyToNull } from '@/lib/cloudinary-config'
 
-function extractPublicId(url: string): string | null {
-  if (!url.includes('cloudinary.com')) return null
-  try {
-    const parts = url.split('/')
-    const uploadIndex = parts.findIndex(p => p === 'upload')
-    if (uploadIndex === -1) return null
-    let start = uploadIndex + 1
-    if (parts[start]?.startsWith('v') && !isNaN(Number(parts[start].substring(1)))) start++
-    const idParts = parts.slice(start)
-    const last = idParts[idParts.length - 1]
-    idParts[idParts.length - 1] = last.split('.')[0]
-    return idParts.join('/')
-  } catch {
-    return null
-  }
-}
-
 export async function POST(request: NextRequest) {
   const admin = await getCurrentAdmin()
   if (!admin) {
@@ -28,22 +11,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { url, label, category } = body
+    const { key, url, label, category } = body
 
-    if (!url) {
-      return NextResponse.json({ error: 'Se requiere url' }, { status: 400 })
+    if (!key || !url) {
+      return NextResponse.json({ error: 'Se requieren key y url' }, { status: 400 })
     }
 
-    // Use Cloudinary public_id as the key so deletion works
-    const cloudinaryPublicId = extractPublicId(url) || body.key || `media-${Date.now()}`
-
     const existingImage = await db.siteImage.findUnique({
-      where: { key: cloudinaryPublicId },
+      where: { key },
     })
 
     if (existingImage) {
       await db.siteImage.update({
-        where: { key: cloudinaryPublicId },
+        where: { key },
         data: {
           url,
           label: label || existingImage.label,
@@ -53,8 +33,8 @@ export async function POST(request: NextRequest) {
     } else {
       await db.siteImage.create({
         data: {
-          key: cloudinaryPublicId,
-          label: label || cloudinaryPublicId,
+          key,
+          label: label || key,
           category: emptyToNull(category) || 'general',
           url,
         },
@@ -64,7 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       url,
-      key: cloudinaryPublicId,
+      key,
       replaced: !!existingImage,
     })
   } catch (error) {
