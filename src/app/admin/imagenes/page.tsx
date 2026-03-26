@@ -270,7 +270,7 @@ export default function ImagenesAdminPage() {
               {uploading ? 'Subiendo archivo...' : 'Arrastra archivos aquí o haz clic para seleccionar'}
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
-              <span><strong>Imágenes:</strong> JPG, PNG, WebP, GIF, SVG | Máx. 5MB</span>
+              <span><strong>Imágenes:</strong> JPG, PNG, WebP, GIF | Máx. 5MB</span>
               <span><strong>Videos:</strong> MP4, WebM, MOV | Máx. 25MB</span>
               <span><strong>Audio:</strong> MP3, WAV, OGG, M4A | Máx. 15MB</span>
             </div>

@@ -232,7 +232,7 @@ export function ImageSelector({
                 {uploading ? 'Subiendo...' : 'Haz clic para subir archivo'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Imágenes: JPG, PNG, WebP, GIF, SVG
+                Imágenes: JPG, PNG, WebP, GIF
               </p>
               <p className="text-xs text-muted-foreground">
                 Videos: MP4, WebM, MOV (máx. 50MB)
