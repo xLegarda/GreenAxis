@@ -3,8 +3,8 @@
  * Tests tasks 4.1 and 4.2 implementation
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs'
+import path from 'path'
 
 // Create a simple test image buffer (1x1 PNG)
 const createTestImage = (name) => {

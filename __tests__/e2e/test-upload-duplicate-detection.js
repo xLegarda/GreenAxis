@@ -3,8 +3,8 @@
  * Tests Task 4.3 implementation
  */
 
-const fs = require('fs')
-const path = require('path')
+import fs from 'fs'
+import path from 'path'
 
 async function testDuplicateDetection() {
   console.log('Testing Upload Endpoint - Duplicate Detection')

@@ -493,7 +493,7 @@ function MediaPickerCompact({
                       >
                         <div className="aspect-square bg-muted rounded flex items-center justify-center overflow-hidden">
                           {item.type === 'image' ? (
-                            // eslint-disable-next-line @next/next/no-img-element
+                             
                             <img
                               src={item.url}
                               alt={item.label}
@@ -644,7 +644,7 @@ function MediaPickerCompact({
                 <div className="flex items-center gap-2">
                   <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
                     {getMediaType(suggestion.url) === 'image' ? (
-                      // eslint-disable-next-line @next/next/no-img-element
+                       
                       <img
                         src={suggestion.url}
                         alt={suggestion.label}

@@ -276,7 +276,7 @@ export function MediaPreviewModal({
               {/* Media Preview - Requirements: 12.1, 12.2, 12.3, 12.4 */}
               <div className="rounded-lg border bg-muted overflow-hidden">
                 {item.type === 'image' && (
-                  // eslint-disable-next-line @next/next/no-img-element
+                   
                   <img
                     src={item.url}
                     alt={item.label}

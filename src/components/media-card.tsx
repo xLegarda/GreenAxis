@@ -159,7 +159,7 @@ export function MediaCard({
         <div className="aspect-square bg-muted flex items-center justify-center relative">
           {item.type === 'image' ? (
             // Lazy loading for images - Requirements: 14.4
-            // eslint-disable-next-line @next/next/no-img-element
+             
             <img
               src={isCloudinaryUrl(item.url) ? getAdminThumbnailUrl(item.url) : item.url}
               alt={item.label}

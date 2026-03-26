@@ -696,7 +696,7 @@ export function MediaPicker({
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
                     {getMediaType(suggestion.url) === 'image' ? (
-                      // eslint-disable-next-line @next/next/no-img-element
+                       
                       <img
                         src={suggestion.url}
                         alt={suggestion.label}

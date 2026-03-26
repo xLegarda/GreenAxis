@@ -167,7 +167,7 @@ export function ImageSelector({
                 muted
               />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
+               
               <img 
                 src={value} 
                 alt="Imagen seleccionada" 
@@ -269,7 +269,7 @@ export function ImageSelector({
                         <Video className="h-12 w-12 text-white/60" />
                       </div>
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
+                       
                       <img 
                         src={image.url} 
                         alt={image.label}
@@ -341,7 +341,7 @@ export function ImageSelector({
                       <Video className="h-12 w-12 text-white/60" />
                     </div>
                   ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
+                     
                     <img 
                       src={deleteConfirm.url} 
                       alt={deleteConfirm.label}
