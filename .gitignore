@@ -8,6 +8,7 @@
 DOCUMENTACION-PROYECTO.md
 *.tar
 /.md
+/.opencode
 
 # dependencies
 node_modules
