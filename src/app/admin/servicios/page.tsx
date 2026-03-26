@@ -265,8 +265,8 @@ export default function ServiciosAdminPage() {
     shortEditorDataRef.current = null
   }
 
-  const openEditDialog = (service: Service) => {
-    let blocksData = null
+   const openEditDialog = (service: Service) => {
+    let blocksData: { blocks: { type: string; data: { text: string } }[] } | null = null
     if (service.blocks) {
       try {
         blocksData = JSON.parse(service.blocks)

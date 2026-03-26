@@ -119,13 +119,6 @@ function MediaPickerCompact({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
-  // Fetch media items when library tab is active
-  useEffect(() => {
-    if (state.activeTab === 'library' && showLibrary) {
-      fetchMediaItems()
-    }
-  }, [state.activeTab])
-
   /**
    * Fetch only 4 most recent media items for compact display
    */
@@ -169,6 +162,13 @@ function MediaPickerCompact({
       setState(prev => ({ ...prev, loading: false }))
     }
   }
+
+  // Fetch media items when library tab is active
+  useEffect(() => {
+    if (state.activeTab === 'library' && showLibrary) {
+      fetchMediaItems()
+    }
+  }, [state.activeTab])
 
   /**
    * Handle file upload with progress tracking and duplicate detection

@@ -136,13 +136,6 @@ export function MediaPicker({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
-  // Fetch media items when library tab is active
-  useEffect(() => {
-    if (state.activeTab === 'library' && showLibrary) {
-      fetchMediaItems()
-    }
-  }, [state.activeTab, state.searchQuery, state.selectedCategory, state.page])
-
   /**
    * Fetch media items from API
    */
@@ -195,6 +188,13 @@ export function MediaPicker({
       setState(prev => ({ ...prev, loading: false }))
     }
   }
+
+  // Fetch media items when library tab is active
+  useEffect(() => {
+    if (state.activeTab === 'library' && showLibrary) {
+      fetchMediaItems()
+    }
+  }, [state.activeTab, state.searchQuery, state.selectedCategory, state.page])
 
   /**
    * Handle file upload with progress tracking and duplicate detection

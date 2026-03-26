@@ -109,7 +109,14 @@ export function MediaCard({
   showActions = true
 }: MediaCardProps) {
   const [isHovered, setIsHovered] = useState(false)
-  const Icon = getMediaIcon(item.type)
+
+  const renderIcon = () => {
+    switch (item.type) {
+      case 'video': return <Video className="h-12 w-12 text-muted-foreground" />
+      case 'audio': return <Music className="h-12 w-12 text-muted-foreground" />
+      default: return <ImageIcon className="h-12 w-12 text-muted-foreground" />
+    }
+  }
 
   /**
    * Handle select action
@@ -161,7 +168,7 @@ export function MediaCard({
             />
           ) : (
             // Video/Audio icon - Requirements: 1.3
-            <Icon className="h-12 w-12 text-muted-foreground" />
+            renderIcon()
           )}
 
           {/* File Type Icon Badge for videos and audio - Requirements: 1.3 */}
@@ -170,7 +177,7 @@ export function MediaCard({
               variant="secondary" 
               className="absolute top-2 left-2 text-xs flex items-center gap-1"
             >
-              <Icon className="h-3 w-3" />
+              {item.type === 'video' ? <Video className="h-3 w-3" /> : <Music className="h-3 w-3" />}
               {item.type === 'video' ? 'Video' : 'Audio'}
             </Badge>
           )}
