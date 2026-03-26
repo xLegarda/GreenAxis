@@ -189,7 +189,7 @@ const createMediaUploader = (
     const maxSizeBytes = maxSizeMB * 1024 * 1024
     if (file.size > maxSizeBytes) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      alert(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+      alert(`El archivo es demasiado grande (${fileSizeMB} MB). Súbelo desde la biblioteca para evitar errores.`)
       return { success: 0 }
     }
 
@@ -208,7 +208,7 @@ const createMediaUploader = (
         return { success: 1, file: { url: data.url } }
       } else if (response.status === 413) {
         const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-        alert(`El archivo (${fileSizeMB} MB) es demasiado grande para el plan actual.\n\n💡 Alternativa: Sube el ${type} directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`)
+        alert(`El archivo (${fileSizeMB} MB) es demasiado grande. Súbelo desde la biblioteca para evitar errores.`)
       }
     } catch (e) {
       console.error(`${type} upload error:`, e)

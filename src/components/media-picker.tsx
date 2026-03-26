@@ -206,9 +206,7 @@ export function MediaPicker({
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
       setState(prev => ({ 
         ...prev, 
-        error: `El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual. 
-
-💡 Alternativa: Si no puedes comprimir más el archivo, súbelo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`
+        error: `El archivo es demasiado grande (${fileSizeMB} MB). Súbelo desde la biblioteca para evitar errores.`
       }))
       return
     }
@@ -249,9 +247,7 @@ export function MediaPicker({
           } else if (xhr.status === 413) {
             // Payload Too Large
             const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB) para el plan actual.
-
-💡 Alternativa: Sube el archivo directamente a Cloudinary Console (https://console.cloudinary.com) y copia la URL para usarla aquí.`))
+            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB). Súbelo desde la biblioteca para evitar errores.`))
           } else {
             try {
               const errorData = JSON.parse(xhr.responseText)
