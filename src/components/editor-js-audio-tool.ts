@@ -188,7 +188,7 @@ export default class AudioTool {
       if (!file) return
 
       if (file.size > 15 * 1024 * 1024) {
-        alert('El audio es demasiado grande (máx. 15MB en producción).\n\n💡 Para audios más grandes:\n1. Ve a https://console.cloudinary.com\n2. Sube tu audio en "Media Library"\n3. Copia la URL y úsala directamente')
+        alert('El audio es demasiado grande. Súbelo desde la biblioteca.')
         return
       }
 
@@ -235,7 +235,7 @@ export default class AudioTool {
       }
 
       if (file.size > 15 * 1024 * 1024) {
-        alert('El audio es demasiado grande (máx. 15MB en producción).\n\n💡 Para audios más grandes:\n1. Ve a https://console.cloudinary.com\n2. Sube tu audio en "Media Library"\n3. Copia la URL y úsala directamente')
+        alert('El audio es demasiado grande. Súbelo desde la biblioteca.')
         return
       }
 

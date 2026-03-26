@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
       const maxMB = Math.floor(maxSize / (1024 * 1024))
       const errorMessage = `El archivo es demasiado grande. Máximo ${maxMB}MB para ${fileCategory === 'video' ? 'videos' : fileCategory === 'audio' ? 'audios' : 'imágenes'}.`
       const helpMessage = isProduction 
-        ? ` Para archivos más grandes, súbelos manualmente a Cloudinary: https://console.cloudinary.com/console/c-${process.env.CLOUDINARY_CLOUD_NAME || 'tu-cloud'}/media_library`
+        ? ` Para archivos más grandes, súbelo desde la biblioteca.`
         : ''
       
       return NextResponse.json({ 
