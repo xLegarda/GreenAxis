@@ -32,10 +32,14 @@ async function deleteFromCloudinary(url: string): Promise<{ success: boolean; de
   const publicId = extractCloudinaryPublicId(url)
   if (!publicId) return { success: false, details: 'Could not extract public_id' }
 
-  const isVideo = url.includes('/video/upload/')
+  // Detect resource type from URL
+  let resourceType = 'image'
+  if (url.includes('/video/upload/')) {
+    resourceType = 'video'
+  } else if (url.includes('/raw/upload/')) {
+    resourceType = 'raw'
+  }
 
-  // Use Admin API to delete (more reliable than SDK destroy)
-  const resourceType = isVideo ? 'video' : 'image'
   const apiUrl = `https://api.cloudinary.com/v1_1/${config.cloud_name}/resources/${resourceType}`
 
   try {
