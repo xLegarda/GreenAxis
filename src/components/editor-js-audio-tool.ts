@@ -188,7 +188,19 @@ export default class AudioTool {
       if (!file) return
 
       if (file.size > 15 * 1024 * 1024) {
-        alert('El audio es demasiado grande. Súbelo desde la biblioteca.')
+        const isDark = document.documentElement.classList.contains('dark')
+        container.innerHTML = `
+          <div style="text-align: center; padding: 30px 20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="margin-bottom: 12px;">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p style="color: #f59e0b; font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">Archivo demasiado grande</p>
+            <p style="color: ${isDark ? '#9ca3af' : '#6b7280'}; font-size: 14px; margin: 0 0 16px 0;">Máximo 15MB para audios</p>
+            <p style="color: ${isDark ? '#9ca3af' : '#6b7280'}; font-size: 13px; margin: 0;">Sube este archivo desde la biblioteca</p>
+          </div>
+        `
         return
       }
 
@@ -235,7 +247,19 @@ export default class AudioTool {
       }
 
       if (file.size > 15 * 1024 * 1024) {
-        alert('El audio es demasiado grande. Súbelo desde la biblioteca.')
+        const isDark = document.documentElement.classList.contains('dark')
+        container.innerHTML = `
+          <div style="text-align: center; padding: 30px 20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="margin-bottom: 12px;">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p style="color: #f59e0b; font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">Archivo demasiado grande</p>
+            <p style="color: ${isDark ? '#9ca3af' : '#6b7280'}; font-size: 14px; margin: 0 0 16px 0;">Máximo 15MB para audios</p>
+            <p style="color: ${isDark ? '#9ca3af' : '#6b7280'}; font-size: 13px; margin: 0;">Sube este archivo desde la biblioteca</p>
+          </div>
+        `
         return
       }
 
