@@ -146,7 +146,7 @@ export function Footer({ config, services }: FooterProps) {
                 displayServices.map((service) => (
                   <li key={service.id}>
                     <Link 
-                      href={`/servicios#servicio-${service.id}`}
+                      href={service.slug ? `/servicios/${service.slug}` : `/servicios#servicio-${service.id}`}
                       className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group"
                     >
                       <span className="w-0 group-hover:w-2 transition-all duration-200 h-0.5 bg-[#8BC34A] dark:bg-[#6BBE45] rounded-full" />

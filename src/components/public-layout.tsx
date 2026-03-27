@@ -16,7 +16,8 @@ export async function PublicLayout({ children }: PublicLayoutProps) {
   // Mapear servicios para el footer
   const footerServices = services.map(s => ({
     id: s.id,
-    title: s.title
+    title: s.title,
+    slug: s.slug || undefined
   }))
   
   // Preparar config para el footer
