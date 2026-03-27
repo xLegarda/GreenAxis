@@ -417,13 +417,13 @@ export async function DELETE(request: NextRequest) {
       })
       
       if (image) {
-        // Eliminar archivo según el entorno
-        if (isProduction && image.url.includes('cloudinary.com')) {
-          // Producción: Eliminar de Cloudinary
+        // Eliminar archivo según su origen en lugar de el entorno
+        if (image.url.includes('cloudinary.com')) {
+          // Eliminar de Cloudinary
           const publicId = image.url.split('/').slice(-2).join('/').split('.')[0]
           const resourceType = getCloudinaryResourceType(image.url)
           await deleteFromCloudinary(publicId, resourceType)
-        } else if (!isProduction && image.url.startsWith('/uploads/')) {
+        } else if (image.url.startsWith('/uploads/')) {
           // Desarrollo: Eliminar del sistema de archivos local
           const filePath = path.join(process.cwd(), 'public', image.url)
           if (existsSync(filePath)) {
@@ -438,11 +438,11 @@ export async function DELETE(request: NextRequest) {
       }
     } else if (url) {
       // Eliminar solo el archivo (sin registro en DB)
-      if (isProduction && url.includes('cloudinary.com')) {
+      if (url.includes('cloudinary.com')) {
         const publicId = url.split('/').slice(-2).join('/').split('.')[0]
         const resourceType = getCloudinaryResourceType(url)
         await deleteFromCloudinary(publicId, resourceType)
-      } else if (!isProduction && url.startsWith('/uploads/')) {
+      } else if (url.startsWith('/uploads/')) {
         const filePath = path.join(process.cwd(), 'public', url)
         if (existsSync(filePath)) {
           await unlink(filePath).catch(() => {})

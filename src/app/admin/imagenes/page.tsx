@@ -15,6 +15,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { Progress } from '@/components/ui/progress'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { ExternalMediaForm } from '@/components/external-media-form'
@@ -62,6 +63,8 @@ export default function ImagenesAdminPage() {
   const [deleting, setDeleting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [externalFormOpen, setExternalFormOpen] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [duplicateWarning, setDuplicateWarning] = useState<{ file: File; suggestions: SiteImage[] } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -87,33 +90,109 @@ export default function ImagenesAdminPage() {
     await processFile(file)
   }
 
-  const processFile = async (file: File) => {
-    setUploading(true)
+  const processFile = async (file: File, skipDuplicateCheck = false) => {
+    const label = file.name.replace(/\.[^/.]+$/, '')
 
-    try {
-      const { openCloudinaryUpload } = await import('@/lib/cloudinary-upload')
-      const url = await openCloudinaryUpload({ folder: 'green-axis', resourceType: 'auto' })
-
-      if (!url) {
-        setUploading(false)
+    // 0. Detectar duplicados localmente ya que tenemos todas las imagenes cacheadas
+    if (!skipDuplicateCheck) {
+      const normalizedName = label.toLowerCase().replace(/[-_\s]+/g, '-').trim()
+      const actualDuplicates = images.filter(img => {
+        const itemNormalized = img.label.toLowerCase().replace(/[-_\s]+/g, '-').trim()
+        return itemNormalized === normalizedName
+      })
+      if (actualDuplicates.length > 0) {
+        setDuplicateWarning({ file, suggestions: actualDuplicates })
         return
       }
+    }
 
+    setUploading(true)
+    setUploadProgress(0)
+
+    try {
       const mediaKey = `media-${Date.now()}`
-      const label = file.name.replace(/\.[^/.]+$/, '')
 
-      await fetch('/api/upload/callback', {
+      // 1. Pedir a TU servidor una firma válida (solo envía metadatos, no sobrepasa a Vercel)
+      const signRes = await fetch('/api/upload/sign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: mediaKey, url, label, category: 'general' }),
+        body: JSON.stringify({ key: mediaKey, label, category: 'general' }),
       })
+      
+      if (!signRes.ok) throw new Error('Error al obtener firma de subida (configuración de backend)')
+      const signData = await signRes.json()
+
+      // 2. Preparar el formulario para enviarlo directo a Cloudinary
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('api_key', signData.api_key)
+      formData.append('timestamp', signData.timestamp)
+      formData.append('signature', signData.signature)
+      formData.append('folder', signData.folder)
+      formData.append('public_id', signData.public_id)
+      
+      // Determinar endpoint según el tipo
+      const isVideoOrAudio = file.type.startsWith('video/') || file.type.startsWith('audio/')
+      const resourceType = isVideoOrAudio ? 'video' : 'image'
+
+      // 3. Crear XMLHttpRequest para capturar el progreso real en vivo contra Cloudinary
+      const xhr = new XMLHttpRequest()
+      
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(percentComplete)
+        }
+      })
+
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText))
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText)
+              reject(new Error(errorData.error?.message || 'Error al subir a Cloudinary'))
+            } catch {
+              reject(new Error(`Error ${xhr.status}: Error al subir archivo`))
+            }
+          }
+        })
+        xhr.addEventListener('error', () => reject(new Error('Error de red al subir directo a Cloudinary')))
+        xhr.addEventListener('abort', () => reject(new Error('Subida cancelada')))
+      })
+
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${signData.cloud_name}/${resourceType}/upload`)
+      xhr.send(formData)
+
+      const uploadData = await uploadPromise
+
+      // 4. Informar a la BD que la subida finalizó bien
+      const callbackRes = await fetch('/api/upload/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          key: mediaKey, 
+          url: uploadData.secure_url, 
+          label, 
+          category: 'general' 
+        }),
+      })
+
+      if (!callbackRes.ok) throw new Error('Error al guardar en base de datos')
 
       toast({ title: 'Archivo subido correctamente' })
       fetchImages()
     } catch (error) {
-      toast({ title: 'Error al subir archivo', variant: 'destructive' })
+      console.error('Upload error:', error)
+      toast({ 
+        title: 'Error al subir archivo', 
+        description: error instanceof Error ? error.message : 'Desconocido',
+        variant: 'destructive' 
+      })
     } finally {
       setUploading(false)
+      setUploadProgress(100)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
@@ -269,11 +348,22 @@ export default function ImagenesAdminPage() {
             <p className="text-sm font-medium mb-2">
               {uploading ? 'Subiendo archivo...' : 'Arrastra archivos aquí o haz clic para seleccionar'}
             </p>
-            <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
-              <span><strong>Imágenes:</strong> JPG, PNG, WebP, GIF | Máx. 5MB</span>
-              <span><strong>Videos:</strong> MP4, WebM, MOV | Máx. 25MB</span>
-              <span><strong>Audio:</strong> MP3, WAV, OGG, M4A | Máx. 15MB</span>
-            </div>
+            {uploading && (
+              <div className="max-w-md mx-auto my-4 space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Subiendo directo a Cloudinary...</span>
+                  <span className="font-medium text-foreground">{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+            {!uploading && (
+              <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+                <span><strong>Imágenes:</strong> JPG, PNG, WebP, GIF | Máx. 5MB</span>
+                <span><strong>Videos:</strong> MP4, WebM, MOV | Máx. 25MB</span>
+                <span><strong>Audio:</strong> MP3, WAV, OGG, M4A | Máx. 15MB</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -532,6 +622,58 @@ export default function ImagenesAdminPage() {
           fetchImages()
         }}
       />
+      
+      {/* Duplicate Warning Dialog */}
+      <Dialog open={!!duplicateWarning} onOpenChange={(open) => !open && setDuplicateWarning(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Archivo similar encontrado
+            </DialogTitle>
+            <DialogDescription>
+              Ya existen archivos con ese nombre en la biblioteca. ¿Qué deseas hacer?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4 max-h-[40vh] overflow-y-auto">
+            <p className="text-sm font-medium">Archivos similares en la biblioteca:</p>
+            <div className="grid grid-cols-2 gap-3">
+              {duplicateWarning?.suggestions.map((suggestion) => (
+                <div key={suggestion.id} className="border rounded-md overflow-hidden bg-muted/30">
+                  <div className="aspect-video bg-black/5 flex items-center justify-center relative">
+                    {isVideoUrl(suggestion.url) ? (
+                      <Video className="h-8 w-8 text-black/40" />
+                    ) : isAudioUrl(suggestion.url) ? (
+                      <div className="text-2xl">🎵</div>
+                    ) : (
+                      <img src={suggestion.url} alt={suggestion.label} className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="p-2 text-xs truncate">
+                    {suggestion.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDuplicateWarning(null)}>
+              Cancelar subida
+            </Button>
+            <Button onClick={() => {
+              if (duplicateWarning) {
+                const file = duplicateWarning.file
+                setDuplicateWarning(null)
+                processFile(file, true)
+              }
+            }}>
+              Subir de todas formas
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

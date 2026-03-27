@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
-import { emptyToNull } from '@/lib/cloudinary-config'
+import { emptyToNull, configureCloudinary } from '@/lib/cloudinary-config'
+
+function getCloudinaryResourceType(url: string): string {
+  const match = url.match(/\/res\.cloudinary\.com\/[^/]+\/([^/]+)\//)
+  return match ? match[1] : 'image'
+}
 
 export async function POST(request: NextRequest) {
   const admin = await getCurrentAdmin()
@@ -22,6 +27,24 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingImage) {
+      // Intentar borrar en Cloudinary el anterior solo si cambia de URL (ej: de imagen a video).
+      // Si la URL nueva es exactamente la anterior, fue sobrescrito automáticamente.
+      if (existingImage.url !== url && existingImage.url.includes('cloudinary.com')) {
+        try {
+          const cloudinary = configureCloudinary()
+          const publicId = existingImage.url.split('/').slice(-2).join('/').split('.')[0]
+          const resourceType = getCloudinaryResourceType(existingImage.url)
+          await new Promise<void>((resolve) => {
+            cloudinary.uploader.destroy(publicId, { resource_type: resourceType }, (error: any) => {
+              if (error) console.warn('Failed to delete old file from Cloudinary:', error)
+              resolve()
+            })
+          })
+        } catch (error) {
+          console.warn('Failed to delete old file:', error)
+        }
+      }
+
       await db.siteImage.update({
         where: { key },
         data: {

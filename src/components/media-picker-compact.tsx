@@ -174,13 +174,22 @@ function MediaPickerCompact({
    * Handle file upload with progress tracking and duplicate detection
    */
   const handleFileUpload = async (file: File, skipDuplicateCheck = false) => {
-    // Validate file size before uploading
-    const maxSizeBytes = maxSizeMB * 1024 * 1024
-    if (file.size > maxSizeBytes) {
+    // Limits de Cloudinary Gratutito + Limite configurado
+    const isImage = file.type.startsWith('image/')
+    const cloudinaryMaxMB = isImage ? 10 : 100
+    const actualMaxMB = Math.min(maxSizeMB, cloudinaryMaxMB)
+    const actualMaxBytes = actualMaxMB * 1024 * 1024
+
+    if (file.size > actualMaxBytes) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      const isCloudinaryLimit = actualMaxMB === cloudinaryMaxMB && maxSizeMB > cloudinaryMaxMB
+      const limitReason = isCloudinaryLimit 
+        ? `límite de la versión gratuita de Cloudinary para ${isImage ? 'imágenes' : 'videos/audios'}`
+        : 'límite configurado en este componente'
+
       setState(prev => ({ 
         ...prev, 
-        error: `El archivo es demasiado grande (${fileSizeMB} MB). Súbelo desde la biblioteca para evitar errores.`
+        error: `El archivo es demasiado grande (${fileSizeMB} MB). El límite máximo permitido es de ${actualMaxMB} MB (${limitReason}).`
       }))
       return
     }
@@ -188,24 +197,59 @@ function MediaPickerCompact({
     // Reset error state
     setState(prev => ({ ...prev, uploading: true, uploadProgress: 0, error: null }))
 
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    // Use fixedKey if provided, otherwise generate unique key
     const mediaKey = fixedKey || `${keyPrefix}-${Date.now()}`
-    formData.append('key', mediaKey)
-    formData.append('label', file.name.replace(/\.[^/.]+$/, ''))
-    formData.append('category', category)
-    
-    if (skipDuplicateCheck) {
-      formData.append('skipDuplicateCheck', 'true')
-    }
+    const label = file.name.replace(/\.[^/.]+$/, '')
 
     try {
-      // Create XMLHttpRequest for progress tracking
+      // 1. Duplicate detection check via query
+      if (!skipDuplicateCheck) {
+        const dupRes = await fetch(`/api/admin/media?search=${encodeURIComponent(label)}`)
+        if (dupRes.ok) {
+          const dupData = await dupRes.json()
+          const normalizedName = label.toLowerCase().replace(/[-_\s]+/g, '-').trim()
+          const actualDuplicates = dupData.items.filter((item: any) => {
+            const itemNormalized = item.label.toLowerCase().replace(/[-_\s]+/g, '-').trim()
+            return itemNormalized === normalizedName && item.key !== fixedKey
+          })
+          
+          if (actualDuplicates.length > 0) {
+            setState(prev => ({ 
+              ...prev, 
+              uploading: false,
+              uploadProgress: 0,
+              duplicateWarning: {
+                file,
+                suggestions: actualDuplicates
+              }
+            }))
+            return
+          }
+        }
+      }
+
+      // 2. Pedir firma segura a servidor
+      const signRes = await fetch('/api/upload/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: mediaKey, label, category }),
+      })
+      if (!signRes.ok) throw new Error('Error al obtener firma de subida (asegúrate de que está configurado correctamente)')
+      const signData = await signRes.json()
+
+      const isVideoOrAudio = file.type.startsWith('video/') || file.type.startsWith('audio/')
+      const resourceType = isVideoOrAudio ? 'video' : 'image'
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('api_key', signData.api_key)
+      formData.append('timestamp', signData.timestamp)
+      formData.append('signature', signData.signature)
+      formData.append('folder', signData.folder)
+      formData.append('public_id', signData.public_id)
+
+      // 3. Create XMLHttpRequest for progress tracking against Cloudinary directly
       const xhr = new XMLHttpRequest()
       
-      // Track upload progress
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
           const percentComplete = Math.round((e.loaded / e.total) * 100)
@@ -213,63 +257,53 @@ function MediaPickerCompact({
         }
       })
 
-      // Handle response
       const uploadPromise = new Promise<any>((resolve, reject) => {
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText))
-          } else if (xhr.status === 413) {
-            // Payload Too Large
-            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-            reject(new Error(`El archivo es demasiado grande (${fileSizeMB} MB). Súbelo desde la biblioteca para evitar errores.`))
           } else {
             try {
               const errorData = JSON.parse(xhr.responseText)
-              const errorMsg = errorData.error || xhr.responseText || 'Error desconocido'
-              const details = errorData.details ? `\n\nDetalles: ${errorData.details}` : ''
-              reject(new Error(errorMsg + details))
+              reject(new Error(errorData.error?.message || 'Error al subir a Cloudinary'))
             } catch {
-              reject(new Error(`Error ${xhr.status}: ${xhr.responseText || 'Error al subir archivo'}`))
+              reject(new Error(`Error ${xhr.status}: Error al subir archivo`))
             }
           }
         })
-        xhr.addEventListener('error', () => reject(new Error('Error de red al subir archivo')))
+        xhr.addEventListener('error', () => reject(new Error('Error de red al subir directo a Cloudinary')))
         xhr.addEventListener('abort', () => reject(new Error('Subida cancelada')))
       })
 
-      xhr.open('POST', '/api/upload')
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${signData.cloud_name}/${resourceType}/upload`)
       xhr.send(formData)
 
-      const data = await uploadPromise
+      const uploadData = await uploadPromise
 
-      // Check for duplicate warning
-      if (!data.success && data.duplicate?.exists) {
-        setState(prev => ({ 
-          ...prev, 
-          uploading: false,
-          uploadProgress: 0,
-          duplicateWarning: {
-            file,
-            suggestions: data.duplicate.suggestions
-          }
-        }))
-        return
-      }
+      // 4. Informar al backend
+      const callbackRes = await fetch('/api/upload/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          key: mediaKey, 
+          url: uploadData.secure_url, 
+          label, 
+          category 
+        }),
+      })
 
-      // Success - update with new URL
-      if (data.success) {
-        onChange(data.url)
-        setState(prev => ({ 
-          ...prev, 
-          uploading: false,
-          uploadProgress: 100,
-          error: null
-        }))
-        
-        // Refresh library if on library tab
-        if (state.activeTab === 'library') {
-          fetchMediaItems()
-        }
+      if (!callbackRes.ok) throw new Error('Error al guardar registro del archivo subido en tu base de datos')
+
+      // 5. Done
+      onChange(uploadData.secure_url)
+      setState(prev => ({ 
+        ...prev, 
+        uploading: false,
+        uploadProgress: 100,
+        error: null
+      }))
+      
+      if (state.activeTab === 'library') {
+        fetchMediaItems()
       }
     } catch (error) {
       console.error('Upload error:', error)

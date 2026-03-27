@@ -85,40 +85,92 @@ export function ImageSelector({
     const file = e.target.files?.[0]
     if (!file) return
 
-    setUploading(true)
-    const formData = new FormData()
-    formData.append('file', file)
-    // Si hay fixedKey, usarlo para sobrescribir; sino generar key única
-    const imageKey = fixedKey || `${keyPrefix}-${Date.now()}`
-    formData.append('key', imageKey)
-    formData.append('label', file.name.replace(/\.[^/.]+$/, ''))
-    formData.append('category', category)
+    // Limites de Cloudinary Gratuitito
+    const isImage = file.type.startsWith('image/')
+    const cloudinaryMaxMB = isImage ? 10 : 100
+    if (file.size > cloudinaryMaxMB * 1024 * 1024) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      toast({ 
+        title: 'Archivo demasiado grande', 
+        description: `Tu archivo pesa ${fileSizeMB} MB. El límite máximo permitido es de ${cloudinaryMaxMB} MB (Límite de la versión gratuita de Cloudinary para ${isImage ? 'imágenes' : 'videos'}).`,
+        variant: 'destructive' 
+      })
+      if (e.target) e.target.value = ''
+      return
+    }
 
+    setUploading(true)
+    
     try {
-      const response = await fetch('/api/upload', {
+      // 1. Determinar key a usar
+      const imageKey = fixedKey || `${keyPrefix}-${Date.now()}`
+      const label = file.name.replace(/\.[^/.]+$/, '')
+
+      // 2. Pedir firma segura a tu servidor Next.js
+      const signRes = await fetch('/api/upload/sign', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: imageKey, label, category }),
+      })
+      
+      if (!signRes.ok) throw new Error('Error al obtener firma de subida')
+      const signData = await signRes.json()
+
+      // 3. Preparar los datos reales para Cloudinary
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('api_key', signData.api_key)
+      uploadFormData.append('timestamp', signData.timestamp)
+      uploadFormData.append('signature', signData.signature)
+      uploadFormData.append('folder', signData.folder)
+      uploadFormData.append('public_id', signData.public_id)
+
+      const isVideoOrAudio = file.type.startsWith('video/') || file.type.startsWith('audio/')
+      const resourceType = isVideoOrAudio ? 'video' : 'image'
+
+      // 4. Subir a Cloudinary (bypassa a Vercel 100%)
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${signData.cloud_name}/${resourceType}/upload`,
+        {
+          method: 'POST',
+          body: uploadFormData,
+        }
+      )
+
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json()
+        throw new Error(errorData.error?.message || 'Error al subir a Cloudinary')
+      }
+      const uploadData = await uploadRes.json()
+
+      // 5. Informar a la BD que la subida finalizó y es oficial
+      const callbackRes = await fetch('/api/upload/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          key: imageKey, 
+          url: uploadData.secure_url, 
+          label, 
+          category 
+        }),
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        onChange(data.url)
-        toast({ title: 'Archivo subido correctamente' })
-      } else {
-        const error = await response.json()
-        toast({ 
-          title: 'Error al subir archivo', 
-          description: error.error,
-          variant: 'destructive' 
-        })
-      }
+      if (!callbackRes.ok) throw new Error('Error al guardar en base de datos')
+
+      // Éxito
+      onChange(uploadData.secure_url)
+      toast({ title: 'Archivo subido correctamente a Cloudinary' })
+
     } catch (error) {
+      console.error('Upload Error:', error)
       toast({ 
         title: 'Error al subir archivo', 
+        description: error instanceof Error ? error.message : 'Error desconocido',
         variant: 'destructive' 
       })
     } finally {
       setUploading(false)
+      // resetear input (aunque en este componente no hay ref, react re-renderiza todo igual si cambia value)
     }
   }
 
