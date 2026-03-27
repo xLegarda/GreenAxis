@@ -150,10 +150,15 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-accent/30 flex overflow-x-hidden">
       {/* Session expired overlay */}
-      {sessionExpired && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center space-y-5">
-            <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto">
+      <Dialog open={sessionExpired} onOpenChange={() => {}}>
+        <DialogContent 
+          showCloseButton={false} 
+          className="sm:max-w-sm !z-[10001] border-none"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <div className="flex flex-col items-center text-center space-y-5 py-4">
+            <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
               <LockKeyhole className="h-8 w-8 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
@@ -172,8 +177,8 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
               </Link>
             </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r shrink-0">
         <div className="p-4 border-b">
