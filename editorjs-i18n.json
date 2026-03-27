@@ -14,7 +14,7 @@
       "article:modified_time": "2025-09-15T17:51:30+00:00",
       "og:title": "Internationalization",
       "og:type": "article",
-      "viewport": "width=device-width, initial-scale=1.0, maximum-scale=1.0"
+      "viewport": "width=device-width, initial-scale=1.0, maximum-scale=5.0"
     },
     "title": "Internationalization",
     "url": "https://editorjs.io/i18n/",
