@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateAdmin, createSession } from '@/lib/auth'
+import { z } from 'zod'
 
 // Rate limiting dual: IP + Usuario
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>()
@@ -29,20 +30,22 @@ function checkRateLimit(key: string, maxAttempts: number) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password } = body
+    
+    // Definimos el schema de validación con Zod
+    const loginSchema = z.object({
+      email: z.string({ message: 'Email y contraseña son requeridos' }).email('Formato de email inválido'),
+      password: z.string({ message: 'Email y contraseña son requeridos' }).min(1, 'Email y contraseña son requeridos'),
+    })
 
-    if (!email || !password) {
+    const validationResult = loginSchema.safeParse(body)
+    
+    if (!validationResult.success) {
       return NextResponse.json({
-        error: 'Email y contraseña son requeridos'
+        error: validationResult.error.issues[0].message
       }, { status: 400 })
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({
-        error: 'Formato de email inválido'
-      }, { status: 400 })
-    }
+    const { email, password } = validationResult.data
 
     const ip = request.headers.get('x-real-ip') ??
            request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??

@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { z } from 'zod'
+
+const legalSchema = z.object({
+  slug: z.string({ message: 'El slug es requerido' }).min(1, 'El slug es requerido'),
+  title: z.string({ message: 'El título es requerido' }).min(1, 'El título es requerido'),
+  content: z.string().nullable().optional(),
+  blocks: z.string().nullable().optional(),
+  manualDate: z.string().nullable().optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,27 +61,28 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { slug, title, content, blocks, manualDate } = body
     
-    if (!slug || !title) {
-      return NextResponse.json({ error: 'Slug y título son requeridos' }, { status: 400 })
+    const validationResult = legalSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
     }
+    const val = validationResult.data
     
     // Upsert: crear si no existe, actualizar si existe
     const page = await db.legalPage.upsert({
-      where: { slug },
+      where: { slug: val.slug },
       create: { 
-        slug, 
-        title, 
-        content: content || '', 
-        blocks: blocks || null,
-        manualDate: manualDate || null 
+        slug: val.slug, 
+        title: val.title, 
+        content: val.content || '', 
+        blocks: val.blocks || null,
+        manualDate: val.manualDate || null 
       },
       update: { 
-        title, 
-        content: content || '', 
-        blocks: blocks || null,
-        manualDate: manualDate || null 
+        title: val.title, 
+        content: val.content || '', 
+        blocks: val.blocks || null,
+        manualDate: val.manualDate || null 
       }
     })
     

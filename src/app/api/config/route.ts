@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentAdmin } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
+import { z } from 'zod'
+
+const configSchema = z.object({
+  siteName: z.string().optional(),
+  siteSlogan: z.string().nullable().optional(),
+  siteDescription: z.string().nullable().optional(),
+  whatsappMessage: z.string().nullable().optional(),
+  whatsappShowBubble: z.boolean().optional(),
+})
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +45,13 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
+    
+    const validationResult = configSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
     const config = await db.platformConfig.findFirst()
 
     if (!config) {
@@ -45,11 +61,11 @@ export async function PUT(request: NextRequest) {
     const updated = await db.platformConfig.update({
       where: { id: config.id },
       data: {
-        siteName: body.siteName,
-        siteSlogan: body.siteSlogan,
-        siteDescription: body.siteDescription,
-        whatsappMessage: body.whatsappMessage,
-        whatsappShowBubble: body.whatsappShowBubble,
+        siteName: val.siteName,
+        siteSlogan: val.siteSlogan,
+        siteDescription: val.siteDescription,
+        whatsappMessage: val.whatsappMessage,
+        whatsappShowBubble: val.whatsappShowBubble,
       }
     })
 

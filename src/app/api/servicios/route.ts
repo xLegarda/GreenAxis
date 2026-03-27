@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { z } from 'zod'
+
+const serviceSchema = z.object({
+  id: z.string().optional(),
+  title: z.string({ message: 'El título es requerido' }).min(1, 'El título es requerido'),
+  slug: z.string().nullable().optional(),
+  regenerateSlug: z.boolean().optional(),
+  description: z.string().nullable().optional(),
+  shortBlocks: z.string().nullable().optional(),
+  content: z.string().nullable().optional(),
+  blocks: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
+  order: z.number().optional().default(0),
+  active: z.boolean().optional().default(true),
+  featured: z.boolean().optional().default(false),
+  showSummary: z.boolean().optional().default(true),
+})
 
 // Helper para generar slug
 function generateSlug(title: string): string {
@@ -36,7 +54,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    let slug = body.slug || generateSlug(body.title)
+    const validationResult = serviceSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
+    let slug = val.slug || generateSlug(val.title)
 
     // Verificar si el slug ya existe
     const existingSlug = await db.service.findUnique({ where: { slug } })
@@ -46,18 +70,18 @@ export async function POST(request: NextRequest) {
 
     const service = await db.service.create({
       data: {
-        title: body.title,
+        title: val.title,
         slug,
-        description: body.description || null,
-        shortBlocks: body.shortBlocks || null,
-        content: body.content || null,
-        blocks: body.blocks || null,
-        icon: body.icon || null,
-        imageUrl: body.imageUrl || null,
-        order: body.order || 0,
-        active: body.active ?? true,
-        featured: body.featured ?? false,
-        showSummary: body.showSummary ?? true,
+        description: val.description || null,
+        shortBlocks: val.shortBlocks || null,
+        content: val.content || null,
+        blocks: val.blocks || null,
+        icon: val.icon || null,
+        imageUrl: val.imageUrl || null,
+        order: val.order,
+        active: val.active,
+        featured: val.featured,
+        showSummary: val.showSummary,
       }
     })
     
@@ -86,10 +110,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
     
+    const validationResult = serviceSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
     // Handle slug on update
-    let slug = body.slug
-    if (body.regenerateSlug || (!slug && body.title)) {
-      slug = generateSlug(body.title)
+    let slug = val.slug
+    if (val.regenerateSlug || (!slug && val.title)) {
+      slug = generateSlug(val.title)
     }
     if (slug) {
       // Ensure uniqueness excluding the current record
@@ -104,18 +134,18 @@ export async function PUT(request: NextRequest) {
     const service = await db.service.update({
       where: { id: body.id },
       data: {
-        title: body.title,
+        title: val.title,
         slug: slug || undefined,
-        description: body.description || null,
-        shortBlocks: body.shortBlocks || null,
-        content: body.content || null,
-        blocks: body.blocks || null,
-        icon: body.icon || null,
-        imageUrl: body.imageUrl || null,
-        order: body.order,
-        active: body.active,
-        featured: body.featured,
-        showSummary: body.showSummary ?? true,
+        description: val.description || null,
+        shortBlocks: val.shortBlocks || null,
+        content: val.content || null,
+        blocks: val.blocks || null,
+        icon: val.icon || null,
+        imageUrl: val.imageUrl || null,
+        order: val.order,
+        active: val.active,
+        featured: val.featured,
+        showSummary: val.showSummary,
       }
     })
     

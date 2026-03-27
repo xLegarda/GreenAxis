@@ -3,15 +3,10 @@ import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
 import { validateFullPhone } from '@/lib/phone-validation'
 import { Resend } from 'resend'
+import { z } from 'zod'
 
 const resend = new Resend(process.env.RESEND_API_KEY || '')
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-
-// Validación de email
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
 
 // Sanitización de input para prevenir XSS - codifica entidades HTML
 function sanitizeInput(input: string, maxLength: number): string {
@@ -28,7 +23,7 @@ function sanitizeInput(input: string, maxLength: number): string {
 
 // Enviar email de notificación al admin
 async function sendContactNotification(
-  toEmail: string, 
+  toEmail: string,
   contactData: {
     name: string
     email: string
@@ -39,7 +34,7 @@ async function sendContactNotification(
   }
 ): Promise<boolean> {
   const siteName = 'Green Axis S.A.S.'
-  
+
   try {
     await resend.emails.send({
       from: RESEND_FROM_EMAIL,
@@ -122,7 +117,7 @@ async function sendContactNotification(
         </html>
       `,
     })
-    
+
     return true
   } catch (error) {
     console.error('Error sending notification email:', error)
@@ -138,22 +133,22 @@ const LOCKOUT_TIME = 60 * 60 * 1000 // 1 hora en milisegundos
 export async function POST(request: NextRequest) {
   try {
     // Obtener IP del cliente para Rate Limiting
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown'
-    
+    const ip = request.headers.get('x-real-ip') ??
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+      'unknown'
+
     // Verificar rate limiting
     const attempts = messageAttempts.get(ip)
     if (attempts) {
       const timeSinceLastAttempt = Date.now() - attempts.lastAttempt
-      
+
       if (attempts.count >= MAX_MESSAGES && timeSinceLastAttempt < LOCKOUT_TIME) {
         const remainingTime = Math.ceil((LOCKOUT_TIME - timeSinceLastAttempt) / 60000)
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: `Has enviado muchos mensajes. Intenta nuevamente en ${remainingTime} minuto(s).`
         }, { status: 429 })
       }
-      
+
       // Reset si pasó el tiempo de lockout
       if (timeSinceLastAttempt >= LOCKOUT_TIME) {
         messageAttempts.delete(ip)
@@ -161,33 +156,46 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    
-    const { name, email, phone, company, subject, message, consent } = body
-    
-    // Validaciones
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
-      return NextResponse.json({ error: 'Nombre es requerido (mínimo 2 caracteres)' }, { status: 400 })
-    }
-    
-    if (!email || !isValidEmail(email)) {
-      return NextResponse.json({ error: 'Email válido es requerido' }, { status: 400 })
-    }
-    
-    if (phone && typeof phone === 'string') {
-      const phoneValidation = validateFullPhone(phone)
-      if (!phoneValidation.valid) {
-        return NextResponse.json({ error: phoneValidation.error }, { status: 400 })
+
+    // Definición del schema de Zod
+    const contactSchema = z.object({
+      name: z.string({ message: 'Nombre es requerido (mínimo 2 caracteres)' })
+        .trim()
+        .min(2, 'Nombre es requerido (mínimo 2 caracteres)'),
+      email: z.string({ message: 'Email válido es requerido' })
+        .email('Email válido es requerido'),
+      phone: z.string().optional().nullable(),
+      company: z.string().optional().nullable(),
+      subject: z.string().optional().nullable(),
+      message: z.string({ message: 'Mensaje es requerido (mínimo 10 caracteres)' })
+        .trim()
+        .min(10, 'Mensaje es requerido (mínimo 10 caracteres)'),
+      consent: z.literal(true, {
+        message: 'Debe aceptar la política de tratamiento de datos'
+      })
+    }).superRefine((data, ctx) => {
+      if (data.phone && data.phone.trim() !== '') {
+        const phoneValidation = validateFullPhone(data.phone)
+        if (!phoneValidation.valid) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: phoneValidation.error || 'Teléfono inválido',
+            path: ['phone']
+          })
+        }
       }
+    })
+
+    const validationResult = contactSchema.safeParse(body)
+
+    if (!validationResult.success) {
+      return NextResponse.json({ 
+        error: validationResult.error.issues[0].message 
+      }, { status: 400 })
     }
-    
-    if (!message || typeof message !== 'string' || message.trim().length < 10) {
-      return NextResponse.json({ error: 'Mensaje es requerido (mínimo 10 caracteres)' }, { status: 400 })
-    }
-    
-    if (!consent) {
-      return NextResponse.json({ error: 'Debe aceptar la política de tratamiento de datos' }, { status: 400 })
-    }
-    
+
+    const { name, email, phone, company, subject, message, consent } = validationResult.data
+
     // Sanitizar datos
     const sanitizedData = {
       name: sanitizeInput(name, 100),
@@ -197,7 +205,7 @@ export async function POST(request: NextRequest) {
       subject: subject ? sanitizeInput(subject, 200) : null,
       message: sanitizeInput(message, 2000),
     }
-    
+
     // Crear mensaje en la base de datos
     const contactMessage = await db.contactMessage.create({
       data: {
@@ -205,23 +213,23 @@ export async function POST(request: NextRequest) {
         consent: true,
       }
     })
-    
+
     // Registrar el intento exitoso para el rate limiting
     const current = messageAttempts.get(ip) || { count: 0, lastAttempt: 0 }
     messageAttempts.set(ip, {
       count: current.count + 1,
       lastAttempt: Date.now()
     })
-    
+
     // Obtener email de notificación de la configuración
     const config = await db.platformConfig.findFirst()
     const notificationEmail = config?.notificationEmail || config?.companyEmail
-    
+
     // Enviar email de notificación si hay email configurado
     if (notificationEmail) {
       await sendContactNotification(notificationEmail, sanitizedData)
     }
-    
+
     return NextResponse.json({ success: true, id: contactMessage.id })
   } catch (error) {
     console.error('Error saving contact message:', error)
@@ -240,7 +248,7 @@ export async function GET() {
     const messages = await db.contactMessage.findMany({
       orderBy: { createdAt: 'desc' }
     })
-    
+
     return NextResponse.json(messages)
   } catch (error) {
     console.error('Error fetching contact messages:', error)
@@ -258,16 +266,16 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     const { id, read } = body
-    
+
     if (!id) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
-    
+
     const message = await db.contactMessage.update({
       where: { id },
       data: { read }
     })
-    
+
     return NextResponse.json(message)
   } catch (error) {
     console.error('Error updating message:', error)
@@ -285,15 +293,15 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
-    
+
     await db.contactMessage.delete({
       where: { id }
     })
-    
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting message:', error)

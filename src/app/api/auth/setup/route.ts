@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminExists, createAdmin, canCreateAdmin, countAdmins, getMaxAccounts } from '@/lib/auth'
 import { validatePassword } from '@/lib/password-validator'
+import { z } from 'zod'
+
+const setupSchema = z.object({
+  email: z.string({ message: 'Email es requerido' }).email('Formato de email inválido'),
+  password: z.string({ message: 'Contraseña es requerida' }).min(8, 'Contraseña mínima de 8 caracteres'),
+  name: z.string().optional()
+})
 
 export async function GET() {
   try {
@@ -34,13 +41,12 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { email, password, name } = body
     
-    if (!email || !password) {
-      return NextResponse.json({ 
-        error: 'Email y contraseña son requeridos' 
-      }, { status: 400 })
+    const validationResult = setupSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
     }
+    const { email, password, name } = validationResult.data
     
     // Validar contraseña segura
     const validation = validatePassword(password)

@@ -267,18 +267,8 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header del sidebar */}
-          <div className="flex items-center justify-between p-4 pt-16 border-b">
-            <span className="font-bold text-foreground">Menú Admin</span>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-1.5 rounded-lg hover:bg-accent transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
           {/* Nav items con scroll */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav className="flex-1 overflow-y-auto p-4 pt-20 space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href ||

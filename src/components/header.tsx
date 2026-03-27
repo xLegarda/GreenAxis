@@ -125,15 +125,15 @@ export function Header({ config }: HeaderProps) {
             <ThemeToggle />
             <button
               type="button"
-              aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
               aria-expanded={mobileMenuOpen}
               className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-[#6BBE45] dark:hover:text-[#8BC34A] hover:bg-green-50 dark:hover:bg-[#1a3a40] transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
+              <span className="sr-only">{mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}</span>
               {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-6 w-6" aria-hidden="true" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-6 w-6" aria-hidden="true" />
               )}
             </button>
           </div>

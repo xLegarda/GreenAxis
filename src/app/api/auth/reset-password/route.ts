@@ -4,6 +4,16 @@ import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { validatePassword } from '@/lib/password-validator'
 import { Resend } from 'resend'
+import { z } from 'zod'
+
+const resetRequestSchema = z.object({
+  email: z.string({ message: 'Email es requerido' }).email('Formato de email inválido'),
+})
+
+const resetPasswordSchema = z.object({
+  token: z.string({ message: 'Token es requerido' }).min(1, 'Token es requerido'),
+  password: z.string({ message: 'Contraseña es requerida' }).min(8, 'La contraseña debe tener mínimo 8 caracteres'),
+})
 
 const resend = new Resend(process.env.RESEND_API_KEY || '')
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
@@ -84,17 +94,12 @@ async function sendResetEmail(email: string, token: string, baseUrl: string): Pr
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email } = body
     
-    if (!email) {
-      return NextResponse.json({ error: 'Email es requerido' }, { status: 400 })
+    const validationResult = resetRequestSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
     }
-    
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Formato de email inválido' }, { status: 400 })
-    }
+    const { email } = validationResult.data
     
     // Verificar si existe el usuario
     const admin = await db.admin.findUnique({
@@ -195,11 +200,12 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { token, password } = body
     
-    if (!token || !password) {
-      return NextResponse.json({ error: 'Token y contraseña son requeridos' }, { status: 400 })
+    const validationResult = resetPasswordSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
     }
+    const { token, password } = validationResult.data
     
     // Validar fortaleza de contraseña
     const validation = validatePassword(password)

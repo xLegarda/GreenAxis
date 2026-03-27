@@ -103,9 +103,6 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
   }
 
   const renderShortDescription = (service: Service, variant: 'card' | 'detail' = 'card') => {
-    // Check if summary should be shown (default to true for backward compatibility)
-    if (service.showSummary === false) return null
-    
     const text = getShortDescriptionText(service)
     if (!text) return null
 

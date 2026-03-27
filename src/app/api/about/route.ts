@@ -2,6 +2,36 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { z } from 'zod'
+
+const aboutSchema = z.object({
+  heroTitle: z.string().nullable().optional(),
+  heroSubtitle: z.string().nullable().optional(),
+  heroImageUrl: z.string().nullable().optional(),
+  historyTitle: z.string().nullable().optional(),
+  historyContent: z.string().nullable().optional(),
+  historyImageUrl: z.string().nullable().optional(),
+  missionTitle: z.string().nullable().optional(),
+  missionContent: z.string().nullable().optional(),
+  visionTitle: z.string().nullable().optional(),
+  visionContent: z.string().nullable().optional(),
+  valuesTitle: z.string().nullable().optional(),
+  valuesContent: z.string().nullable().optional(),
+  teamTitle: z.string().nullable().optional(),
+  teamEnabled: z.boolean().optional(),
+  teamMembers: z.string().nullable().optional(),
+  whyChooseTitle: z.string().nullable().optional(),
+  whyChooseContent: z.string().nullable().optional(),
+  ctaTitle: z.string().nullable().optional(),
+  ctaSubtitle: z.string().nullable().optional(),
+  ctaButtonText: z.string().nullable().optional(),
+  ctaButtonUrl: z.string().nullable().optional(),
+  statsEnabled: z.boolean().optional(),
+  statsContent: z.string().nullable().optional(),
+  certificationsEnabled: z.boolean().optional(),
+  certificationsContent: z.string().nullable().optional(),
+  showLocationSection: z.boolean().optional(),
+})
 
 // GET - Obtener contenido de la página Quiénes Somos
 export async function GET() {
@@ -68,69 +98,75 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     
+    const validationResult = aboutSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
     let aboutPage = await db.aboutPage.findFirst()
     
     if (!aboutPage) {
       aboutPage = await db.aboutPage.create({
         data: {
-          heroTitle: body.heroTitle || 'Quiénes Somos',
-          heroSubtitle: body.heroSubtitle,
-          heroImageUrl: body.heroImageUrl || null,
-          historyTitle: body.historyTitle,
-          historyContent: body.historyContent,
-          historyImageUrl: body.historyImageUrl || null,
-          missionTitle: body.missionTitle,
-          missionContent: body.missionContent,
-          visionTitle: body.visionTitle,
-          visionContent: body.visionContent,
-          valuesTitle: body.valuesTitle,
-          valuesContent: body.valuesContent,
-          teamTitle: body.teamTitle,
-          teamEnabled: body.teamEnabled ?? false,
-          teamMembers: body.teamMembers,
-          whyChooseTitle: body.whyChooseTitle,
-          whyChooseContent: body.whyChooseContent,
-          ctaTitle: body.ctaTitle,
-          ctaSubtitle: body.ctaSubtitle,
-          ctaButtonText: body.ctaButtonText,
-          ctaButtonUrl: body.ctaButtonUrl,
-          statsEnabled: body.statsEnabled ?? true,
-          statsContent: body.statsContent,
-          certificationsEnabled: body.certificationsEnabled ?? false,
-          certificationsContent: body.certificationsContent,
-          showLocationSection: body.showLocationSection ?? true,
+          heroTitle: val.heroTitle || 'Quiénes Somos',
+          heroSubtitle: val.heroSubtitle,
+          heroImageUrl: val.heroImageUrl || null,
+          historyTitle: val.historyTitle,
+          historyContent: val.historyContent,
+          historyImageUrl: val.historyImageUrl || null,
+          missionTitle: val.missionTitle,
+          missionContent: val.missionContent,
+          visionTitle: val.visionTitle,
+          visionContent: val.visionContent,
+          valuesTitle: val.valuesTitle,
+          valuesContent: val.valuesContent,
+          teamTitle: val.teamTitle,
+          teamEnabled: val.teamEnabled ?? false,
+          teamMembers: val.teamMembers,
+          whyChooseTitle: val.whyChooseTitle,
+          whyChooseContent: val.whyChooseContent,
+          ctaTitle: val.ctaTitle,
+          ctaSubtitle: val.ctaSubtitle,
+          ctaButtonText: val.ctaButtonText,
+          ctaButtonUrl: val.ctaButtonUrl,
+          statsEnabled: val.statsEnabled ?? true,
+          statsContent: val.statsContent,
+          certificationsEnabled: val.certificationsEnabled ?? false,
+          certificationsContent: val.certificationsContent,
+          showLocationSection: val.showLocationSection ?? true,
         }
       })
     } else {
       aboutPage = await db.aboutPage.update({
         where: { id: aboutPage.id },
         data: {
-          heroTitle: body.heroTitle,
-          heroSubtitle: body.heroSubtitle,
-          heroImageUrl: body.heroImageUrl || null,
-          historyTitle: body.historyTitle,
-          historyContent: body.historyContent,
-          historyImageUrl: body.historyImageUrl || null,
-          missionTitle: body.missionTitle,
-          missionContent: body.missionContent,
-          visionTitle: body.visionTitle,
-          visionContent: body.visionContent,
-          valuesTitle: body.valuesTitle,
-          valuesContent: body.valuesContent,
-          teamTitle: body.teamTitle,
-          teamEnabled: body.teamEnabled,
-          teamMembers: body.teamMembers,
-          whyChooseTitle: body.whyChooseTitle,
-          whyChooseContent: body.whyChooseContent,
-          ctaTitle: body.ctaTitle,
-          ctaSubtitle: body.ctaSubtitle,
-          ctaButtonText: body.ctaButtonText,
-          ctaButtonUrl: body.ctaButtonUrl,
-          statsEnabled: body.statsEnabled,
-          statsContent: body.statsContent,
-          certificationsEnabled: body.certificationsEnabled,
-          certificationsContent: body.certificationsContent,
-          showLocationSection: body.showLocationSection,
+          heroTitle: val.heroTitle,
+          heroSubtitle: val.heroSubtitle,
+          heroImageUrl: val.heroImageUrl || null,
+          historyTitle: val.historyTitle,
+          historyContent: val.historyContent,
+          historyImageUrl: val.historyImageUrl || null,
+          missionTitle: val.missionTitle,
+          missionContent: val.missionContent,
+          visionTitle: val.visionTitle,
+          visionContent: val.visionContent,
+          valuesTitle: val.valuesTitle,
+          valuesContent: val.valuesContent,
+          teamTitle: val.teamTitle,
+          teamEnabled: val.teamEnabled,
+          teamMembers: val.teamMembers,
+          whyChooseTitle: val.whyChooseTitle,
+          whyChooseContent: val.whyChooseContent,
+          ctaTitle: val.ctaTitle,
+          ctaSubtitle: val.ctaSubtitle,
+          ctaButtonText: val.ctaButtonText,
+          ctaButtonUrl: val.ctaButtonUrl,
+          statsEnabled: val.statsEnabled,
+          statsContent: val.statsContent,
+          certificationsEnabled: val.certificationsEnabled,
+          certificationsContent: val.certificationsContent,
+          showLocationSection: val.showLocationSection,
         }
       })
     }

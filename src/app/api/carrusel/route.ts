@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { z } from 'zod'
+
+const carruselSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  imageUrl: z.string({ message: 'URL de imagen es requerida' }).min(1, 'URL de imagen es requerida'),
+  buttonText: z.string().nullable().optional(),
+  buttonUrl: z.string().nullable().optional(),
+  linkUrl: z.string().nullable().optional(),
+  gradientEnabled: z.boolean().optional().default(true),
+  animationEnabled: z.boolean().optional().default(true),
+  gradientColor: z.string().nullable().optional(),
+  order: z.number().optional().default(0),
+  active: z.boolean().optional().default(true),
+})
 
 export async function GET() {
   try {
@@ -24,20 +41,26 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    const validationResult = carruselSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
     const slide = await db.carouselSlide.create({
       data: {
-        title: body.title || null,
-        subtitle: body.subtitle || null,
-        description: body.description || null,
-        imageUrl: body.imageUrl,
-        buttonText: body.buttonText || null,
-        buttonUrl: body.buttonUrl || null,
-        linkUrl: body.linkUrl || null,
-        gradientEnabled: body.gradientEnabled ?? true,
-        animationEnabled: body.animationEnabled ?? true,
-        gradientColor: body.gradientColor || null,
-        order: body.order ?? 0,
-        active: body.active ?? true,
+        title: val.title || null,
+        subtitle: val.subtitle || null,
+        description: val.description || null,
+        imageUrl: val.imageUrl,
+        buttonText: val.buttonText || null,
+        buttonUrl: val.buttonUrl || null,
+        linkUrl: val.linkUrl || null,
+        gradientEnabled: val.gradientEnabled,
+        animationEnabled: val.animationEnabled,
+        gradientColor: val.gradientColor || null,
+        order: val.order,
+        active: val.active,
       }
     })
     
@@ -64,21 +87,27 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
     
+    const validationResult = carruselSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
     const slide = await db.carouselSlide.update({
       where: { id: body.id },
       data: {
-        title: body.title || null,
-        subtitle: body.subtitle || null,
-        description: body.description || null,
-        imageUrl: body.imageUrl,
-        buttonText: body.buttonText || null,
-        buttonUrl: body.buttonUrl || null,
-        linkUrl: body.linkUrl || null,
-        gradientEnabled: body.gradientEnabled,
-        animationEnabled: body.animationEnabled,
-        gradientColor: body.gradientColor || null,
-        order: body.order,
-        active: body.active,
+        title: val.title || null,
+        subtitle: val.subtitle || null,
+        description: val.description || null,
+        imageUrl: val.imageUrl,
+        buttonText: val.buttonText || null,
+        buttonUrl: val.buttonUrl || null,
+        linkUrl: val.linkUrl || null,
+        gradientEnabled: val.gradientEnabled,
+        animationEnabled: val.animationEnabled,
+        gradientColor: val.gradientColor || null,
+        order: val.order,
+        active: val.active,
       }
     })
     

@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { z } from 'zod'
+
+const newsSchema = z.object({
+  id: z.string().optional(),
+  title: z.string({ message: 'El título es requerido' }).min(1, 'El título es requerido'),
+  slug: z.string().nullable().optional(),
+  regenerateSlug: z.boolean().optional(),
+  excerpt: z.string().nullable().optional(),
+  content: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
+  author: z.string().nullable().optional(),
+  published: z.boolean().optional().default(false),
+  featured: z.boolean().optional().default(false),
+  publishedAt: z.string().nullable().optional(),
+  blocks: z.string().nullable().optional(),
+  showCoverInContent: z.boolean().optional().default(true),
+})
 
 // Helper para generar slug
 function generateSlug(title: string): string {
@@ -61,7 +78,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    let slug = body.slug || generateSlug(body.title)
+    const validationResult = newsSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
+    let slug = val.slug || generateSlug(val.title)
     
     // Verificar si el slug ya existe
     const existing = await db.news.findUnique({
@@ -74,10 +97,10 @@ export async function POST(request: NextRequest) {
     
     // Parse publication date if provided
     let publishedAt: Date | null = null
-    if (body.published) {
-      if (body.publishedAt) {
+    if (val.published) {
+      if (val.publishedAt) {
         // Parse the date string and set to start of day in UTC
-        publishedAt = new Date(body.publishedAt + 'T12:00:00.000Z')
+        publishedAt = new Date(val.publishedAt + 'T12:00:00.000Z')
       } else {
         publishedAt = new Date()
       }
@@ -85,17 +108,17 @@ export async function POST(request: NextRequest) {
     
     const news = await db.news.create({
       data: {
-        title: body.title,
+        title: val.title,
         slug,
-        excerpt: body.excerpt || null,
-        content: body.content || '',
-        imageUrl: body.imageUrl || null,
-        author: body.author || null,
-        published: body.published ?? false,
-        featured: body.featured ?? false,
+        excerpt: val.excerpt || null,
+        content: val.content || '',
+        imageUrl: val.imageUrl || null,
+        author: val.author || null,
+        published: val.published,
+        featured: val.featured,
         publishedAt,
-        blocks: body.blocks || null,
-        showCoverInContent: true,
+        blocks: val.blocks || null,
+        showCoverInContent: val.showCoverInContent,
       }
     })
     
@@ -124,6 +147,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
     
+    const validationResult = newsSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+
     // Check if news exists
     const existingNews = await db.news.findUnique({
       where: { id: body.id }
@@ -133,11 +162,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Noticia no encontrada' }, { status: 404 })
     }
     
-    let slug = body.slug
+    let slug = val.slug
     
     // Si el título cambió, regenerar slug
-    if (body.regenerateSlug) {
-      slug = generateSlug(body.title)
+    if (val.regenerateSlug) {
+      slug = generateSlug(val.title)
       
       // Verificar si el nuevo slug ya existe
       const existing = await db.news.findFirst({
@@ -155,10 +184,10 @@ export async function PUT(request: NextRequest) {
     // Handle publishedAt date
     let publishedAt: Date | null = existingNews.publishedAt
     
-    if (body.published) {
-      if (body.publishedAt) {
+    if (val.published) {
+      if (val.publishedAt) {
         // Use the provided date
-        publishedAt = new Date(body.publishedAt + 'T12:00:00.000Z')
+        publishedAt = new Date(val.publishedAt + 'T12:00:00.000Z')
       } else if (!existingNews.publishedAt) {
         // Only set to now if not already set
         publishedAt = new Date()
@@ -172,16 +201,16 @@ export async function PUT(request: NextRequest) {
     const news = await db.news.update({
       where: { id: body.id },
       data: {
-        title: body.title,
-        slug,
-        excerpt: body.excerpt || null,
-        content: body.content || '',
-        imageUrl: body.imageUrl || null,
-        author: body.author || null,
-        published: body.published,
-        featured: body.featured,
+        title: val.title,
+        slug: slug || undefined,
+        excerpt: val.excerpt || null,
+        content: val.content || '',
+        imageUrl: val.imageUrl || null,
+        author: val.author || null,
+        published: val.published,
+        featured: val.featured,
         publishedAt,
-        blocks: body.blocks || null,
+        blocks: val.blocks || null,
       }
     })
     

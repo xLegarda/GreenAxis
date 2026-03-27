@@ -2,6 +2,47 @@ import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentAdmin } from '@/lib/auth'
+import { z } from 'zod'
+
+const adminConfigSchema = z.object({
+  siteName: z.string().optional(),
+  siteUrl: z.string().nullable().optional(),
+  siteSlogan: z.string().nullable().optional(),
+  siteDescription: z.string().nullable().optional(),
+  logoUrl: z.string().nullable().optional(),
+  faviconUrl: z.string().nullable().optional(),
+  companyName: z.string().nullable().optional(),
+  companyAddress: z.string().nullable().optional(),
+  companyPhone: z.string().nullable().optional(),
+  companyEmail: z.string().nullable().optional(),
+  notificationEmail: z.string().nullable().optional(),
+  facebookUrl: z.string().nullable().optional(),
+  instagramUrl: z.string().nullable().optional(),
+  twitterUrl: z.string().nullable().optional(),
+  linkedinUrl: z.string().nullable().optional(),
+  tiktokUrl: z.string().nullable().optional(),
+  youtubeUrl: z.string().nullable().optional(),
+  whatsappNumber: z.string().nullable().optional(),
+  whatsappMessage: z.string().nullable().optional(),
+  whatsappShowBubble: z.boolean().optional(),
+  footerText: z.string().nullable().optional(),
+  socialText: z.string().nullable().optional(),
+  aboutImageUrl: z.string().nullable().optional(),
+  aboutTitle: z.string().nullable().optional(),
+  aboutDescription: z.string().nullable().optional(),
+  aboutYearsExperience: z.string().nullable().optional(),
+  aboutYearsText: z.string().nullable().optional(),
+  aboutStats: z.string().nullable().optional(),
+  aboutFeatures: z.string().nullable().optional(),
+  aboutSectionEnabled: z.boolean().optional(),
+  aboutBadge: z.string().nullable().optional(),
+  aboutBadgeColor: z.string().nullable().optional(),
+  showMapSection: z.boolean().optional(),
+  metaKeywords: z.string().nullable().optional(),
+  googleAnalytics: z.string().nullable().optional(),
+  googleMapsEmbed: z.string().nullable().optional(),
+  primaryColor: z.string().nullable().optional(),
+})
 
 // Helper para convertir string vacío a null
 function emptyToNull(value: string | null | undefined): string | null {
@@ -48,51 +89,57 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json()
     
+    const validationResult = adminConfigSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
+    }
+    const val = validationResult.data
+    
     let config = await db.platformConfig.findFirst()
     
     const data = {
-      siteUrl: emptyToNull(body.siteUrl),
-      siteSlogan: emptyToNull(body.siteSlogan),
-      siteDescription: emptyToNull(body.siteDescription),
-      logoUrl: emptyToNull(body.logoUrl),
-      faviconUrl: emptyToNull(body.faviconUrl),
-      companyName: emptyToNull(body.companyName),
-      companyAddress: emptyToNull(body.companyAddress),
-      companyPhone: emptyToNull(body.companyPhone),
-      companyEmail: emptyToNull(body.companyEmail),
-      notificationEmail: emptyToNull(body.notificationEmail),
-      facebookUrl: emptyToNull(body.facebookUrl),
-      instagramUrl: emptyToNull(body.instagramUrl),
-      twitterUrl: emptyToNull(body.twitterUrl),
-      linkedinUrl: emptyToNull(body.linkedinUrl),
-      tiktokUrl: emptyToNull(body.tiktokUrl),
-      youtubeUrl: emptyToNull(body.youtubeUrl),
-      whatsappNumber: emptyToNull(body.whatsappNumber),
-      whatsappMessage: body.whatsappMessage,
-      whatsappShowBubble: body.whatsappShowBubble,
-      footerText: emptyToNull(body.footerText),
-      socialText: emptyToNull(body.socialText),
+      siteUrl: emptyToNull(val.siteUrl),
+      siteSlogan: emptyToNull(val.siteSlogan),
+      siteDescription: emptyToNull(val.siteDescription),
+      logoUrl: emptyToNull(val.logoUrl),
+      faviconUrl: emptyToNull(val.faviconUrl),
+      companyName: emptyToNull(val.companyName),
+      companyAddress: emptyToNull(val.companyAddress),
+      companyPhone: emptyToNull(val.companyPhone),
+      companyEmail: emptyToNull(val.companyEmail),
+      notificationEmail: emptyToNull(val.notificationEmail),
+      facebookUrl: emptyToNull(val.facebookUrl),
+      instagramUrl: emptyToNull(val.instagramUrl),
+      twitterUrl: emptyToNull(val.twitterUrl),
+      linkedinUrl: emptyToNull(val.linkedinUrl),
+      tiktokUrl: emptyToNull(val.tiktokUrl),
+      youtubeUrl: emptyToNull(val.youtubeUrl),
+      whatsappNumber: emptyToNull(val.whatsappNumber),
+      whatsappMessage: val.whatsappMessage || null,
+      whatsappShowBubble: val.whatsappShowBubble ?? true,
+      footerText: emptyToNull(val.footerText),
+      socialText: emptyToNull(val.socialText),
       // About Section
-      aboutImageUrl: emptyToNull(body.aboutImageUrl),
-      aboutTitle: emptyToNull(body.aboutTitle),
-      aboutDescription: emptyToNull(body.aboutDescription),
-      aboutYearsExperience: emptyToNull(body.aboutYearsExperience),
-      aboutYearsText: emptyToNull(body.aboutYearsText),
-      aboutStats: emptyToNull(body.aboutStats),
-      aboutFeatures: emptyToNull(body.aboutFeatures),
-      aboutSectionEnabled: body.aboutSectionEnabled,
-      aboutBadge: emptyToNull(body.aboutBadge),
-      aboutBadgeColor: emptyToNull(body.aboutBadgeColor),
+      aboutImageUrl: emptyToNull(val.aboutImageUrl),
+      aboutTitle: emptyToNull(val.aboutTitle),
+      aboutDescription: emptyToNull(val.aboutDescription),
+      aboutYearsExperience: emptyToNull(val.aboutYearsExperience),
+      aboutYearsText: emptyToNull(val.aboutYearsText),
+      aboutStats: emptyToNull(val.aboutStats),
+      aboutFeatures: emptyToNull(val.aboutFeatures),
+      aboutSectionEnabled: val.aboutSectionEnabled ?? true,
+      aboutBadge: emptyToNull(val.aboutBadge),
+      aboutBadgeColor: emptyToNull(val.aboutBadgeColor),
       // Map Section
-      showMapSection: body.showMapSection,
+      showMapSection: val.showMapSection ?? true,
       // SEO
-      metaKeywords: emptyToNull(body.metaKeywords),
-      googleAnalytics: emptyToNull(body.googleAnalytics),
-      googleMapsEmbed: emptyToNull(body.googleMapsEmbed),
-      primaryColor: emptyToNull(body.primaryColor),
+      metaKeywords: emptyToNull(val.metaKeywords),
+      googleAnalytics: emptyToNull(val.googleAnalytics),
+      googleMapsEmbed: emptyToNull(val.googleMapsEmbed),
+      primaryColor: emptyToNull(val.primaryColor),
     }
     
-    const siteName = body.siteName || 'Green Axis S.A.S.'
+    const siteName = val.siteName || 'Green Axis S.A.S.'
     
     if (!config) {
       config = await db.platformConfig.create({

@@ -1,0 +1,38 @@
+# Exclude files that don't affect Vercel builds:
+
+# Tests
+tests/
+__tests__/
+cypress/
+playwright/
+e2e/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+vitest.config.ts
+vitest-setup.ts
+jest.config.js
+jest.setup.js
+cypress.config.ts
+playwright.config.ts
+
+# Documentation
+.github/
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+DOCUMENTACION-PROYECTO.md
+
+# Editor Config
+.vscode/
+.idea/
+.editorconfig
+.prettierrc
+.eslintrc.json
+
+# Tooling
+.husky/
+Dockerfile
+docker-compose.yml
+.dockerignore
