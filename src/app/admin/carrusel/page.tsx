@@ -281,18 +281,20 @@ export default function CarruselAdminPage() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {editingSlide ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-              {editingSlide ? 'Editar Slide' : 'Nuevo Slide'}
-            </DialogTitle>
-            <DialogDescription>
-              Configura la imagen, textos y efectos del slide.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] max-h-[90vh] p-0 flex flex-col overflow-hidden">
+          <div className="p-4 sm:p-6 pb-3 border-b shrink-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {editingSlide ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                {editingSlide ? 'Editar Slide' : 'Nuevo Slide'}
+              </DialogTitle>
+              <DialogDescription>
+                Configura la imagen, textos y efectos del slide.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-6 py-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             {/* Image Upload */}
             <div className="space-y-3">
               <Label>Imagen del Slide *</Label>
@@ -451,13 +453,15 @@ export default function CarruselAdminPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white">
-              <Save className="h-4 w-4 mr-2" />
-              {editingSlide ? 'Guardar cambios' : 'Crear slide'}
-            </Button>
-          </DialogFooter>
+          <div className="p-4 sm:p-6 pt-3 border-t shrink-0">
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSave} className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white">
+                <Save className="h-4 w-4 mr-2" />
+                {editingSlide ? 'Guardar cambios' : 'Crear slide'}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

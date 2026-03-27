@@ -175,25 +175,25 @@ export default function QuienesSomosPage() {
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Quiénes Somos</h1>
           <p className="text-sm text-muted-foreground">Configura la sección "Sobre Nosotros" del landing page</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row-reverse sm:items-center gap-3 sm:gap-4">
+          <Button onClick={handleSave} disabled={saving} className="gradient-nature text-white w-full sm:w-auto">
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </Button>
+          <div className="flex items-center justify-between sm:justify-start gap-2 bg-muted/30 sm:bg-transparent p-3 sm:p-0 rounded-lg">
+            <span className="text-sm text-muted-foreground font-medium sm:font-normal">
+              {config?.aboutSectionEnabled ? 'Ocultar sección' : 'Mostrar sección'}
+            </span>
             <Switch
               checked={config?.aboutSectionEnabled ?? true}
               onCheckedChange={(checked) => updateConfig('aboutSectionEnabled', checked)}
             />
-            <span className="text-sm text-muted-foreground">
-              {config?.aboutSectionEnabled ? 'Sección visible' : 'Sección oculta'}
-            </span>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="gradient-nature text-white">
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
-          </Button>
         </div>
       </div>
 

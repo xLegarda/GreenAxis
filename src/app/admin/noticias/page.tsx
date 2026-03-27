@@ -321,12 +321,14 @@ export default function NoticiasAdminPage() {
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">{editingNews ? 'Editar Noticia' : 'Nueva Noticia'}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] max-h-[90vh] p-0 flex flex-col overflow-hidden">
+          <div className="p-4 sm:p-6 pb-2 border-b shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl">{editingNews ? 'Editar Noticia' : 'Nueva Noticia'}</DialogTitle>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Title, Author and Date - Full width row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -383,10 +385,6 @@ export default function NoticiasAdminPage() {
                 formatHint="Proporción 1.9:1 - ideal para redes sociales. Esta imagen aparecerá como vista previa al compartir."
                 maxSizeMB={5}
               />
-              
-              <p className="text-xs text-muted-foreground">
-                Recomendado: 1200x630px (proporción 1.9:1) - ideal para redes sociales
-              </p>
             </div>
 
             {/* Editor.js Content */}
@@ -404,19 +402,18 @@ export default function NoticiasAdminPage() {
                   <ul className="text-xs mt-1 space-y-0.5 text-green-600 dark:text-green-400">
                     <li>• <strong>Al editar:</strong> Espera a que cargue todo el contenido antes de modificar</li>
                     <li>• Haz clic en <strong>+</strong> para añadir bloques (títulos, listas, imágenes, videos, audios)</li>
-                    <li>• Puedes arrastrar y soltar para reorganizar los bloques</li>
-                    <li>• Para videos de YouTube/Spotify, usa la herramienta <strong>"Incrustar"</strong></li>
-                    <li>• Para videos o audios locales, usa <strong>"Video Local"</strong> o <strong>"Audio"</strong></li>
                     <li>• Selecciona texto para ver opciones: <strong>negrita</strong>, <em>cursiva</em>, código, resaltado</li>
                   </ul>
                 </div>
               </div>
               
-              <EditorJSComponent 
-                data={editorDataRef.current} 
-                onChange={handleEditorChange}
-                placeholder="Escribe aquí el contenido de tu noticia..."
-              />
+              <div className="border rounded-md">
+                <EditorJSComponent 
+                  data={editorDataRef.current} 
+                  onChange={handleEditorChange}
+                  placeholder="Escribe aquí el contenido de tu noticia..."
+                />
+              </div>
             </div>
 
             {/* Options */}
@@ -438,15 +435,17 @@ export default function NoticiasAdminPage() {
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto order-2 sm:order-1">
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} className="gradient-nature text-white w-full sm:w-auto order-1 sm:order-2">
-              <Save className="h-4 w-4 mr-2" />
-              Guardar
-            </Button>
-          </DialogFooter>
+          <div className="p-4 sm:p-6 pt-2 border-t shrink-0">
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto order-2 sm:order-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} className="gradient-nature text-white w-full sm:w-auto order-1 sm:order-2">
+                <Save className="h-4 w-4 mr-2" />
+                Guardar
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

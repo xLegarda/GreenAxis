@@ -472,15 +472,17 @@ export default function ServiciosAdminPage() {
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</DialogTitle>
-            <DialogDescription className="sr-only">
-              Formulario para {editingService ? 'editar' : 'crear'} un servicio
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] max-h-[90vh] p-0 flex flex-col overflow-hidden">
+          <div className="p-4 sm:p-6 pb-3 border-b shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl">{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</DialogTitle>
+              <DialogDescription className="sr-only">
+                Formulario para {editingService ? 'editar' : 'crear'} un servicio
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
@@ -690,18 +692,20 @@ export default function ServiciosAdminPage() {
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto order-2 sm:order-1">
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white w-full sm:w-auto order-1 sm:order-2"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {editingService ? 'Guardar cambios' : 'Crear servicio'}
-            </Button>
-          </DialogFooter>
+          <div className="p-4 sm:p-6 pt-3 border-t shrink-0">
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto order-2 sm:order-1">
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white w-full sm:w-auto order-1 sm:order-2"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {editingService ? 'Guardar cambios' : 'Crear servicio'}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

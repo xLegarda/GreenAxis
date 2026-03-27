@@ -122,6 +122,21 @@
   }
 }
 
+/* ==================== iOS ZOOM PREVENTION ====================
+   iOS auto-zooms when an input/select/textarea has font-size < 16px.
+   This global rule ensures all form elements in the admin panel
+   never trigger that zoom behavior on any device.
+   Only applies on touch/small screens to avoid affecting desktop typography. */
+@media (max-width: 1024px) {
+  input,
+  select,
+  textarea,
+  [role="combobox"],
+  [role="listbox"] {
+    font-size: 16px !important;
+  }
+}
+
 /* Animaciones personalizadas */
 @keyframes float {
   0%, 100% { transform: translateY(0); }

@@ -19,7 +19,8 @@ import {
   Users,
   Trash2,
   AlertTriangle,
-  Library
+  Library,
+  LockKeyhole
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -66,7 +67,26 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [adminCount, setAdminCount] = useState(0)
+  const [sessionExpired, setSessionExpired] = useState(false)
   
+  useEffect(() => {
+    // Global 401 interceptor — detect session expiry
+    const originalFetch = window.fetch
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args)
+      if (response.status === 401) {
+        const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof URL ? args[0].href : ''
+        if (url.startsWith('/api/')) {
+          setSessionExpired(true)
+        }
+      }
+      return response
+    }
+    return () => {
+      window.fetch = originalFetch
+    }
+  }, [])
+
   useEffect(() => {
     // Fetch config to get logo
     fetch('/api/admin/config')
@@ -129,6 +149,31 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
   
   return (
     <div className="min-h-screen bg-accent/30 flex overflow-x-hidden">
+      {/* Session expired overlay */}
+      {sessionExpired && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center space-y-5">
+            <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto">
+              <LockKeyhole className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Sesión expirada</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                Tu sesión ha caducado por inactividad. Por favor, inicia sesión de nuevo para continuar.
+              </p>
+            </div>
+            <Button
+              asChild
+              className="w-full gradient-nature text-white h-11 font-semibold"
+            >
+              <Link href="/portal-interno">
+                <LogOut className="h-4 w-4 mr-2" />
+                Ir al inicio de sesión
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r shrink-0">
         <div className="p-4 border-b">

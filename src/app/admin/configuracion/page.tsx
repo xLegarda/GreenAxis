@@ -67,7 +67,7 @@ export default function ConfiguracionPage() {
 
   const handleSave = async () => {
     if (!config) return
-    
+
     setSaving(true)
     try {
       const response = await fetch('/api/admin/config', {
@@ -75,7 +75,7 @@ export default function ConfiguracionPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       })
-      
+
       if (response.ok) {
         toast({ title: 'Guardado', description: 'La configuración se guardó correctamente' })
         fetchConfig()
@@ -256,7 +256,7 @@ export default function ConfiguracionPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2 pt-4 border-t">
                 <Label htmlFor="notificationEmail">Email para Notificaciones</Label>
                 <Input
