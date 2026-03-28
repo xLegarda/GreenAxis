@@ -77,7 +77,7 @@ export function Header({ config }: HeaderProps) {
         <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative" style={{ width: 140, height: 48 }}>
+            <div style={{ position: 'relative', width: 140, height: 48 }} className="flex-shrink-0">
               <Image
                 src={logoUrl}
                 alt={siteName}
