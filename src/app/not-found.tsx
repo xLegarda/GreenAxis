@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 export default function NotFound() {
   const [logoUrl, setLogoUrl] = useState('/logo.png')
   const [siteName, setSiteName] = useState('Green Axis')
-  const [companyEmail, setCompanyEmail] = useState('contacto@greenaxis.com.co')
+  const [companyEmail, setCompanyEmail] = useState('')
 
   useEffect(() => {
     // Obtener configuración para el logo
@@ -26,14 +26,14 @@ export default function NotFound() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex flex-col items-center justify-center px-4">
       <div className="text-center max-w-md">
         {/* Logo */}
-        <div className="mb-8">
+        <div style={{ position: 'relative', width: 200, height: 64, margin: '0 auto 2rem auto' }} className="flex-shrink-0">
           <Image 
             src={logoUrl} 
             alt={siteName} 
-            width={200}
-            height={64}
-            className="h-16 mx-auto object-contain"
-            style={{ width: 'auto' }}
+            fill
+            className="object-contain"
+            sizes="200px"
+            priority
             unoptimized
           />
         </div>
@@ -76,15 +76,17 @@ export default function NotFound() {
         </div>
 
         {/* Help text */}
-        <p className="mt-8 text-sm text-muted-foreground">
-          ¿Problemas? Contáctanos en{' '}
-          <a 
-            href={`mailto:${companyEmail}`}
-            className="text-primary hover:underline"
-          >
-            {companyEmail}
-          </a>
-        </p>
+        {companyEmail && (
+          <p className="mt-8 text-sm text-muted-foreground">
+            ¿Problemas? Contáctanos en{' '}
+            <a 
+              href={`mailto:${companyEmail}`}
+              className="text-primary hover:underline"
+            >
+              {companyEmail}
+            </a>
+          </p>
+        )}
       </div>
     </div>
   )

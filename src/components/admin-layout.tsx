@@ -184,17 +184,16 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <div style={{ position: 'relative', width: 120, height: 40 }} className="flex-shrink-0">
                 <Image
                   src={logoUrl || '/logo.png'}
                   alt="Logo"
-                  fill
+                  width={120}
+                  height={40}
                   className="object-contain"
-                  sizes="120px"
+                  style={{ width: 120, height: 40 }}
                   priority
                   unoptimized
                 />
-              </div>
               <div>
                 <span className="font-bold text-foreground">Admin</span>
                 <p className="text-xs text-muted-foreground">Panel de control</p>
@@ -270,16 +269,15 @@ export function AdminLayout({ children, admin }: AdminLayoutProps) {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-2">
-            <div style={{ position: 'relative', width: 80, height: 32 }} className="flex-shrink-0">
-              <Image
-                src={logoUrl || '/logo.png'}
-                alt="Logo"
-                fill
-                className="object-contain"
-                sizes="80px"
-                unoptimized
-              />
-            </div>
+            <Image
+              src={logoUrl || '/logo.png'}
+              alt="Logo"
+              width={80}
+              height={32}
+              className="object-contain"
+              style={{ width: 80, height: 32 }}
+              unoptimized
+            />
             <span className="font-bold">Admin</span>
           </Link>
           
