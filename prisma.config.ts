@@ -1,5 +1,8 @@
-import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
+
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -7,6 +10,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL") ?? "",
+    url: process.env.DATABASE_URL ?? process.env.TURSO_DATABASE_URL ?? "",
   },
 });
