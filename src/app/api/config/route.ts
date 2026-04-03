@@ -10,6 +10,9 @@ const configSchema = z.object({
   siteDescription: z.string().nullable().optional(),
   whatsappMessage: z.string().nullable().optional(),
   whatsappShowBubble: z.boolean().optional(),
+  portfolioEnabled: z.boolean().optional(),
+  portfolioTitle: z.string().nullable().optional(),
+  portfolioUrl: z.string().nullable().optional(),
 })
 
 export const dynamic = 'force-dynamic'
@@ -66,6 +69,9 @@ export async function PUT(request: NextRequest) {
         siteDescription: val.siteDescription,
         whatsappMessage: val.whatsappMessage,
         whatsappShowBubble: val.whatsappShowBubble,
+        portfolioEnabled: val.portfolioEnabled,
+        portfolioTitle: val.portfolioTitle,
+        portfolioUrl: val.portfolioUrl,
       }
     })
 

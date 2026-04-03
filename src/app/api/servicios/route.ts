@@ -19,6 +19,9 @@ const serviceSchema = z.object({
   active: z.boolean().optional().default(true),
   featured: z.boolean().optional().default(false),
   showSummary: z.boolean().optional().default(true),
+  portfolioEnabled: z.boolean().optional().default(false),
+  portfolioTitle: z.string().nullable().optional(),
+  portfolioUrl: z.string().nullable().optional(),
 })
 
 // Helper para generar slug
@@ -82,6 +85,9 @@ export async function POST(request: NextRequest) {
         active: val.active,
         featured: val.featured,
         showSummary: val.showSummary,
+        portfolioEnabled: val.portfolioEnabled ?? false,
+        portfolioTitle: val.portfolioTitle || null,
+        portfolioUrl: val.portfolioUrl || null,
       }
     })
     
@@ -146,6 +152,9 @@ export async function PUT(request: NextRequest) {
         active: val.active,
         featured: val.featured,
         showSummary: val.showSummary,
+        portfolioEnabled: val.portfolioEnabled ?? false,
+        portfolioTitle: val.portfolioTitle || null,
+        portfolioUrl: val.portfolioUrl || null,
       }
     })
     
