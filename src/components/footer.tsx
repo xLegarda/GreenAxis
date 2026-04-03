@@ -142,7 +142,7 @@ export function Footer({ config, services }: FooterProps) {
           <div className="text-center md:text-left">
             <h3 className="font-semibold text-white mb-5 text-lg">Servicios</h3>
             {displayServices.length > 0 ? (
-              <div className={`grid gap-x-6 gap-y-3 ${displayServices.length > 4 ? 'grid-cols-2' : 'grid-cols-1'} ${displayServices.length > 4 ? 'justify-items-center md:justify-items-start' : ''}`}>
+              <div className={`grid gap-x-6 gap-y-3 ${displayServices.length > 4 ? 'grid-cols-2 justify-items-center md:justify-items-start' : 'grid-cols-1 justify-items-center md:justify-items-start'}`}>
                 {displayServices.map((service) => (
                   <Link 
                     key={service.id}
