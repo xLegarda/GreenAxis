@@ -64,9 +64,9 @@ export function Footer({ config, services }: FooterProps) {
       <div className="container mx-auto px-4 py-16 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Logo y descripción */}
-          <div className="space-y-5">
+          <div className="space-y-5 text-center md:text-left">
             <Link href="/" className="inline-block">
-              <div style={{ position: 'relative', width: 160, height: 56 }} className="flex-shrink-0">
+              <div style={{ position: 'relative', width: 160, height: 56 }} className="flex-shrink-0 mx-auto md:mx-0">
                 <Image
                   src={logoUrl}
                   alt={siteName}
@@ -93,7 +93,7 @@ export function Footer({ config, services }: FooterProps) {
                   </p>
                 )}
                 {socialLinks.length > 0 && (
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 justify-center md:justify-start">
                     {socialLinks.map((link) => {
                       const Icon = link.icon
                       return (
@@ -116,9 +116,9 @@ export function Footer({ config, services }: FooterProps) {
           </div>
 
           {/* Enlaces rápidos */}
-          <div>
+          <div className="text-center md:text-left">
             <h3 className="font-semibold text-white mb-5 text-lg">Navegación</h3>
-            <ul className="space-y-3">
+            <ul className="space-y-3 flex flex-col items-center md:items-start">
               {[
                 { name: 'Inicio', href: '/' },
                 { name: 'Servicios', href: '/servicios' },
@@ -139,37 +139,39 @@ export function Footer({ config, services }: FooterProps) {
           </div>
 
           {/* Servicios dinámicos */}
-          <div>
+          <div className="text-center md:text-left">
             <h3 className="font-semibold text-white mb-5 text-lg">Servicios</h3>
             {displayServices.length > 0 ? (
-              <div className={`grid gap-x-8 gap-y-3 ${displayServices.length > 4 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className={`grid gap-x-6 gap-y-3 ${displayServices.length > 4 ? 'grid-cols-2' : 'grid-cols-1'} ${displayServices.length > 4 ? 'justify-items-center md:justify-items-start' : ''}`}>
                 {displayServices.map((service) => (
                   <Link 
                     key={service.id}
                     href={service.slug ? `/servicios/${service.slug}` : `/servicios#servicio-${service.id}`}
-                    className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group"
+                    className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group whitespace-nowrap"
                   >
                     <span className="w-0 group-hover:w-2 transition-all duration-200 h-0.5 bg-[#8BC34A] dark:bg-[#6BBE45] rounded-full" />
-                    {service.title}
+                    <span className="truncate max-w-[140px]">{service.title}</span>
                   </Link>
                 ))}
               </div>
             ) : (
-              <Link href="/servicios" className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group">
-                <span className="w-0 group-hover:w-2 transition-all duration-200 h-0.5 bg-[#8BC34A] dark:bg-[#6BBE45] rounded-full" />
-                Ver todos los servicios
-              </Link>
+              <div className="flex justify-center md:justify-start">
+                <Link href="/servicios" className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group">
+                  <span className="w-0 group-hover:w-2 transition-all duration-200 h-0.5 bg-[#8BC34A] dark:bg-[#6BBE45] rounded-full" />
+                  Ver todos los servicios
+                </Link>
+              </div>
             )}
           </div>
 
           {/* Contacto */}
-          <div>
+          <div className="text-center md:text-left">
             <h3 className="font-semibold text-white mb-5 text-lg">Contacto</h3>
-            <ul className="space-y-4">
+            <ul className="space-y-4 flex flex-col items-center md:items-start">
               {config.companyAddress && (
                 <li className="flex items-start gap-3 text-sm">
                   <MapPin className="h-5 w-5 text-[#8BC34A] dark:text-[#6BBE45] shrink-0 mt-0.5" />
-                  <span className="text-green-100/60 dark:text-gray-400">{config.companyAddress}</span>
+                  <span className="text-green-100/60 dark:text-gray-400 text-left">{config.companyAddress}</span>
                 </li>
               )}
               {config.companyPhone && (
