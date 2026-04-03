@@ -13,6 +13,9 @@ export default async function ContactoPage() {
         companyPhone: config.companyPhone,
         companyEmail: config.companyEmail,
         googleMapsEmbed: config.googleMapsEmbed,
+        portfolioEnabled: config.portfolioEnabled ?? false,
+        portfolioTitle: config.portfolioTitle,
+        portfolioUrl: config.portfolioUrl,
       }} />
     </PublicLayout>
   )
