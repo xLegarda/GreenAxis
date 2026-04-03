@@ -282,7 +282,15 @@ export function AboutPageContent({ config, aboutPage }: AboutPageContentProps) {
                 {aboutPage.teamTitle || 'Nuestro Equipo'}
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            <div className={`grid gap-8 max-w-6xl mx-auto ${
+              team.length === 1 
+                ? 'grid-cols-1 max-w-xs' 
+                : team.length === 2 
+                ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' 
+                : team.length === 3 
+                ? 'grid-cols-1 md:grid-cols-3 max-w-4xl' 
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+            }`}>
               {team.map((member, index) => (
                 <div key={index} className="text-center">
                   <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden bg-gray-200">

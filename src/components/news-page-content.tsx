@@ -140,45 +140,27 @@ export function NewsPageContent({ news, currentPage, totalPages, total, config }
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-4 mt-12">
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === 1}
-                    asChild={currentPage > 1}
-                  >
-                    {currentPage > 1 ? (
+                  {currentPage > 1 && (
+                    <Button variant="outline" asChild>
                       <Link href={`/noticias?page=${currentPage - 1}`}>
                         <ChevronLeft className="h-4 w-4 mr-2" />
                         Anterior
                       </Link>
-                    ) : (
-                      <span>
-                        <ChevronLeft className="h-4 w-4 mr-2" />
-                        Anterior
-                      </span>
-                    )}
-                  </Button>
+                    </Button>
+                  )}
                   
                   <span className="text-muted-foreground">
                     Página {currentPage} de {totalPages}
                   </span>
                   
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === totalPages}
-                    asChild={currentPage < totalPages}
-                  >
-                    {currentPage < totalPages ? (
+                  {currentPage < totalPages && (
+                    <Button variant="outline" asChild>
                       <Link href={`/noticias?page=${currentPage + 1}`}>
                         Siguiente
                         <ChevronRight className="h-4 w-4 ml-2" />
                       </Link>
-                    ) : (
-                      <span>
-                        Siguiente
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </span>
-                    )}
-                  </Button>
+                    </Button>
+                  )}
                 </div>
               )}
             </>

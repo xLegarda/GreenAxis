@@ -162,7 +162,10 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
               onClick={() => {
                 const element = document.getElementById('servicios')
                 if (element) {
-                  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  const offset = 80
+                  const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                  const offsetPosition = elementPosition - offset
+                  window.scrollTo({ top: offsetPosition, behavior: 'smooth' })
                 }
               }}
               className="inline-flex items-center justify-center gap-2 border-2 border-white text-white hover:bg-white hover:text-[#005A7A] bg-white/10 backdrop-blur-sm px-8 py-3 rounded-lg transition-all text-base font-medium"
@@ -194,7 +197,13 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`grid gap-6 ${
+              featuredServices.length === 1 
+                ? 'grid-cols-1 max-w-md mx-auto' 
+                : featuredServices.length === 2 
+                ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto' 
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            }`}>
               {featuredServices.map((service) => {
                 const IconComponent = getIconComponent(service.icon)
                 const serviceHref = getServiceHref(service)

@@ -53,8 +53,8 @@ export function Footer({ config, services }: FooterProps) {
 
   const logoUrl = config.logoUrl || '/logo.png'
   
-  // Mostrar máximo 4 servicios
-  const displayServices = services.slice(0, 4)
+  // Mostrar todos los servicios disponibles
+  const displayServices = services
 
   return (
     <footer className="bg-gradient-to-b from-[#005A7A] via-[#004A66] to-[#003D52] dark:from-[#051215] dark:via-[#0a1a1f] dark:to-[#0f2028] text-white relative overflow-hidden">
@@ -141,30 +141,25 @@ export function Footer({ config, services }: FooterProps) {
           {/* Servicios dinámicos */}
           <div>
             <h3 className="font-semibold text-white mb-5 text-lg">Servicios</h3>
-            <ul className="space-y-3">
-              {displayServices.length > 0 ? (
-                displayServices.map((service) => (
-                  <li key={service.id}>
-                    <Link 
-                      href={service.slug ? `/servicios/${service.slug}` : `/servicios#servicio-${service.id}`}
-                      className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group"
-                    >
-                      <span className="w-0 group-hover:w-2 transition-all duration-200 h-0.5 bg-[#8BC34A] dark:bg-[#6BBE45] rounded-full" />
-                      {service.title}
-                    </Link>
-                  </li>
-                ))
-              ) : (
-                // Fallback si no hay servicios
-                <>
-                  <li>
-                    <Link href="/servicios" className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm">
-                      Ver todos los servicios
-                    </Link>
-                  </li>
-                </>
-              )}
-            </ul>
+            {displayServices.length > 0 ? (
+              <div className={`grid gap-x-8 gap-y-3 ${displayServices.length > 4 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {displayServices.map((service) => (
+                  <Link 
+                    key={service.id}
+                    href={service.slug ? `/servicios/${service.slug}` : `/servicios#servicio-${service.id}`}
+                    className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group"
+                  >
+                    <span className="w-0 group-hover:w-2 transition-all duration-200 h-0.5 bg-[#8BC34A] dark:bg-[#6BBE45] rounded-full" />
+                    {service.title}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <Link href="/servicios" className="text-green-100/60 dark:text-gray-400 hover:text-[#8BC34A] dark:hover:text-[#6BBE45] transition-colors text-sm inline-flex items-center gap-1 group">
+                <span className="w-0 group-hover:w-2 transition-all duration-200 h-0.5 bg-[#8BC34A] dark:bg-[#6BBE45] rounded-full" />
+                Ver todos los servicios
+              </Link>
+            )}
           </div>
 
           {/* Contacto */}
