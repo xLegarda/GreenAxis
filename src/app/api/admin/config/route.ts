@@ -42,6 +42,9 @@ const adminConfigSchema = z.object({
   googleAnalytics: z.string().nullable().optional(),
   googleMapsEmbed: z.string().nullable().optional(),
   primaryColor: z.string().nullable().optional(),
+  portfolioEnabled: z.boolean().optional(),
+  portfolioTitle: z.string().nullable().optional(),
+  portfolioUrl: z.string().nullable().optional(),
 })
 
 // Helper para convertir string vacío a null
@@ -137,6 +140,10 @@ export async function PUT(request: Request) {
       googleAnalytics: emptyToNull(val.googleAnalytics),
       googleMapsEmbed: emptyToNull(val.googleMapsEmbed),
       primaryColor: emptyToNull(val.primaryColor),
+      // Portfolio
+      portfolioEnabled: val.portfolioEnabled ?? false,
+      portfolioTitle: emptyToNull(val.portfolioTitle),
+      portfolioUrl: emptyToNull(val.portfolioUrl),
     }
     
     const siteName = val.siteName || 'Green Axis S.A.S.'

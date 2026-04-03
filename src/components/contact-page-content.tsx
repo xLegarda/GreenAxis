@@ -11,6 +11,12 @@ import Link from 'next/link'
 import { toast } from '@/hooks/use-toast'
 import { COUNTRIES, validatePhone, getCountryHint } from '@/lib/phone-validation'
 
+function normalizeUrl(url: string | null | undefined): string {
+  if (!url) return '#'
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return `https://${url}`
+}
+
 interface PlatformConfig {
   siteName: string
   companyAddress: string | null
@@ -429,7 +435,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                   size="lg"
                   className="bg-[#6BBE45] hover:bg-[#5CAE38] dark:bg-[#8BC34A] dark:hover:bg-[#7AB83A] text-white font-medium px-8 shadow-lg"
                 >
-                  <a href={config.portfolioUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={normalizeUrl(config.portfolioUrl)} target="_blank" rel="noopener noreferrer">
                     <Download className="h-5 w-5 mr-2" />
                     Descargar Portafolio
                   </a>

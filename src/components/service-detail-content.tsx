@@ -13,6 +13,12 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Tractor, Droplet, CloudSun, Waves, Bird, Bug,
 }
 
+function normalizeUrl(url: string | null | undefined): string {
+  if (!url) return '#'
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return `https://${url}`
+}
+
 interface Service {
   id: string
   title: string
@@ -219,7 +225,7 @@ export function ServiceDetailContent({ service, config }: ServiceDetailContentPr
                         variant="outline"
                         className="w-full border-2 border-[#6BBE45] text-[#6BBE45] hover:bg-[#6BBE45] hover:text-white dark:border-[#8BC34A] dark:text-[#8BC34A] dark:hover:bg-[#8BC34A] dark:hover:text-white font-medium"
                       >
-                        <a href={service.portfolioUrl || config.portfolioUrl || '#'} target="_blank" rel="noopener noreferrer">
+                        <a href={normalizeUrl(service.portfolioUrl || config.portfolioUrl)} target="_blank" rel="noopener noreferrer">
                           <Download className="h-4 w-4 mr-2" />
                           Descargar
                         </a>
