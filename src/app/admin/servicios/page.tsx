@@ -265,6 +265,9 @@ export default function ServiciosAdminPage() {
       active: true,
       featured: false,
       showSummary: true,
+      portfolioEnabled: false,
+      portfolioTitle: '',
+      portfolioUrl: '',
     })
     setSlugEdited(false)
     editorDataRef.current = null
