@@ -102,6 +102,9 @@ interface Service {
   active: boolean
   featured: boolean
   showSummary: boolean
+  portfolioEnabled?: boolean
+  portfolioTitle?: string | null
+  portfolioUrl?: string | null
 }
 
 export default function ServiciosAdminPage() {
@@ -128,6 +131,9 @@ export default function ServiciosAdminPage() {
     active: true,
     featured: false,
     showSummary: true,
+    portfolioEnabled: false,
+    portfolioTitle: '',
+    portfolioUrl: '',
   })
 
   useEffect(() => {
@@ -298,7 +304,10 @@ export default function ServiciosAdminPage() {
       imageUrl: service.imageUrl || '',
       active: service.active,
       featured: service.featured,
-      showSummary: service.showSummary ?? true
+      showSummary: service.showSummary ?? true,
+      portfolioEnabled: service.portfolioEnabled ?? false,
+      portfolioTitle: service.portfolioTitle || '',
+      portfolioUrl: service.portfolioUrl || ''
     })
     setSlugEdited(false)
     editorDataRef.current = blocksData
@@ -688,6 +697,55 @@ export default function ServiciosAdminPage() {
                   checked={formData.showSummary}
                   onCheckedChange={(checked) => setFormData({ ...formData, showSummary: checked })}
                 />
+              </div>
+
+              {/* Portfolio Section */}
+              <div className="pt-4 border-t space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-[#6BBE45]" />
+                  <p className="text-sm font-semibold text-foreground">Portafolio Personalizado</p>
+                </div>
+                
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="portfolioEnabled" className="cursor-pointer flex-1">
+                    {formData.portfolioEnabled ? '📄 Portafolio habilitado' : '🚫 Portafolio deshabilitado'}
+                  </Label>
+                  <Switch
+                    id="portfolioEnabled"
+                    checked={formData.portfolioEnabled ?? false}
+                    onCheckedChange={(checked) => setFormData({ ...formData, portfolioEnabled: checked })}
+                  />
+                </div>
+
+                {formData.portfolioEnabled && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="portfolioTitle">Título del Portafolio</Label>
+                      <Input
+                        id="portfolioTitle"
+                        value={formData.portfolioTitle || ''}
+                        onChange={(e) => setFormData({ ...formData, portfolioTitle: e.target.value })}
+                        placeholder="Descarga el Portafolio de Servicios Ambientales"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Si está vacío, se usará el título general configurado
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="portfolioUrl">URL del Portafolio</Label>
+                      <Input
+                        id="portfolioUrl"
+                        value={formData.portfolioUrl || ''}
+                        onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                        placeholder="https://ejemplo.com/portafolio.pdf"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Si está vacío, se usará la URL general configurada
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

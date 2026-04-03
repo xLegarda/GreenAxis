@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Leaf, Recycle, TreePine, Droplets, Wind, Building2, ArrowRight, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Sparkles, Phone, Mail } from 'lucide-react'
+import { Leaf, Recycle, TreePine, Droplets, Wind, Building2, ArrowRight, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Sparkles, Phone, Mail, Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getServiceResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
@@ -25,6 +25,9 @@ interface PlatformConfig {
   siteName: string
   companyPhone?: string | null
   companyEmail?: string | null
+  portfolioEnabled?: boolean
+  portfolioTitle?: string | null
+  portfolioUrl?: string | null
 }
 
 interface ServicesPageContentProps {
@@ -274,7 +277,7 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
       )}
 
       {/* All Services Detail */}
-      <section id="servicios" className="py-16 bg-gray-50 dark:bg-[#0f2028]">
+      <section id="servicios" className="py-16 bg-gray-50 dark:bg-[#0f2028] scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <span className="text-[#6BBE45] dark:text-[#8BC34A] font-semibold text-sm uppercase tracking-wider">
@@ -362,6 +365,43 @@ export function ServicesPageContent({ services, config }: ServicesPageContentPro
           </div>
         </div>
       </section>
+
+      {/* Portfolio Download Section */}
+      {config.portfolioEnabled && config.portfolioUrl && (
+        <section className="py-16 bg-white dark:bg-[#0a1a1f]">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-gradient-to-br from-[#005A7A]/5 to-[#6BBE45]/5 dark:from-[#003D52]/20 dark:to-[#8BC34A]/10 rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100 dark:border-gray-800">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="shrink-0">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-[#6BBE45] to-[#5CAE38] dark:from-[#8BC34A] dark:to-[#7AB83A] flex items-center justify-center shadow-lg animate-bounce-slow">
+                      <FileText className="h-10 w-10 md:h-12 md:w-12 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-2xl md:text-3xl font-bold text-[#005A7A] dark:text-white mb-2">
+                      {config.portfolioTitle || 'Descarga Nuestro Portafolio Corporativo'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Conoce todos nuestros servicios y soluciones ambientales en un solo documento
+                    </p>
+                    <Button
+                      asChild
+                      size="lg"
+                      className="bg-[#6BBE45] hover:bg-[#5CAE38] dark:bg-[#8BC34A] dark:hover:bg-[#7AB83A] text-white font-medium px-8 shadow-lg"
+                    >
+                      <a href={config.portfolioUrl} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-5 w-5 mr-2" />
+                        Descargar Portafolio
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-br from-[#005A7A] via-[#004A66] to-[#003D52] dark:from-[#051215] dark:via-[#0a1a1f] dark:to-[#0f2028] relative overflow-hidden">

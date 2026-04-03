@@ -6,6 +6,7 @@ import { NewsSection } from '@/components/news-section'
 import { CTASection } from '@/components/cta-section'
 import { SocialFeedSection } from '@/components/social-feed-section'
 import { MapSection } from '@/components/map-section'
+import { PortfolioDownloadSection } from '@/components/portfolio-download-section'
 import { getCarouselSlides, getServices, getNews, getPlatformConfig } from '@/lib/actions'
 
 export default async function HomePage() {
@@ -22,13 +23,27 @@ export default async function HomePage() {
       <HeroCarousel slides={slides} />
       
       {/* Services Section */}
-      <ServicesSection services={services} />
+      <div className="animate-slide-down">
+        <ServicesSection services={services} />
+      </div>
+      
+      {/* Portfolio Download Section */}
+      {config.portfolioEnabled && config.portfolioUrl && (
+        <PortfolioDownloadSection 
+          title={config.portfolioTitle}
+          url={config.portfolioUrl}
+        />
+      )}
       
       {/* About Section */}
-      <AboutSection config={config} />
+      <div className="animate-slide-down">
+        <AboutSection config={config} />
+      </div>
       
       {/* News Section */}
-      <NewsSection news={newsData.news} />
+      <div className="animate-slide-down">
+        <NewsSection news={newsData.news} />
+      </div>
       
       {/* Social Feed */}
       <SocialFeedSection config={config} />
@@ -41,10 +56,12 @@ export default async function HomePage() {
       />
       
       {/* CTA Section */}
-      <CTASection 
-        companyPhone={config.companyPhone} 
-        companyEmail={config.companyEmail}
-      />
+      <div className="animate-slide-down">
+        <CTASection 
+          companyPhone={config.companyPhone} 
+          companyEmail={config.companyEmail}
+        />
+      </div>
     </PublicLayout>
   )
 }

@@ -47,26 +47,32 @@ model PlatformConfig {
   googleAnalytics      String?
   googleMapsEmbed      String?
   primaryColor         String?  @default("#6BBE45")
+  portfolioEnabled     Boolean  @default(false)
+  portfolioTitle       String?  @default("Descarga Nuestro Portafolio Corporativo")
+  portfolioUrl         String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String?  @unique
-  description String?
-  shortBlocks String?
-  content     String?
-  blocks      String?
-  icon        String?
-  imageUrl    String?
-  order       Int      @default(0)
-  active      Boolean  @default(true)
-  featured    Boolean  @default(false)
-  showSummary Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  title                 String
+  slug                  String?  @unique
+  description           String?
+  shortBlocks           String?
+  content               String?
+  blocks                String?
+  icon                  String?
+  imageUrl              String?
+  order                 Int      @default(0)
+  active                Boolean  @default(true)
+  featured              Boolean  @default(false)
+  showSummary           Boolean  @default(true)
+  portfolioEnabled      Boolean  @default(false)
+  portfolioTitle        String?  @default("Descarga el Portafolio de Servicios Ambientales")
+  portfolioUrl          String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model News {

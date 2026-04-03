@@ -158,6 +158,22 @@
   100% { transform: scale(1.08); }
 }
 
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
@@ -173,6 +189,14 @@
 .animate-slow-zoom {
   animation: slow-zoom 5.5s ease-out forwards;
   transform: scale(1.08); /* Fallback por si la animación no carga */
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.5s ease-out;
 }
 
 /* Scrollbar personalizado - Green Axis */

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink, ChevronDown } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink, ChevronDown, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +17,9 @@ interface PlatformConfig {
   companyPhone: string | null
   companyEmail: string | null
   googleMapsEmbed: string | null
+  portfolioEnabled: boolean
+  portfolioTitle: string | null
+  portfolioUrl: string | null
 }
 
 interface ContactPageContentProps {
@@ -408,6 +411,34 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
           </div>
         </div>
       </section>
+      
+      {/* Portfolio Download Section */}
+      {config.portfolioEnabled && config.portfolioUrl && (
+        <section className="py-12 bg-gray-50 dark:bg-[#0f2028]">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="bg-white dark:bg-[#0f252d] rounded-2xl shadow-lg p-8 border border-gray-100 dark:border-gray-800">
+                <h3 className="text-2xl font-bold text-[#005A7A] dark:text-white mb-3">
+                  {config.portfolioTitle || 'Descarga Nuestro Portafolio Corporativo'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Conoce todos nuestros servicios y soluciones ambientales en detalle
+                </p>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-[#6BBE45] hover:bg-[#5CAE38] dark:bg-[#8BC34A] dark:hover:bg-[#7AB83A] text-white font-medium px-8 shadow-lg"
+                >
+                  <a href={config.portfolioUrl} target="_blank" rel="noopener noreferrer">
+                    <Download className="h-5 w-5 mr-2" />
+                    Descargar Portafolio
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </>
   )
 }

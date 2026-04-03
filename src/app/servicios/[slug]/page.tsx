@@ -71,7 +71,10 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     blocks: service.blocks,
     icon: service.icon,
     imageUrl: service.imageUrl,
-    showSummary: service.showSummary
+    showSummary: service.showSummary,
+    portfolioEnabled: service.portfolioEnabled,
+    portfolioTitle: service.portfolioTitle,
+    portfolioUrl: service.portfolioUrl
   }
 
   return (

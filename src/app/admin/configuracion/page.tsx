@@ -40,6 +40,9 @@ interface PlatformConfig {
   primaryColor: string | null
   footerText: string | null
   socialText: string | null
+  portfolioEnabled: boolean
+  portfolioTitle: string | null
+  portfolioUrl: string | null
 }
 
 export default function ConfiguracionPage() {
@@ -120,6 +123,7 @@ export default function ConfiguracionPage() {
             <TabsTrigger value="contacto" className="shrink-0">Contacto</TabsTrigger>
             <TabsTrigger value="redes" className="shrink-0">Redes</TabsTrigger>
             <TabsTrigger value="whatsapp" className="shrink-0">WhatsApp</TabsTrigger>
+            <TabsTrigger value="portafolio" className="shrink-0">Portafolio</TabsTrigger>
             <TabsTrigger value="footer" className="shrink-0">Footer</TabsTrigger>
             <TabsTrigger value="seo" className="shrink-0">SEO</TabsTrigger>
           </TabsList>
@@ -345,6 +349,64 @@ export default function ConfiguracionPage() {
                   rows={3}
                   placeholder="¡Hola! Me gustaría obtener información sobre sus servicios ambientales."
                 />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Portafolio */}
+        <TabsContent value="portafolio">
+          <Card className="border-0">
+            <CardHeader>
+              <CardTitle>Portafolio Corporativo</CardTitle>
+              <CardDescription>Configura la descarga del portafolio en la página principal, contacto y servicios.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-accent rounded-lg">
+                <div>
+                  <p className="font-medium">Mostrar sección de portafolio</p>
+                  <p className="text-sm text-muted-foreground">Aparecerá en la página principal, contacto y servicios</p>
+                </div>
+                <Switch
+                  checked={config?.portfolioEnabled ?? false}
+                  onCheckedChange={(checked) => updateConfig('portfolioEnabled', checked)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="portfolioTitle">Título de la Sección</Label>
+                <Input
+                  id="portfolioTitle"
+                  value={config?.portfolioTitle || ''}
+                  onChange={(e) => updateConfig('portfolioTitle', e.target.value)}
+                  placeholder="Descarga Nuestro Portafolio Corporativo"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este texto aparecerá encima del botón de descarga
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="portfolioUrl">URL del Portafolio (PDF o enlace externo)</Label>
+                <Input
+                  id="portfolioUrl"
+                  value={config?.portfolioUrl || ''}
+                  onChange={(e) => updateConfig('portfolioUrl', e.target.value)}
+                  placeholder="https://ejemplo.com/portafolio.pdf"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Puede ser un enlace a un PDF en Google Drive, Dropbox, o cualquier URL externa
+                </p>
+              </div>
+
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <p className="text-sm font-medium">Dónde aparecerá:</p>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Página principal: Debajo de la sección de servicios</li>
+                  <li>Página de contacto: Debajo del formulario de cotización</li>
+                  <li>Página de servicios: Debajo del catálogo completo</li>
+                  <li>Servicios individuales: Opcionalmente en cada servicio (configurable por servicio)</li>
+                </ul>
               </div>
             </CardContent>
           </Card>

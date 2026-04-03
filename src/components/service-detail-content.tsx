@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, CheckCircle, Phone, Mail, Leaf, Recycle, TreePine, Droplets, Wind, Building2, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle, Phone, Mail, Leaf, Recycle, TreePine, Droplets, Wind, Building2, Sun, CloudRain, Mountain, Flower2, Landmark, Factory, Tractor, Droplet, CloudSun, Waves, Bird, Bug, Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { editorDataToText, renderEditorBlocks } from '@/components/editor-js'
 import { getHeroResponsiveUrl, isCloudinaryUrl } from '@/lib/cloudinary'
@@ -24,12 +24,18 @@ interface Service {
   icon: string | null
   imageUrl: string | null
   showSummary?: boolean
+  portfolioEnabled?: boolean
+  portfolioTitle?: string | null
+  portfolioUrl?: string | null
 }
 
 interface PlatformConfig {
   siteName: string
   companyPhone?: string | null
   companyEmail?: string | null
+  portfolioEnabled?: boolean
+  portfolioTitle?: string | null
+  portfolioUrl?: string | null
 }
 
 interface ServiceDetailContentProps {
@@ -200,11 +206,32 @@ export function ServiceDetailContent({ service, config }: ServiceDetailContentPr
                     )}
                   </div>
                 </div>
+
+                {/* Portfolio Download - Service Specific */}
+                {(service.portfolioEnabled || config.portfolioEnabled) && (service.portfolioUrl || config.portfolioUrl) && (
+                  <div className="lg:hidden mt-8 pt-8 border-t">
+                    <div className="bg-gradient-to-br from-[#005A7A]/5 to-[#6BBE45]/5 dark:from-[#003D52]/20 dark:to-[#8BC34A]/10 rounded-xl p-6 border border-gray-100 dark:border-gray-800">
+                      <p className="text-sm font-semibold text-[#005A7A] dark:text-white mb-3">
+                        {service.portfolioTitle || config.portfolioTitle || 'Descarga el Portafolio de Servicios Ambientales'}
+                      </p>
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="w-full border-2 border-[#6BBE45] text-[#6BBE45] hover:bg-[#6BBE45] hover:text-white dark:border-[#8BC34A] dark:text-[#8BC34A] dark:hover:bg-[#8BC34A] dark:hover:text-white font-medium"
+                      >
+                        <a href={service.portfolioUrl || config.portfolioUrl || '#'} target="_blank" rel="noopener noreferrer">
+                          <Download className="h-4 w-4 mr-2" />
+                          Descargar
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* CTA (desktop) */}
-            <aside className="hidden lg:block lg:sticky lg:top-24">
+            <aside className="hidden lg:block lg:sticky lg:top-24 space-y-4">
               <div className="rounded-2xl border bg-white dark:bg-[#0f252d] p-6 shadow-sm">
                 <p className="text-sm font-semibold text-[#005A7A] dark:text-white mb-3">
                   ¿Te interesa este servicio?
@@ -233,6 +260,30 @@ export function ServiceDetailContent({ service, config }: ServiceDetailContentPr
                   </div>
                 )}
               </div>
+
+              {/* Portfolio Download - Service Specific */}
+              {(service.portfolioEnabled || config.portfolioEnabled) && (service.portfolioUrl || config.portfolioUrl) && (
+                <div className="rounded-2xl border bg-gradient-to-br from-[#005A7A]/5 to-[#6BBE45]/5 dark:from-[#003D52]/20 dark:to-[#8BC34A]/10 p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-[#6BBE45]/10 dark:bg-[#8BC34A]/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-[#6BBE45] dark:text-[#8BC34A]" />
+                    </div>
+                    <p className="text-sm font-semibold text-[#005A7A] dark:text-white">
+                      {service.portfolioTitle || config.portfolioTitle || 'Descarga el Portafolio de Servicios Ambientales'}
+                    </p>
+                  </div>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full border-2 border-[#6BBE45] text-[#6BBE45] hover:bg-[#6BBE45] hover:text-white dark:border-[#8BC34A] dark:text-[#8BC34A] dark:hover:bg-[#8BC34A] dark:hover:text-white font-medium"
+                  >
+                    <a href={service.portfolioUrl || config.portfolioUrl || '#'} target="_blank" rel="noopener noreferrer">
+                      <Download className="h-4 w-4 mr-2" />
+                      Descargar
+                    </a>
+                  </Button>
+                </div>
+              )}
             </aside>
           </div>
         </div>
