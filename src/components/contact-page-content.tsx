@@ -426,7 +426,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
               <div className="bg-white dark:bg-[#0f252d] rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100 dark:border-gray-800">
                 <div className="flex flex-col md:flex-row items-center gap-8">
                   <div className="shrink-0">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-[#6BBE45] to-[#5CAE38] dark:from-[#8BC34A] dark:to-[#7AB83A] flex items-center justify-center shadow-lg">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-[#6BBE45] to-[#5CAE38] dark:from-[#8BC34A] dark:to-[#7AB83A] flex items-center justify-center shadow-lg animate-bounce-slow">
                       <FileText className="h-10 w-10 md:h-12 md:w-12 text-white" />
                     </div>
                   </div>
