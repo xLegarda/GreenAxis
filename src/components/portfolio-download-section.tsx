@@ -66,7 +66,7 @@ export function PortfolioDownloadSection({
                   size="lg"
                   className="bg-[#6BBE45] hover:bg-[#5CAE38] dark:bg-[#8BC34A] dark:hover:bg-[#7AB83A] text-white font-medium px-8 shadow-lg"
                 >
-                  <a href={url} target="_blank" rel="noopener noreferrer">
+                  <a href={normalizeUrl(url)} target="_blank" rel="noopener noreferrer">
                     <Download className="h-5 w-5 mr-2" />
                     Descargar Portafolio
                   </a>
