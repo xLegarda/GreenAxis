@@ -8,9 +8,15 @@ interface PortfolioDownloadSectionProps {
   className?: string
 }
 
-export function PortfolioDownloadSection({ 
-  title, 
-  url, 
+function normalizeUrl(url: string | null | undefined): string {
+  if (!url) return '#'
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return `https://${url}`
+}
+
+export function PortfolioDownloadSection({
+  title,
+  url,
   variant = 'default',
   className = ''
 }: PortfolioDownloadSectionProps) {
@@ -25,7 +31,7 @@ export function PortfolioDownloadSection({
           variant="outline"
           className="border-2 border-[#6BBE45] text-[#6BBE45] hover:bg-[#6BBE45] hover:text-white dark:border-[#8BC34A] dark:text-[#8BC34A] dark:hover:bg-[#8BC34A] dark:hover:text-white font-medium px-8 shadow-lg transition-all"
         >
-          <a href={url} target="_blank" rel="noopener noreferrer">
+          <a href={normalizeUrl(url)} target="_blank" rel="noopener noreferrer">
             <Download className="h-5 w-5 mr-2" />
             {title || 'Descargar Portafolio'}
           </a>
@@ -46,7 +52,7 @@ export function PortfolioDownloadSection({
                   <FileText className="h-10 w-10 md:h-12 md:w-12 text-white" />
                 </div>
               </div>
-              
+
               {/* Content */}
               <div className="flex-1 text-center md:text-left">
                 <h3 className="text-2xl md:text-3xl font-bold text-[#005A7A] dark:text-white mb-2">
