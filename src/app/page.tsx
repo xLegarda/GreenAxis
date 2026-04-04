@@ -27,14 +27,6 @@ export default async function HomePage() {
         <ServicesSection services={services} />
       </div>
       
-      {/* Portfolio Download Section */}
-      {config.portfolioEnabled && config.portfolioUrl && (
-        <PortfolioDownloadSection 
-          title={config.portfolioTitle}
-          url={config.portfolioUrl}
-        />
-      )}
-      
       {/* About Section */}
       <div className="animate-slide-down">
         <AboutSection config={config} />

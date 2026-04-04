@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink, ChevronDown, Download } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink, ChevronDown, Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -420,26 +420,35 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
       
       {/* Portfolio Download Section */}
       {config.portfolioEnabled && config.portfolioUrl && (
-        <section className="py-12 bg-gray-50 dark:bg-[#0f2028]">
+        <section className="py-16 bg-gradient-to-br from-[#005A7A]/5 to-[#6BBE45]/5 dark:from-[#003D52]/20 dark:to-[#8BC34A]/10">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="bg-white dark:bg-[#0f252d] rounded-2xl shadow-lg p-8 border border-gray-100 dark:border-gray-800">
-                <h3 className="text-2xl font-bold text-[#005A7A] dark:text-white mb-3">
-                  {config.portfolioTitle || 'Descarga Nuestro Portafolio Corporativo'}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Conoce todos nuestros servicios y soluciones ambientales en detalle
-                </p>
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-[#6BBE45] hover:bg-[#5CAE38] dark:bg-[#8BC34A] dark:hover:bg-[#7AB83A] text-white font-medium px-8 shadow-lg"
-                >
-                  <a href={normalizeUrl(config.portfolioUrl)} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-5 w-5 mr-2" />
-                    Descargar Portafolio
-                  </a>
-                </Button>
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white dark:bg-[#0f252d] rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100 dark:border-gray-800">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="shrink-0">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-[#6BBE45] to-[#5CAE38] dark:from-[#8BC34A] dark:to-[#7AB83A] flex items-center justify-center shadow-lg">
+                      <FileText className="h-10 w-10 md:h-12 md:w-12 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-2xl md:text-3xl font-bold text-[#005A7A] dark:text-white mb-2">
+                      {config.portfolioTitle || 'Descarga Nuestro Portafolio Corporativo'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Conoce todos nuestros servicios y soluciones ambientales en un solo documento
+                    </p>
+                    <Button
+                      asChild
+                      size="lg"
+                      className="bg-[#6BBE45] hover:bg-[#5CAE38] dark:bg-[#8BC34A] dark:hover:bg-[#7AB83A] text-white font-medium px-8 shadow-lg"
+                    >
+                      <a href={normalizeUrl(config.portfolioUrl)} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-5 w-5 mr-2" />
+                        Descargar Portafolio
+                      </a>
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
