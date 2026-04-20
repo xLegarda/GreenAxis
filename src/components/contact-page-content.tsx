@@ -253,20 +253,78 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
             </div>
             
             {/* Contact Form */}
-            <div className="bg-card rounded-2xl p-8 shadow-lg overflow-hidden">
+            <div className="bg-card rounded-2xl p-8 shadow-lg overflow-hidden relative">
               <AnimatePresence mode="wait">
                 {success ? (
+                  <>
+                    {/* Lottie - capa independiente, SIN exit animation */}
+                    <motion.div
+                      key="lottie-bg"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }} // Salida instantánea
+                      transition={{ 
+                        delay: 0.2,
+                        duration: 0.6,
+                        ease: [0.22, 1, 0.36, 1]
+                      }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+                    >
+                      <div className="w-28 h-28 opacity-10">
+                        <Lottie 
+                          animationData={checkboxAnimation} 
+                          loop={false}
+                          className="w-full h-full"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Contenido de éxito - con animación de salida */}
+                    <motion.div
+                      key="success-content"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      className="relative z-10 text-center py-12"
+                    >
+                      <motion.h3
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.4 }}
+                        className="text-2xl font-bold text-foreground mb-2"
+                      >
+                        ¡Mensaje Enviado!
+                      </motion.h3>
+                      <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.4 }}
+                        className="text-muted-foreground mb-6"
+                      >
+                        Gracias por contactarnos. Te responderemos lo antes posible.
+                      </motion.p>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6, duration: 0.4 }}
+                      >
+                        <Button 
+                          onClick={() => setSuccess(false)} 
+                          className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white transition-all duration-300 hover:scale-105"
+                        >
+                          Enviar otro mensaje
+                        </Button>
+                      </motion.div>
+                    </motion.div>
+                  </>
+                ) : (
                   <motion.div
-                    key="success"
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                    transition={{ 
-                      duration: 0.5,
-                      ease: [0.22, 1, 0.36, 1],
-                      times: [0, 0.3, 0.7, 1]
-                    }}
-                    className="text-center py-12"
+                    key="form"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <motion.div
                       initial={{ opacity: 0, scale: 0 }}
@@ -316,10 +374,9 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                 ) : (
                   <motion.div
                     key="form"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
                   >
                   <h2 className="text-2xl font-bold text-foreground mb-6">
                     Solicitar Cotización
