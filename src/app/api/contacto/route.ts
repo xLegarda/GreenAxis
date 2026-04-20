@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
         const phoneValidation = validateFullPhone(data.phone)
         if (!phoneValidation.valid) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             message: phoneValidation.error || 'Teléfono inválido',
             path: ['phone']
           })

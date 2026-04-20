@@ -10,6 +10,9 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { toast } from '@/hooks/use-toast'
 import { COUNTRIES, validatePhone, getCountryHint } from '@/lib/phone-validation'
+import Lottie from 'lottie-react'
+import checkboxAnimation from '@/assets/lottieflow-checkbox-06-6BBE45-easey.json'
+import { AnimatePresence, motion } from 'framer-motion'
 
 function normalizeUrl(url: string | null | undefined): string {
   if (!url) return '#'
@@ -250,24 +253,74 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
             </div>
             
             {/* Contact Form */}
-            <div className="bg-card rounded-2xl p-8 shadow-lg">
-              {success ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-foreground mb-2">
-                    ¡Mensaje Enviado!
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    Gracias por contactarnos. Te responderemos lo antes posible.
-                  </p>
-                  <Button onClick={() => setSuccess(false)} className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white">
-                    Enviar otro mensaje
-                  </Button>
-                </div>
-              ) : (
-                <>
+            <div className="bg-card rounded-2xl p-8 shadow-lg overflow-hidden">
+              <AnimatePresence mode="wait">
+                {success ? (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                    transition={{ 
+                      duration: 0.5,
+                      ease: [0.22, 1, 0.36, 1],
+                      times: [0, 0.3, 0.7, 1]
+                    }}
+                    className="text-center py-12"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ 
+                        delay: 0.2,
+                        duration: 0.6,
+                        ease: [0.22, 1, 0.36, 1]
+                      }}
+                      className="w-28 h-28 mx-auto mb-6"
+                    >
+                      <Lottie 
+                        animationData={checkboxAnimation} 
+                        loop={false}
+                        className="w-full h-full"
+                      />
+                    </motion.div>
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4, duration: 0.4 }}
+                      className="text-2xl font-bold text-foreground mb-2"
+                    >
+                      ¡Mensaje Enviado!
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.4 }}
+                      className="text-muted-foreground mb-6"
+                    >
+                      Gracias por contactarnos. Te responderemos lo antes posible.
+                    </motion.p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 0.4 }}
+                    >
+                      <Button 
+                        onClick={() => setSuccess(false)} 
+                        className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white transition-all duration-300 hover:scale-105"
+                      >
+                        Enviar otro mensaje
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
                   <h2 className="text-2xl font-bold text-foreground mb-6">
                     Solicitar Cotización
                   </h2>
@@ -396,23 +449,24 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                       </Label>
                     </div>
                     
-                    <Button
-                      type="submit"
-                      className="w-full bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        'Enviando...'
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Enviar Mensaje
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </>
-              )}
+                     <Button
+                       type="submit"
+                       className="w-full bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium"
+                       disabled={loading}
+                     >
+                       {loading ? (
+                         'Enviando...'
+                       ) : (
+                         <>
+                           <Send className="h-4 w-4 mr-2" />
+                           Enviar Mensaje
+                         </>
+                       )}
+                     </Button>
+                   </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
