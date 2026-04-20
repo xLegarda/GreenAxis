@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Send, CheckCircle, ExternalLink, ChevronDown, Download, FileText } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, ExternalLink, ChevronDown, Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -61,7 +61,6 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
       // Si es solo la URL, usarla directamente
       if (config.googleMapsEmbed.startsWith('http')) return config.googleMapsEmbed
     }
-    
     // Si solo hay dirección, crear embed URL
     if (config.companyAddress) {
       const encodedAddress = encodeURIComponent(config.companyAddress)
@@ -157,7 +156,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
       setLoading(false)
     }
   }
-  
+   
   return (
     <>
       {/* Hero Section */}
@@ -253,24 +252,19 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
             </div>
             
             {/* Contact Form */}
-            <div className="bg-card rounded-2xl p-8 shadow-lg overflow-hidden relative">
+            <div className="bg-card rounded-2xl p-8 shadow-lg overflow-hidden relative min-h-[500px]">
               <AnimatePresence mode="wait">
                 {success ? (
                   <>
-                    {/* Lottie - capa independiente, SIN exit animation */}
+                    {/* Lottie de fondo - capa estática sin animación de salida */}
                     <motion.div
                       key="lottie-bg"
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0 }} // Salida instantánea
-                      transition={{ 
-                        delay: 0.2,
-                        duration: 0.6,
-                        ease: [0.22, 1, 0.36, 1]
-                      }}
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.15 }}
+                      transition={{ duration: 0.3 }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
                     >
-                      <div className="w-28 h-28 opacity-10">
+                      <div className="w-32 h-32">
                         <Lottie 
                           animationData={checkboxAnimation} 
                           loop={false}
@@ -279,43 +273,27 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                       </div>
                     </motion.div>
 
-                    {/* Contenido de éxito - con animación de salida */}
+                    {/* Contenido principal con animación de salida suave */}
                     <motion.div
                       key="success-content"
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                       className="relative z-10 text-center py-12"
                     >
-                      <motion.h3
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4, duration: 0.4 }}
-                        className="text-2xl font-bold text-foreground mb-2"
-                      >
+                      <h3 className="text-2xl font-bold text-foreground mb-2">
                         ¡Mensaje Enviado!
-                      </motion.h3>
-                      <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.4 }}
-                        className="text-muted-foreground mb-6"
-                      >
+                      </h3>
+                      <p className="text-muted-foreground mb-6">
                         Gracias por contactarnos. Te responderemos lo antes posible.
-                      </motion.p>
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 0.4 }}
+                      </p>
+                      <Button 
+                        onClick={() => setSuccess(false)} 
+                        className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white transition-all duration-300 hover:scale-105"
                       >
-                        <Button 
-                          onClick={() => setSuccess(false)} 
-                          className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white transition-all duration-300 hover:scale-105"
-                        >
-                          Enviar otro mensaje
-                        </Button>
-                      </motion.div>
+                        Enviar otro mensaje
+                      </Button>
                     </motion.div>
                   </>
                 ) : (
@@ -326,201 +304,149 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                     exit={{ opacity: 0, y: 20 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ 
-                        delay: 0.2,
-                        duration: 0.6,
-                        ease: [0.22, 1, 0.36, 1]
-                      }}
-                      className="w-28 h-28 mx-auto mb-6"
-                    >
-                      <Lottie 
-                        animationData={checkboxAnimation} 
-                        loop={false}
-                        className="w-full h-full"
-                      />
-                    </motion.div>
-                    <motion.h3
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, duration: 0.4 }}
-                      className="text-2xl font-bold text-foreground mb-2"
-                    >
-                      ¡Mensaje Enviado!
-                    </motion.h3>
-                    <motion.p
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.4 }}
-                      className="text-muted-foreground mb-6"
-                    >
-                      Gracias por contactarnos. Te responderemos lo antes posible.
-                    </motion.p>
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6, duration: 0.4 }}
-                    >
-                      <Button 
-                        onClick={() => setSuccess(false)} 
-                        className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white transition-all duration-300 hover:scale-105"
-                      >
-                        Enviar otro mensaje
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="form"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                  >
-                  <h2 className="text-2xl font-bold text-foreground mb-6">
-                    Solicitar Cotización
-                  </h2>
-                  
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nombre completo *</Label>
-                        <Input
-                          id="name"
-                          required
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="Tu nombre"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Correo electrónico *</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          required
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          placeholder="tu@correo.com"
-                        />
-                      </div>
-                    </div>
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Solicitar Cotización
+                    </h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                      <Label htmlFor="phone">Teléfono</Label>
-                      <div className="flex gap-2">
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
-                            className="flex items-center justify-between w-[120px] h-10 px-3 border border-input bg-background rounded-md text-sm hover:bg-accent"
-                          >
-                            <span>{formData.countryCode}</span>
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                          </button>
-                          {countryDropdownOpen && (
-                            <div className="absolute z-50 w-[180px] max-h-[200px] overflow-auto mt-1 bg-popover border rounded-md shadow-lg">
-                                {COUNTRIES.map((country) => (
-                                <button
-                                  key={country.code}
-                                  type="button"
-                                  onClick={() => {
-                                    setFormData({ ...formData, countryCode: country.code })
-                                    setCountryDropdownOpen(false)
-                                    setPhoneError('')
-                                    setPhoneHint(getCountryHint(country.code))
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${
-                                    formData.countryCode === country.code ? 'bg-accent' : ''
-                                  }`}
-                                >
-                                  {country.code} {country.name}
-                                </button>
-                              ))}
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Nombre completo *</Label>
+                          <Input
+                            id="name"
+                            required
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            placeholder="Tu nombre"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Correo electrónico *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            required
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="tu@correo.com"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Teléfono</Label>
+                          <div className="flex gap-2">
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                                className="flex items-center justify-between w-[120px] h-10 px-3 border border-input bg-background rounded-md text-sm hover:bg-accent"
+                              >
+                                <span>{formData.countryCode}</span>
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </button>
+                              {countryDropdownOpen && (
+                                <div className="absolute z-50 w-[180px] max-h-[200px] overflow-auto mt-1 bg-popover border rounded-md shadow-lg">
+                                    {COUNTRIES.map((country) => (
+                                    <button
+                                      key={country.code}
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData({ ...formData, countryCode: country.code })
+                                        setCountryDropdownOpen(false)
+                                        setPhoneError('')
+                                        setPhoneHint(getCountryHint(country.code))
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${
+                                        formData.countryCode === country.code ? 'bg-accent' : ''
+                                      }`}
+                                    >
+                                      {country.code} {country.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
+                            <Input
+                              id="phone"
+                              value={formData.phone}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^\d\s\-()]/g, '')
+                                setFormData({ ...formData, phone: value })
+                                if (phoneError) setPhoneError('')
+                              }}
+                              placeholder={phoneHint}
+                              className="flex-1"
+                            />
+                          </div>
+                          {phoneError && (
+                            <p className="text-sm text-red-500">{phoneError}</p>
                           )}
                         </div>
-                        <Input
-                          id="phone"
-                          value={formData.phone}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/[^\d\s\-()]/g, '')
-                            setFormData({ ...formData, phone: value })
-                            if (phoneError) setPhoneError('')
-                          }}
-                          placeholder={phoneHint}
-                          className="flex-1"
-                        />
-                      </div>
-                      {phoneError && (
-                        <p className="text-sm text-red-500">{phoneError}</p>
-                      )}
-                    </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="company">Empresa</Label>
+                            <Input
+                              id="company"
+                              value={formData.company}
+                              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                              placeholder="Nombre de tu empresa"
+                            />
+                          </div>
+                        </div>
+                      
                       <div className="space-y-2">
-                        <Label htmlFor="company">Empresa</Label>
+                        <Label htmlFor="subject">Asunto</Label>
                         <Input
-                          id="company"
-                          value={formData.company}
-                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                          placeholder="Nombre de tu empresa"
+                          id="subject"
+                          value={formData.subject}
+                          onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                          placeholder="¿En qué podemos ayudarte?"
                         />
                       </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="subject">Asunto</Label>
-                      <Input
-                        id="subject"
-                        value={formData.subject}
-                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        placeholder="¿En qué podemos ayudarte?"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="message">Mensaje *</Label>
-                      <Textarea
-                        id="message"
-                        required
-                        value={formData.message}
-                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        placeholder="Describe tu consulta o los servicios que necesitas..."
-                        className="min-h-[150px]"
-                      />
-                    </div>
-                    
-                    <div className="flex items-start space-x-2">
-                      <Checkbox
-                        id="consent"
-                        checked={consent}
-                        onCheckedChange={(checked) => setConsent(checked as boolean)}
-                      />
-                      <Label htmlFor="consent" className="text-sm text-muted-foreground leading-tight">
-                        Acepto la{' '}
-                        <Link href="/privacidad" className="text-primary hover:underline">
-                          Política de Tratamiento de Datos Personales
-                        </Link>
-                        {' '}y autorizo el uso de mis datos para ser contactado.
-                      </Label>
-                    </div>
-                    
-                     <Button
-                       type="submit"
-                       className="w-full bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium"
-                       disabled={loading}
-                     >
-                       {loading ? (
-                         'Enviando...'
-                       ) : (
-                         <>
-                           <Send className="h-4 w-4 mr-2" />
-                           Enviar Mensaje
-                         </>
-                       )}
-                     </Button>
-                   </form>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="message">Mensaje *</Label>
+                        <Textarea
+                          id="message"
+                          required
+                          value={formData.message}
+                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                          placeholder="Describe tu consulta o los servicios que necesitas..."
+                          className="min-h-[150px]"
+                        />
+                      </div>
+                      
+                      <div className="flex items-start space-x-2">
+                        <Checkbox
+                          id="consent"
+                          checked={consent}
+                          onCheckedChange={(checked) => setConsent(checked as boolean)}
+                        />
+                        <Label htmlFor="consent" className="text-sm text-muted-foreground leading-tight">
+                          Acepto la{' '}
+                          <Link href="/privacidad" className="text-primary hover:underline">
+                            Política de Tratamiento de Datos Personales
+                          </Link>
+                          {' '}y autorizo el uso de mis datos para ser contactado.
+                        </Label>
+                      </div>
+                      
+                      <Button
+                        type="submit"
+                        className="w-full bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          'Enviando...'
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Enviar Mensaje
+                          </>
+                        )}
+                      </Button>
+                    </form>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -538,7 +464,7 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                 <div className="flex flex-col md:flex-row items-center gap-8">
                   <div className="shrink-0">
                     <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-[#6BBE45] to-[#5CAE38] dark:from-[#8BC34A] dark:to-[#7AB83A] flex items-center justify-center shadow-lg animate-bounce-slow">
-                      <FileText className="h-10 w-10 md:h-12 md:w-12 text-white" />
+                      <FileText className="h-10 w-10 md:h-12 md:h-12 text-white" />
                     </div>
                   </div>
                   <div className="flex-1 text-center md:text-left">
