@@ -66,10 +66,8 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
       const encodedAddress = encodeURIComponent(config.companyAddress)
       return `https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`
     }
-    
     return null
   }
-
   // Crear URL para abrir en Google Maps
   const getGoogleMapsUrl = () => {
     if (config.companyAddress) {
@@ -252,42 +250,54 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
             </div>
             
             {/* Contact Form */}
-            <div className="bg-card rounded-2xl p-8 shadow-lg overflow-hidden relative min-h-[500px]">
+            <div className="bg-card rounded-2xl p-8 shadow-lg overflow-hidden relative">
               <AnimatePresence mode="wait">
                 {success ? (
-                  <>
-                    {/* Lottie de fondo - capa estática sin animación de salida */}
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-center py-12"
+                  >
                     <motion.div
-                      key="lottie-bg"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 0.15 }}
-                      transition={{ duration: 0.3 }}
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ 
+                        delay: 0.1,
+                        duration: 0.5,
+                        ease: [0.22, 1, 0.36, 1]
+                      }}
+                      className="w-28 h-28 mx-auto mb-6"
                     >
-                      <div className="w-32 h-32">
-                        <Lottie 
-                          animationData={checkboxAnimation} 
-                          loop={false}
-                          className="w-full h-full"
-                        />
-                      </div>
+                      <Lottie 
+                        animationData={checkboxAnimation} 
+                        loop={false}
+                        className="w-full h-full"
+                      />
                     </motion.div>
-
-                    {/* Contenido principal con animación de salida suave */}
-                    <motion.div
-                      key="success-content"
-                      initial={{ opacity: 0, y: 30 }}
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                      className="relative z-10 text-center py-12"
+                      transition={{ delay: 0.4, duration: 0.3 }}
+                      className="text-2xl font-bold text-foreground mb-2"
                     >
-                      <h3 className="text-2xl font-bold text-foreground mb-2">
-                        ¡Mensaje Enviado!
-                      </h3>
-                      <p className="text-muted-foreground mb-6">
-                        Gracias por contactarnos. Te responderemos lo antes posible.
-                      </p>
+                      ¡Mensaje Enviado!
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.3 }}
+                      className="text-muted-foreground mb-6"
+                    >
+                      Gracias por contactarnos. Te responderemos lo antes posible.
+                    </motion.p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 0.3 }}
+                    >
                       <Button 
                         onClick={() => setSuccess(false)} 
                         className="bg-[#6BBE45] hover:bg-[#5CAE38] text-white transition-all duration-300 hover:scale-105"
@@ -295,14 +305,14 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                         Enviar otro mensaje
                       </Button>
                     </motion.div>
-                  </>
+                  </motion.div>
                 ) : (
                   <motion.div
                     key="form"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <h2 className="text-2xl font-bold text-foreground mb-6">
                       Solicitar Cotización
@@ -432,20 +442,20 @@ export function ContactPageContent({ config }: ContactPageContentProps) {
                         </Label>
                       </div>
                       
-                      <Button
-                        type="submit"
-                        className="w-full bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium"
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          'Enviando...'
-                        ) : (
-                          <>
-                            <Send className="h-4 w-4 mr-2" />
-                            Enviar Mensaje
-                          </>
-                        )}
-                      </Button>
+                       <Button
+                         type="submit"
+                         className="w-full bg-[#6BBE45] hover:bg-[#5CAE38] text-white font-medium"
+                         disabled={loading}
+                       >
+                         {loading ? (
+                           'Enviando...'
+                         ) : (
+                           <>
+                             <Send className="h-4 w-4 mr-2" />
+                             Enviar Mensaje
+                           </>
+                         )}
+                       </Button>
                     </form>
                   </motion.div>
                 )}
