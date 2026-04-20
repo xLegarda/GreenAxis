@@ -40,7 +40,7 @@ async function sendContactNotification(
       from: RESEND_FROM_EMAIL,
       to: toEmail,
       replyTo: contactData.email,
-      subject: `Nuevo mensaje de contacto: ${contactData.subject || 'Sin asunto'}`,
+      subject: `📧 Nuevo mensaje de contacto: ${contactData.subject || 'Sin asunto'}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -63,44 +63,44 @@ async function sendContactNotification(
         <body>
           <div class="container">
             <div class="header">
-              <h1>Nuevo Mensaje de Contacto</h1>
+              <h1>🌱 Nuevo Mensaje de Contacto</h1>
             </div>
             <div class="content">
               <p>Has recibido un nuevo mensaje a través del formulario de contacto:</p>
               
               <div class="field">
-                <div class="field-label">Nombre:</div>
+                <div class="field-label">👤 Nombre:</div>
                 <div class="field-value">${contactData.name}</div>
               </div>
               
               <div class="field">
-                <div class="field-label">Email:</div>
+                <div class="field-label">📧 Email:</div>
                 <div class="field-value"><a href="mailto:${contactData.email}">${contactData.email}</a></div>
               </div>
               
               ${contactData.phone ? `
               <div class="field">
-                <div class="field-label">Telefono:</div>
+                <div class="field-label">📱 Telefono:</div>
                 <div class="field-value"><a href="tel:${contactData.phone}">${contactData.phone}</a></div>
               </div>
               ` : ''}
               
               ${contactData.company ? `
               <div class="field">
-                <div class="field-label">Empresa:</div>
+                <div class="field-label">🏢 Empresa:</div>
                 <div class="field-value">${contactData.company}</div>
               </div>
               ` : ''}
               
               ${contactData.subject ? `
               <div class="field">
-                <div class="field-label">Asunto:</div>
+                <div class="field-label">📌 Asunto:</div>
                 <div class="field-value">${contactData.subject}</div>
               </div>
               ` : ''}
               
               <div class="field">
-                <div class="field-label">Mensaje:</div>
+                <div class="field-label">💬 Mensaje:</div>
                 <div class="message-box">${contactData.message}</div>
               </div>
               
