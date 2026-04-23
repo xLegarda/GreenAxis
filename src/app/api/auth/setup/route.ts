@@ -4,7 +4,7 @@ import { validatePassword } from '@/lib/password-validator'
 import { z } from 'zod'
 
 const setupSchema = z.object({
-  email: z.string({ message: 'Email es requerido' }).email('Formato de email inválido'),
+  email: z.string({ message: 'Email es requerido' }).email({ message: 'Formato de email inválido' }),
   password: z.string({ message: 'Contraseña es requerida' }).min(8, 'Contraseña mínima de 8 caracteres'),
   name: z.string().optional()
 })

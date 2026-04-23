@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         .trim()
         .min(2, 'Nombre es requerido (mínimo 2 caracteres)'),
       email: z.string({ message: 'Email válido es requerido' })
-        .email('Email válido es requerido'),
+        .email({ message: 'Email válido es requerido' }),
       phone: z.string().optional().nullable(),
       company: z.string().optional().nullable(),
       subject: z.string().optional().nullable(),

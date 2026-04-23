@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     
     // Definimos el schema de validación con Zod
     const loginSchema = z.object({
-      email: z.string({ message: 'Email y contraseña son requeridos' }).email('Formato de email inválido'),
+      email: z.string({ message: 'Email y contraseña son requeridos' }).email({ message: 'Formato de email inválido' }),
       password: z.string({ message: 'Email y contraseña son requeridos' }).min(1, 'Email y contraseña son requeridos'),
     })
 

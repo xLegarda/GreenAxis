@@ -7,7 +7,7 @@ import { Resend } from 'resend'
 import { z } from 'zod'
 
 const resetRequestSchema = z.object({
-  email: z.string({ message: 'Email es requerido' }).email('Formato de email inválido'),
+  email: z.string({ message: 'Email es requerido' }).email({ message: 'Formato de email inválido' }),
 })
 
 const resetPasswordSchema = z.object({
@@ -18,15 +18,42 @@ const resetPasswordSchema = z.object({
 const resend = new Resend(process.env.RESEND_API_KEY || '')
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
-// Generar token seguro
+// Rate limiting dual: IP + Email para prevenir abuso del endpoint de reset
+const resetAttempts = new Map<string, { count: number; lastAttempt: number }>()
+
+const MAX_RESET_IP_ATTEMPTS = 10
+const MAX_RESET_EMAIL_ATTEMPTS = 3
+const RESET_LOCKOUT_TIME = 15 * 60 * 1000 // 15 minutos
+
+// Función de verificación de rate limit con auto-limpieza de entradas expiradas
+function checkResetRateLimit(key: string, maxAttempts: number) {
+  const attempts = resetAttempts.get(key)
+  if (!attempts) return { blocked: false }
+
+  const elapsed = Date.now() - attempts.lastAttempt
+  // Limpiar entradas expiradas automáticamente
+  if (elapsed >= RESET_LOCKOUT_TIME) {
+    resetAttempts.delete(key)
+    return { blocked: false }
+  }
+
+  if (attempts.count >= maxAttempts) {
+    const remaining = Math.ceil((RESET_LOCKOUT_TIME - elapsed) / 60000)
+    return { blocked: true, remaining }
+  }
+
+  return { blocked: false }
+}
+
+// Generar token seguro de 64 caracteres hex
 function generateResetToken(): string {
   return crypto.randomBytes(32).toString('hex')
 }
 
-// Enviar email con Resend
+// Enviar email de recuperación usando Resend API
 async function sendResetEmail(email: string, token: string, baseUrl: string): Promise<boolean> {
   const resetUrl = `${baseUrl}/portal-interno/restablecer?token=${token}`
-  
+
   try {
     await resend.emails.send({
       from: RESEND_FROM_EMAIL,
@@ -82,7 +109,7 @@ async function sendResetEmail(email: string, token: string, baseUrl: string): Pr
         </html>
       `,
     })
-    
+
     return true
   } catch (error) {
     console.error('Error sending email:', error)
@@ -94,73 +121,117 @@ async function sendResetEmail(email: string, token: string, baseUrl: string): Pr
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
+    // Validar formato del email con Zod
     const validationResult = resetRequestSchema.safeParse(body)
     if (!validationResult.success) {
       return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
     }
     const { email } = validationResult.data
-    
-    // Verificar si existe el usuario
+
+    // Extraer IP del cliente para rate limiting
+    const ip = request.headers.get('x-real-ip') ??
+           request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+           'unknown'
+
+    // Keys para rate limiting: normalizamos email a lowercase para evitar bypass por case
+    const ipKey = `reset-ip:${ip}`
+    const emailKey = `reset-email:${email.toLowerCase()}`
+
+    // Verificar rate limit por IP (protege contra bots que usan múltiples emails)
+    const ipCheck = checkResetRateLimit(ipKey, MAX_RESET_IP_ATTEMPTS)
+    if (ipCheck.blocked) {
+      return NextResponse.json({
+        error: `Demasiadas solicitudes desde esta red. Intente en ${ipCheck.remaining} minuto(s).`,
+        locked: true
+      }, { status: 429 })
+    }
+
+    // Verificar rate limit por email (protege contra ataques a email específico)
+    const emailCheck = checkResetRateLimit(emailKey, MAX_RESET_EMAIL_ATTEMPTS)
+    if (emailCheck.blocked) {
+      return NextResponse.json({
+        error: `Demasiadas solicitudes para este email. Intente en ${emailCheck.remaining} minuto(s).`,
+        locked: true
+      }, { status: 429 })
+    }
+
+    // Incrementar contadores ANTES del lookup para prevenir enumeración de usuarios
+    // Aunque el email no exista en BD, el contador ya se incrementará
+    // así un atacante no puede descubrir qué emails están registrados
+    const ipAttempts = resetAttempts.get(ipKey) || { count: 0, lastAttempt: 0 }
+    resetAttempts.set(ipKey, {
+      count: ipAttempts.count + 1,
+      lastAttempt: Date.now()
+    })
+
+    const emailAttempts = resetAttempts.get(emailKey) || { count: 0, lastAttempt: 0 }
+    resetAttempts.set(emailKey, {
+      count: emailAttempts.count + 1,
+      lastAttempt: Date.now()
+    })
+
+    // Buscar usuario por email normalizado
     const admin = await db.admin.findUnique({
       where: { email: email.toLowerCase() }
     })
-    
-    // Por seguridad, siempre responder éxito aunque no exista
+
+    // Por seguridad, siempre respondemos éxito aunque el email no exista
+    // Esto evita enumeración de emails válidos
     if (!admin) {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Si el email existe, recibirás un enlace de recuperación' 
+      return NextResponse.json({
+        success: true,
+        message: 'Si el email existe, recibirás un enlace de recuperación'
       })
     }
-    
-    // Verificar si hay un token reciente (evitar spam)
+
+    // Verificar si ya se envió un token recientemente (5 min de cooldown)
     const recentToken = await db.passwordResetToken.findFirst({
       where: {
         email: email.toLowerCase(),
         createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) }
       }
     })
-    
+
     if (recentToken) {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Ya se envió un enlace recientemente. Revisa tu correo o espera 5 minutos.' 
+      return NextResponse.json({
+        success: true,
+        message: 'Ya se envió un enlace recientemente. Revisa tu correo o espera 5 minutos.'
       })
     }
-    
-    // Invalidar tokens anteriores
+
+    // Invalidar tokens anteriores no usados para este email
     await db.passwordResetToken.updateMany({
       where: { email: email.toLowerCase(), used: false },
       data: { used: true }
     })
-    
-    // Generar nuevo token en texto plano (para el email)
+
+    // Generar nuevo token: texto plano para email, hash SHA256 para BD
     const plainToken = generateResetToken()
-    // Hashear el token para guardarlo en BD
     const hashedToken = crypto.createHash('sha256').update(plainToken).digest('hex')
-    
+
+    // Token expira en 1 hora
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
-    
+
     await db.passwordResetToken.create({
       data: {
         email: email.toLowerCase(),
-        token: hashedToken, // Guardamos el hash, no el texto plano
+        token: hashedToken,
         expiresAt,
       }
     })
-    
-    // Obtener URL base
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                    request.headers.get('origin') || 
+
+    // Obtener URL base para construir el enlace de recuperación
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
+                    request.headers.get('origin') ||
                     'https://greenaxis.com.co'
-    
-    // Enviar email con el token en TEXTO PLANO
+
+    // Enviar email con el token en texto plano (solo el usuario lo ve)
     await sendResetEmail(email, plainToken, baseUrl)
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Si el email existe, recibirás un enlace de recuperación' 
+
+    return NextResponse.json({
+      success: true,
+      message: 'Si el email existe, recibirás un enlace de recuperación'
     })
   } catch (error) {
     console.error('Error in password reset:', error)
@@ -168,27 +239,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Verificar si un token es válido
+// GET - Verificar si un token es válido (usado al cargar la página de reset)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const token = searchParams.get('token')
-    
+
     if (!token) {
       return NextResponse.json({ valid: false, error: 'Token requerido' }, { status: 400 })
     }
-    
-    // Hashear el token recibido de la URL para buscarlo en la BD
+
+    // Hash del token recibido para buscarlo en la BD
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
-    
+
     const resetToken = await db.passwordResetToken.findUnique({
       where: { token: hashedToken }
     })
-    
+
+    // Verificar: existe, no usado, no expirado
     if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
       return NextResponse.json({ valid: false, error: 'Token inválido o expirado' })
     }
-    
+
     return NextResponse.json({ valid: true, email: resetToken.email })
   } catch (error) {
     console.error('Error verifying token:', error)
@@ -196,49 +268,76 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT - Restablecer contraseña con token
+// PUT - Restablecer contraseña con token válido
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
+    // Validar que token y password vengan en el body
     const validationResult = resetPasswordSchema.safeParse(body)
     if (!validationResult.success) {
       return NextResponse.json({ error: validationResult.error.issues[0].message }, { status: 400 })
     }
     const { token, password } = validationResult.data
-    
-    // Validar fortaleza de contraseña
+
+    // Extraer IP para rate limiting (prevenir fuerza bruta del token)
+    const ip = request.headers.get('x-real-ip') ??
+           request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+           'unknown'
+
+    const tokenKey = `reset-token:${ip}`
+
+    // Verificar rate limit por IP para intentos de token
+    const tokenCheck = checkResetRateLimit(tokenKey, MAX_RESET_IP_ATTEMPTS)
+    if (tokenCheck.blocked) {
+      return NextResponse.json({
+        error: `Demasiados intentos. Intente en ${tokenCheck.remaining} minuto(s).`,
+        locked: true
+      }, { status: 429 })
+    }
+
+    // Validar fortaleza de la nueva contraseña
     const validation = validatePassword(password)
     if (!validation.valid) {
       return NextResponse.json({ error: validation.errors.join(', ') }, { status: 400 })
     }
-    
-    // Hashear el token recibido de la petición para buscarlo en la BD
+
+    // Hash del token recibido para buscarlo en la BD
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
-    
+
     const resetToken = await db.passwordResetToken.findUnique({
       where: { token: hashedToken }
     })
-    
+
+    // Si el token es inválido, expirado o ya usado, incrementar contador
     if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
+      const tokenAttempts = resetAttempts.get(tokenKey) || { count: 0, lastAttempt: 0 }
+      resetAttempts.set(tokenKey, {
+        count: tokenAttempts.count + 1,
+        lastAttempt: Date.now()
+      })
+
       return NextResponse.json({ error: 'Token inválido o expirado' }, { status: 400 })
     }
-    
-    // Hash de la nueva contraseña
+
+    // Hash de la nueva contraseña con bcrypt (12 rounds)
     const hashedPassword = await bcrypt.hash(password, 12)
-    
-    // Actualizar contraseña
+
+    // Actualizar contraseña del admin
     await db.admin.update({
       where: { email: resetToken.email },
       data: { password: hashedPassword }
     })
-    
-    // Marcar token como usado (buscando por el hash)
+
+    // Marcar token como usado para evitar reuse
     await db.passwordResetToken.update({
       where: { token: hashedToken },
       data: { used: true }
     })
-    
+
+    // Limpiar contador de intentos al completar exitosamente
+    resetAttempts.delete(tokenKey)
+
     return NextResponse.json({ success: true, message: 'Contraseña actualizada correctamente' })
   } catch (error) {
     console.error('Error resetting password:', error)
