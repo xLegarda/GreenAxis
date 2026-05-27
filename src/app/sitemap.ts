@@ -69,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       slug: true,
       updatedAt: true,
       featured: true,
+      imageUrl: true,
     },
     orderBy: {
       updatedAt: 'desc',
@@ -80,6 +81,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: service.updatedAt,
     changeFrequency: 'monthly' as const,
     priority: service.featured ? 0.9 : 0.7,
+    // Incluir imagen de Cloudinary si existe
+    images: service.imageUrl ? [service.imageUrl] : undefined,
   }))
 
   // Obtener noticias publicadas
@@ -92,6 +95,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       updatedAt: true,
       publishedAt: true,
       featured: true,
+      imageUrl: true,
     },
     orderBy: {
       publishedAt: 'desc',
@@ -103,6 +107,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: article.updatedAt,
     changeFrequency: 'weekly' as const,
     priority: article.featured ? 0.8 : 0.6,
+    // Incluir imagen de Cloudinary si existe
+    images: article.imageUrl ? [article.imageUrl] : undefined,
   }))
 
   // Combinar todas las páginas

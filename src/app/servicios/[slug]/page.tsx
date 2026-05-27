@@ -18,8 +18,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
-  const baseUrl = config.siteUrl || `${protocol}://greenaxis.com.co`
-  const url = `${baseUrl}/servicios/${slug}`
+  const siteUrl = config.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || ''
+  const baseUrl = siteUrl || `${protocol}://greenaxis.com.co`
+  const url = `${baseUrl.replace(/\/$/, '')}/servicios/${slug}`
   const description = service.description || config.siteDescription || ''
 
   return {

@@ -2,6 +2,19 @@ import { PublicLayout } from '@/components/public-layout'
 import { getPlatformConfig } from '@/lib/actions'
 import { AboutPageContent } from '@/components/about-page-content'
 import { db } from '@/lib/db'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getPlatformConfig()
+  const siteUrl = config.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || ''
+  const canonicalUrl = siteUrl ? `${siteUrl.replace(/\/$/, '')}/quienes-somos` : undefined
+
+  return {
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  }
+}
 
 export default async function QuienesSomosPage() {
   const [config, aboutPage] = await Promise.all([

@@ -19,9 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   
   // Usar siteUrl configurado o valor por defecto
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
-  const baseUrl = config.siteUrl || `${protocol}://greenaxis.com.co`
-  const url = `${baseUrl}/noticias/${slug}`
+  const siteUrl = config.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || ''
+  const url = siteUrl ? `${siteUrl.replace(/\/$/, '')}/noticias/${slug}` : undefined
   
   return {
     title: news.title,
@@ -48,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       images: news.imageUrl ? [news.imageUrl] : [],
     },
     alternates: {
-      canonical: url,
+      canonical: url || undefined,
     },
   }
 }

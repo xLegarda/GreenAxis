@@ -8,6 +8,19 @@ import { SocialFeedSection } from '@/components/social-feed-section'
 import { MapSection } from '@/components/map-section'
 import { PortfolioDownloadSection } from '@/components/portfolio-download-section'
 import { getCarouselSlides, getServices, getNews, getPlatformConfig } from '@/lib/actions'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getPlatformConfig()
+  const siteUrl = config.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || ''
+  const canonicalUrl = siteUrl ? `${siteUrl.replace(/\/$/, '')}/` : undefined
+
+  return {
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  }
+}
 
 export default async function HomePage() {
   const [slides, services, newsData, config] = await Promise.all([
