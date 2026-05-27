@@ -94,7 +94,9 @@ async function testSitemap() {
     const newsWithoutSlug = await db.news.findMany({
       where: {
         published: true,
-        slug: { equals: null },
+        OR: [
+          { slug: '' },
+        ],
       },
     })
     
